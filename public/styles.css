@@ -1,0 +1,559 @@
+/* Parakeet reserve page. Cream, near-black, one sky-blue accent (the button and the
+   FREE WEEK badge). System font stack, no font file. Heights in svh only: the full
+   viewport unit is wrong inside the in-app browsers. */
+
+:root {
+  --bg: #FBF6EC;
+  --bg-2: #EFE9DC;
+  --sheet: #FFFFFF;
+  --fg: #141414;
+  --fg-2: #4A4A4A;
+  --fg-3: #6B6B6B;
+  --accent: #4FA8E8;
+  --hair: rgba(20, 20, 20, 0.12);
+  --hair-strong: rgba(20, 20, 20, 0.24);
+  --focus: rgba(20, 20, 20, 0.45);
+  --col: 430px;
+  --gutter: 20px;
+  --cta-h: 76px;
+  --vvh: 100svh;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, p, ul, ol { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+button { font: inherit; color: inherit; }
+img, svg, video { display: block; }
+a { color: inherit; }
+
+:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
+.field:focus { outline-offset: 0; }
+
+@supports selector(:focus-visible) {
+  :focus:not(:focus-visible) { outline: none; }
+}
+
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* First screen: the whole page at 100svh. Five rows; the clip row is the only
+   flexible one, so the clip shrinks first and the copy never. */
+.screen {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  row-gap: 10px;
+  justify-items: center;
+  align-items: start;
+  width: 100%;
+  max-width: var(--col);
+  height: 100svh;
+  margin: 0 auto;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) var(--gutter) calc(var(--cta-h) + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+}
+
+/* --screen-h is innerHeight in px, set by app.js only where svh is unknown */
+@supports not (height: 1svh) {
+  .screen { height: var(--screen-h, auto); }
+  .clip-box { max-height: calc(0.4 * var(--screen-h, 0px)); }
+  .sheet { max-height: calc(var(--vvh, 0px) - 12px); }
+}
+
+.wordmark {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.wordmark a { text-decoration: none; }
+
+h1 {
+  max-width: 340px;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+
+.lede {
+  max-width: 340px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--fg-2);
+}
+
+/* Clip: 9:16, width follows the height; no margins so the flexible row never overflows.
+   Centred in its row: on a tall screen the 40svh cap leaves slack, which then splits
+   above and below the clip instead of opening a band between the clip and the facts. */
+.clip-box {
+  position: relative;
+  align-self: center;
+  height: 100%;
+  max-height: 40svh;
+  aspect-ratio: 9 / 16;
+  border-radius: 16px;
+  border: 1px solid var(--hair);
+  background: var(--bg-2);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.clip {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--bg-2);
+}
+
+.clip::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  -webkit-appearance: none;
+}
+
+.clip::-webkit-media-controls { display: none !important; }
+
+/* The visible play control: shown whenever the clip is not playing */
+.play {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.play-disc {
+  width: 40%;
+  min-width: 36px;
+  max-width: 56px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 2px 10px rgba(20, 20, 20, 0.18);
+  display: grid;
+  place-items: center;
+}
+
+.play-disc::after {
+  content: "";
+  width: 0;
+  height: 0;
+  margin-left: 3px;
+  border-style: solid;
+  border-width: 9px 0 9px 15px;
+  border-color: transparent transparent transparent var(--fg);
+}
+
+.play:active .play-disc { filter: brightness(0.92); }
+.clip-box.is-playing .play { display: none; }
+
+.facts {
+  display: grid;
+  row-gap: 4px;
+  max-width: 340px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--fg-2);
+}
+
+.nowrap { white-space: nowrap; }
+
+/* Buttons: near-black on the accent (white on #4FA8E8 is 2.6:1) */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 52px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--accent);
+  color: var(--fg);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.btn:active { filter: brightness(0.92); }
+.btn[disabled] { opacity: 0.7; cursor: default; }
+
+/* Fixed CTA, safe-area aware; --cta-h = 12 + 52 + 12 */
+.cta {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to bottom, rgba(251, 246, 236, 0), var(--bg) 30%);
+}
+
+.cta .btn {
+  max-width: calc(var(--col) - 2 * var(--gutter));
+  margin: 0 auto;
+}
+
+/* Below the fold */
+.footer {
+  width: 100%;
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: 28px var(--gutter) calc(var(--cta-h) + 28px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--hair);
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-3);
+}
+
+.footer a { color: var(--fg-2); }
+
+.foot-links {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 12px;
+}
+
+.foot-links a {
+  display: inline-block;
+  padding: 12px 0;
+  margin: -12px 0;
+  text-decoration: none;
+  color: var(--fg);
+}
+
+.foot-copy { margin-top: 12px; font-size: 12px; }
+
+/* Sheet */
+.sheet-root {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+}
+
+.sheet-root[hidden] { display: none; }
+
+.sheet-backdrop {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(20, 20, 20, 0.45);
+  touch-action: none;
+}
+
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0 auto;
+  max-width: var(--col);
+  max-height: calc(var(--vvh) - 12px);
+  background: var(--sheet);
+  color: var(--fg);
+  border-radius: 20px 20px 0 0;
+  padding: 8px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.sheet-root.open .sheet { transform: none; }
+.sheet:focus-visible { outline: none; }
+
+.grabber {
+  width: 36px;
+  height: 5px;
+  margin: 0 auto;
+  border-radius: 3px;
+  background: var(--hair-strong);
+}
+
+.sheet-x {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 50%;
+}
+
+.sheet-x::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  bottom: 7px;
+  left: 7px;
+  border-radius: 50%;
+  background: var(--bg-2);
+}
+
+.sheet-x svg { position: relative; }
+
+.step { padding-top: 36px; }
+.step[hidden] { display: none; }
+
+.sheet-title {
+  margin: 0;
+  padding-right: 44px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.sheet-body {
+  margin-top: 10px;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--fg-2);
+}
+
+.sheet-small {
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--fg-3);
+}
+
+/* Plan cards: the selected one gets the near-black border, no second colour */
+.plans {
+  display: grid;
+  row-gap: 10px;
+  margin-top: 18px;
+}
+
+.plan {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 14px 52px 14px 16px;
+  border: 2px solid var(--hair);
+  border-radius: 14px;
+  background: var(--sheet);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.plan[aria-checked="true"] { border-color: var(--fg); }
+.plan:active { filter: brightness(0.96); }
+
+.plan::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  border: 2px solid var(--hair-strong);
+  border-radius: 50%;
+}
+
+.plan[aria-checked="true"]::before {
+  border-color: var(--fg);
+  background: var(--fg);
+}
+
+.plan[aria-checked="true"]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 24px;
+  width: 5px;
+  height: 9px;
+  margin-top: -7px;
+  border: solid #FFFFFF;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.plan-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--fg);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+}
+
+.plan-price {
+  display: block;
+  margin-top: 3px;
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--fg-2);
+}
+
+.plans + .sheet-small + .btn, .sheet form { margin-top: 18px; }
+
+/* Field + shake */
+.field {
+  display: block;
+  width: 100%;
+  height: 50px;
+  padding: 0 16px;
+  border: 2px solid var(--hair);
+  border-radius: 14px;
+  background: var(--sheet);
+  color: var(--fg);
+  font: inherit;
+  font-size: 17px;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
+.field::placeholder { color: var(--fg-3); opacity: 1; }
+.field:focus { border-color: var(--fg-3); }
+.field[aria-invalid="true"] { border-color: var(--fg); }
+.field.shake { animation: shake 0.3s ease-in-out; }
+.field + .btn { margin-top: 12px; }
+
+@keyframes shake {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  20% { transform: translate3d(-5px, 0, 0); }
+  40% { transform: translate3d(5px, 0, 0); }
+  60% { transform: translate3d(-3px, 0, 0); }
+  80% { transform: translate3d(3px, 0, 0); }
+}
+
+#step-3 .btn { margin-top: 22px; }
+
+/* The step's primary button stays inside the visible panel when the panel has to
+   scroll (short viewport, open keyboard); the halo hides text passing beneath.
+   The inset is measured from the panel's content edge, so 0 sits above the
+   panel's own bottom padding and safe area. */
+.sheet .btn {
+  position: -webkit-sticky;
+  position: sticky;
+  bottom: 0;
+  box-shadow: 0 0 0 8px var(--sheet);
+}
+
+/* The email step's button sits right under the field, so it is not sticky: pulled up
+   over the field (a short visual viewport with the keyboard open) its halo would cover
+   the field's bottom edge. At scrollTop 0 the field and the button both fit. */
+#email-form .btn {
+  position: static;
+  box-shadow: none;
+}
+
+html.sheet-open body {
+  position: fixed;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+}
+
+/* Legal pages */
+body.legal { display: block; }
+
+.legal-main {
+  width: 100%;
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) var(--gutter) 24px;
+}
+
+.legal-main .wordmark { text-align: left; }
+
+.legal-main h1 {
+  max-width: none;
+  margin-top: 28px;
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.legal-main p {
+  margin-top: 16px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--fg-2);
+}
+
+.legal-main b { color: var(--fg); font-weight: 600; }
+.legal-main a { color: var(--fg); }
+
+body.legal .footer { padding-bottom: 36px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet { transition: none; }
+  .field.shake { animation: none; }
+}

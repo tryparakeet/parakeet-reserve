@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Parakeet</title>
+<meta name="description" content="5 dinners that fit your budget.">
+<meta name="theme-color" content="#FBF6EC">
+<meta name="color-scheme" content="light">
+<meta name="format-detection" content="telephone=no">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="stylesheet" href="/styles.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<main class="screen">
+  <p class="wordmark">Parakeet</p>
+  <h1>5 dinners that fit your budget.</h1>
+  <p class="lede">Pick your store and your budget. Get the week's dinners and one grocery list, with the total added up before you shop.</p>
+  <div class="clip-box" id="clip-box">
+    <video class="clip" id="clip" src="/media/walkthrough-v1.mp4" poster="/media/walkthrough-v1-poster.jpg" muted autoplay playsinline loop preload="metadata" disablepictureinpicture disableremoteplayback></video>
+    <button class="play" type="button" data-tap="play" aria-label="Play the walkthrough"><span class="play-disc" aria-hidden="true"></span></button>
+  </div>
+  <ul class="facts">
+    <li>Totals are estimates from regular shelf prices at Walmart, Kroger, Target and Aldi.</li>
+    <li>Every recipe was cooked by a real person first — a creator on camera or a tested public kitchen. No <span class="nowrap">AI-made</span> recipes.</li>
+    <li>Nothing is charged today. Your free week waits for launch.</li>
+  </ul>
+</main>
+
+<div class="cta">
+  <button class="btn" type="button" data-tap="reserve">Reserve my free week</button>
+</div>
+
+<footer class="footer">
+  <p>Parakeet is an app in development. Prices are what you'd pay at launch. Contact: <a href="mailto:app.parakeet@gmail.com">app.parakeet@gmail.com</a></p>
+  <p class="foot-links"><a href="/privacy">Privacy</a><a href="/terms">Terms</a></p>
+  <p class="foot-copy">© 2026 Parakeet.</p>
+</footer>
+
+<div class="sheet-root" id="sheet" hidden>
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet" id="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title-1" tabindex="-1">
+    <div class="grabber" aria-hidden="true"></div>
+    <button class="sheet-x" type="button" data-close aria-label="Close"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12"/></svg></button>
+
+    <div class="step" id="step-1">
+      <h2 class="sheet-title" id="sheet-title-1">Parakeet launches in January. Which plan would you start with?</h2>
+      <div class="plans" role="radiogroup" aria-label="Plan">
+        <button class="plan" type="button" role="radio" data-tap="plan_yearly" data-plan="yearly" aria-checked="true" tabindex="0">
+          <span class="plan-head"><span class="plan-name">Yearly</span><span class="badge">FREE WEEK</span></span>
+          <span class="plan-price" id="price">7 days free, then $29.99 a year</span>
+        </button>
+        <button class="plan" type="button" role="radio" data-tap="plan_monthly" data-plan="monthly" aria-checked="false" tabindex="-1">
+          <span class="plan-head"><span class="plan-name">Monthly</span></span>
+          <span class="plan-price">$9.99 a month, starts at launch, no free week</span>
+        </button>
+      </div>
+      <p class="sheet-small">Nothing is charged today. At launch, billing is through Apple and you can cancel anytime in Settings.</p>
+      <button class="btn" type="button" id="hold">Hold my spot</button>
+    </div>
+
+    <div class="step" id="step-2" hidden>
+      <h2 class="sheet-title" id="sheet-title-2">Where should we send your invite?</h2>
+      <form id="email-form" novalidate>
+        <label class="vh" for="email">Email</label>
+        <input class="field" id="email" type="email" name="email" placeholder="Email" autocomplete="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" required>
+        <button class="btn" type="submit">Send my invite</button>
+        <p class="sheet-small">One email when we launch. Never shared.</p>
+      </form>
+    </div>
+
+    <div class="step" id="step-3" hidden>
+      <h2 class="sheet-title" id="sheet-title-3">You're on the list.</h2>
+      <p class="sheet-body">We'll email you once, when Parakeet is live.</p>
+      <button class="btn" type="button" data-close>Done</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
