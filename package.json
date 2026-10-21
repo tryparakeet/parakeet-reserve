@@ -1,0 +1,21 @@
+{
+  "name": "parakeet-reserve",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Parakeet reserve page: static site plus one Netlify Function (the instrument).",
+  "scripts": {
+    "test": "node --test \"tests/unit/*.test.mjs\" \"tests/static/*.test.mjs\"",
+    "test:e2e": "playwright test",
+    "check": "npm test && npm run test:e2e",
+    "serve": "node scripts/serve.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.4"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
