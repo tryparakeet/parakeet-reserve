@@ -103,7 +103,7 @@ for (const vp of [{ width: 375, height: 553 }, { width: 375, height: 667 }]) {
     await page.setViewportSize(vp);
     await page.goto(TAGGED_QS);
     await expect(page.locator('h1')).toBeVisible();
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(600);   // past the 420 ms load fade (240 ms, staggered 60 ms over four elements)
     await page.screenshot({ path: join(dir, `first-${size}.png`), fullPage: false });
 
     await page.locator('[data-tap="reserve"]').click();

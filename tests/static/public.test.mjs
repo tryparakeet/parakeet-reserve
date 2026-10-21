@@ -155,6 +155,22 @@ test('index.html video: muted, autoplay, playsinline, a versioned /media mp4 src
   assert.match(index, /<button[^>]*\sdata-tap="play"[^>]*\saria-label="[^"]+"/, 'the play button has a label');
 });
 
+test('index.html facts: one aria-hidden check glyph (xmlns only, 16px, currentColor) as the first child of each li, no text added', () => {
+  const items = index.match(/<li>[\s\S]*?<\/li>/g) || [];
+  assert.equal(items.length, 3, 'three facts');
+  for (const li of items) {
+    const svg = /^<li><svg\b([^>]*)>([\s\S]*?)<\/svg>/.exec(li);
+    assert.ok(svg, 'the li starts with an svg');
+    assert.match(svg[1], /\saria-hidden="true"/);
+    assert.match(svg[1], /\sxmlns="[^"]+"/);
+    assert.match(svg[1], /\swidth="16"/);
+    assert.match(svg[1], /\sheight="16"/);
+    assert.match(svg[1], /\sstroke="currentColor"/);
+    assert.match(svg[1], /\sstroke-width="1\.75"/);
+    assert.equal(svg[2].replace(/<[^>]+>/g, '').trim(), '', 'no text inside the glyph');
+  }
+});
+
 test('index.html copy, verbatim', () => {
   const text = textOf(index);
   const strings = [
@@ -243,6 +259,8 @@ test('app.js: the endpoint, the cookie name, the transport, no http literal', ()
 test('styles.css: the colours, the accent only on the button and the badge, svh, the system font stack', () => {
   assert.match(css, /--bg:\s*#FBF6EC/i);
   assert.match(css, /--accent:\s*#4FA8E8/i);
+  assert.match(css, /--accent-ink:\s*#0E1B26/i);
+  assert.match(css, /\.btn\s*\{[^}]*color:\s*var\(--accent-ink\)/, 'the button label is the accent ink');
   const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
   assert.equal(count(/#4FA8E8/gi, cssNoComments), 1, 'the accent is defined once (as the token), used only through var(--accent)');
   assert.equal(count(/var\(--accent\)/g, cssNoComments), 2, 'var(--accent) is used exactly twice: the button and the badge');

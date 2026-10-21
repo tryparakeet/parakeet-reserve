@@ -1,7 +1,9 @@
 // The first screen is the whole page: at five phone viewports nothing scrolls, every element of the first
 // screen and the fixed CTA sit inside the viewport, the clip shrinks first (never below 80 px) and the copy
 // never; the colours, the type sizes and the absence of a font file; the sheet under a keyboard-sized
-// viewport; closing with and without reduced motion.
+// viewport; closing with and without reduced motion. Since Part B, #clip-box is the phone frame (an 8px
+// bezel and a 1px hairline around the video); the frame is what keeps 9:16, is capped at 40svh and never
+// falls under 80 px, as before, and the video area (#clip) is the frame minus 18 px each way.
 
 import { test, expect, TAGGED_QS, bbox, frames, viewportSize, sheetSettled } from './fixtures.mjs';
 
@@ -13,7 +15,7 @@ const VIEWPORTS = [
   { width: 360, height: 640, note: 'small Android' }
 ];
 
-const FIRST_SCREEN = ['.wordmark', 'h1', '.lede', '#clip-box', '.play', '.facts li >> nth=0', '.facts li >> nth=1', '.facts li >> nth=2', '.cta .btn'];
+const FIRST_SCREEN = ['.wordmark', 'h1', '.lede', '#clip-box', '#clip', '.play', '.facts li >> nth=0', '.facts li >> nth=1', '.facts li >> nth=2', '.cta .btn'];
 
 for (const vp of VIEWPORTS) {
   test(`fits at ${vp.width}x${vp.height} (${vp.note})`, async ({ page }) => {
@@ -36,6 +38,10 @@ for (const vp of VIEWPORTS) {
     expect(clip.height, 'clip height at most 40% of the viewport').toBeLessThanOrEqual(height * 0.4 + 0.5);
     expect(clip.height, 'clip height at least 80 px').toBeGreaterThanOrEqual(80);
     expect(clip.width / clip.height, 'clip is 9:16').toBeCloseTo(9 / 16, 1);
+    const video = await bbox(page.locator('#clip'));
+    expect(clip.height - video.height, 'the frame is the video area plus the 8px bezel and the hairline').toBeCloseTo(18, 0);
+    expect(clip.width - video.width, 'the frame is the video area plus the 8px bezel and the hairline').toBeCloseTo(18, 0);
+    expect(video.height, 'video area height at least 80 px').toBeGreaterThanOrEqual(80);
     const cta = await bbox(page.locator('.cta .btn'));
     const facts = await bbox(page.locator('.facts'));
     expect(facts.bottom, 'the facts end above the CTA').toBeLessThanOrEqual(cta.top + 0.5);
@@ -57,6 +63,7 @@ for (const vp of VIEWPORTS) {
       return {
         body: cs('body', 'background-color'),
         cta: cs('.cta .btn', 'background-color'),
+        ctaColor: cs('.cta .btn', 'color'),
         badgeless: true,
         h1: parseFloat(cs('h1', 'font-size')),
         fact: parseFloat(cs('.facts li', 'font-size')),
@@ -66,8 +73,9 @@ for (const vp of VIEWPORTS) {
     });
     expect(styles.body).toBe('rgb(251, 246, 236)');
     expect(styles.cta).toBe('rgb(79, 168, 232)');
-    expect(styles.h1).toBeGreaterThanOrEqual(28);
-    expect(styles.h1).toBeLessThanOrEqual(32);
+    expect(styles.ctaColor, 'the CTA label is --accent-ink').toBe('rgb(14, 27, 38)');
+    expect(styles.h1).toBeGreaterThanOrEqual(32);
+    expect(styles.h1).toBeLessThanOrEqual(34);
     expect(styles.fact).toBeGreaterThanOrEqual(13);
     expect(styles.fontFaces, 'no @font-face').toBe(0);
     expect(styles.ctaPosition).toBe('fixed');

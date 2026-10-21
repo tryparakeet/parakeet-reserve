@@ -9,6 +9,17 @@
   var COOKIE = 'pk_v';
   var NINETY_DAYS = 90 * 24 * 60 * 60;
 
+  /* ---------- is-ready: the first screen fades up (styles.css); nothing waits on it ---------- */
+
+  function markReady() {
+    try {
+      var main = doc.querySelector('main.screen');
+      if (main) main.classList.add('is-ready');
+    } catch (e) {}
+  }
+  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', markReady);
+  else markReady();   // the script is deferred: the document is already parsed here
+
   /* ---------- --screen-h: innerHeight in px, only where svh units are unknown ---------- */
 
   var hasSvh = false;
