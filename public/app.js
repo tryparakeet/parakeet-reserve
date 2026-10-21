@@ -366,7 +366,7 @@
     win.visualViewport.addEventListener('scroll', onViewport);
   }
 
-  /* The sheet's button and the plan cards slide in under the spot where "Reserve my free week"
+  /* The sheet's button and the plan cards slide in under the spot where "Reserve 2 free weeks"
      was pressed, so the second half of a double tap would land on "Hold my spot" (or a card) and
      record a plan the visitor never chose. A press anywhere inside the sheet during its first
      SETTLE_MS is dropped here, in the capture phase, before any handler runs: no row, no step

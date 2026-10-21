@@ -2,7 +2,7 @@
 // reserve, seen once, the plan cards (press and keyboard), Hold my spot, the email step, Done, the three
 // ways to close, the leave beacon, and the summary the admin would read for it. Then Hold my spot without
 // a card press (via: hold, and the via column of the raw CSV), the leave max across hides, and the double
-// tap on "Reserve my free week": the second tap lands inside the sheet and is dropped (no plan row).
+// tap on "Reserve 2 free weeks": the second tap lands inside the sheet and is dropped (no plan row).
 //
 // Every in-sheet click that follows an open awaits sheetSettled(): presses inside the sheet during its
 // first 500 ms are dropped on purpose (see fixtures.mjs).
@@ -37,7 +37,7 @@ test('tagged visit: reserve, seen, plan cards, Hold my spot, email, Done, close 
   expect(tapReserve.via).toBeUndefined();
   await expect(page.locator('#sheet')).toBeVisible();
   await expect(page.locator('#step-1')).toBeVisible();
-  await expect(page.locator('#sheet-title-1')).toHaveText('Parakeet launches in January. Which plan would you start with?');
+  await expect(page.locator('#sheet-title-1')).toHaveText('Parakeet launches in January. Which plan should your 2 free weeks start on?');
   const [seen] = await waitForRows(blobs, { event: 'seen' });
   expect(seen.vid).toBe(vid);
   await sheetSettled(page);
@@ -100,7 +100,7 @@ test('tagged visit: reserve, seen, plan cards, Hold my spot, email, Done, close 
   expect(emailRow.flag).toBe('gate');
   await expect(page.locator('#step-3')).toBeVisible();
   await expect(page.getByRole('heading', { name: "You're on the list." })).toBeVisible();
-  await expect(page.getByText("We'll email you once, when Parakeet is live.")).toBeVisible();
+  await expect(page.getByText("Your 2 free weeks are reserved. We'll email you once, when Parakeet is live.")).toBeVisible();
 
   // Done closes; focus returns to the reserve button
   await page.locator('#step-3 [data-close]').click();
@@ -230,14 +230,14 @@ test('hidden, visible, hidden: one leave per visitor in the summary with the lar
   expect(tt.uniques).toBe(1);
 });
 
-// A double tap on "Reserve my free week": the sheet's button and the plan cards slide in under the same
+// A double tap on "Reserve 2 free weeks": the sheet's button and the plan cards slide in under the same
 // spot, so without the guard the second tap would press "Hold my spot" (or a card) and record a plan the
 // visitor never chose. Three gaps, timed from the first tap: at ~60 ms the second tap meets a sliding
 // card, at 250 and 400 ms the settled "Hold my spot". Touch taps at the CTA's centre, as on a phone.
 const isPlanTap = (r) => r.event === 'tap' && String(r.button).startsWith('plan_');
 
 for (const gap of [60, 250, 400]) {
-  test(`double tap on Reserve my free week, ${gap} ms apart: the second tap is dropped, no plan row, step 1 stays`, async ({ page, harness }) => {
+  test(`double tap on Reserve 2 free weeks, ${gap} ms apart: the second tap is dropped, no plan row, step 1 stays`, async ({ page, harness }) => {
     const { blobs } = harness;
     await page.setViewportSize({ width: 375, height: 553 });
     await page.goto(TAGGED_QS);

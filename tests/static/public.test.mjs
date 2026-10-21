@@ -151,7 +151,7 @@ test('index.html video: muted, autoplay, playsinline, a versioned /media mp4 src
   assert.match(tag, /\sposter="\/media\/[^"]+"/, 'poster under /media/');
   assert.match(tag, /\sid="clip"/);
   assert.doesNotMatch(index, /<source\b/i, 'src attribute, not <source> (error fires on the element)');
-  assert.match(index, /<span[^>]*\sid="price"[^>]*>7 days free, then \$29\.99 a year<\/span>/);
+  assert.match(index, /<span[^>]*\sid="price"[^>]*>14 days free, then \$29\.99 a year<\/span>/);
   assert.match(index, /<button[^>]*\sdata-tap="play"[^>]*\saria-label="[^"]+"/, 'the play button has a label');
 });
 
@@ -163,21 +163,21 @@ test('index.html copy, verbatim', () => {
     "Pick your store and your budget. Get the week's dinners and one grocery list, with the total added up before you shop.",
     'Totals are estimates from regular shelf prices at Walmart, Kroger, Target and Aldi.',
     'Every recipe was cooked by a real person first — a creator on camera or a tested public kitchen. No AI-made recipes.',
-    'Nothing is charged today. Your free week waits for launch.',
-    'Reserve my free week',
-    'Parakeet launches in January. Which plan would you start with?',
+    'Nothing is charged today. Reserve now and your free week becomes two at launch.',
+    'Reserve 2 free weeks',
+    'Parakeet launches in January. Which plan should your 2 free weeks start on?',
     'Yearly',
-    'FREE WEEK',
-    '7 days free, then $29.99 a year',
+    '2 FREE WEEKS',
+    '14 days free, then $29.99 a year',
     'Monthly',
-    '$9.99 a month, starts at launch, no free week',
-    'Nothing is charged today. At launch, billing is through Apple and you can cancel anytime in Settings.',
+    '$9.99 a month, starts at launch, no free weeks',
+    'Nothing is charged today. At launch your free weeks come first; billing is through Apple and you can cancel anytime in Settings.',
     'Hold my spot',
     'Where should we send your invite?',
     'Send my invite',
-    'One email when we launch. Never shared.',
+    'One email when we launch. Never shared. Your 2 free weeks are tied to this email.',
     "You're on the list.",
-    "We'll email you once, when Parakeet is live.",
+    "Your 2 free weeks are reserved. We'll email you once, when Parakeet is live.",
     'Done',
     "Parakeet is an app in development. Prices are what you'd pay at launch. Contact: app.parakeet@gmail.com",
     'Privacy',
@@ -186,7 +186,7 @@ test('index.html copy, verbatim', () => {
   for (const s of strings) assert.ok(text.includes(s), `index.html says: ${s}`);
   assert.match(index, /<h1>5 dinners that fit your budget\.<\/h1>/);
   assert.match(index, /<p class="wordmark">Parakeet<\/p>/);
-  assert.match(index, /<button[^>]*data-tap="reserve"[^>]*>Reserve my free week<\/button>/);
+  assert.match(index, /<button[^>]*data-tap="reserve"[^>]*>Reserve 2 free weeks<\/button>/);
   assert.match(index, /<button[^>]*id="hold"[^>]*>Hold my spot<\/button>/);
   assert.match(index, /<button[^>]*type="submit"[^>]*>Send my invite<\/button>/);
   assert.match(index, /<h2[^>]*>You're on the list\.<\/h2>/);

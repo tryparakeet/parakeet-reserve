@@ -98,7 +98,7 @@ export function frames(page, n = 2) {
 
 // The sheet is open, its slide-in transition has ended (the panel's transform is back to none) and its
 // settle window has passed: app.js drops every press inside the sheet during its first 500 ms (the second
-// half of a double tap on "Reserve my free week" would land on "Hold my spot" or a card) and marks the end
+// half of a double tap on "Reserve 2 free weeks" would land on "Hold my spot" or a card) and marks the end
 // of that window with the class `settled`. An in-sheet click that follows an open must await this first;
 // the drop itself is what the double-tap cases in flow.spec assert.
 export async function sheetSettled(page) {

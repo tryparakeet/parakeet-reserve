@@ -85,7 +85,7 @@ Columns: **A** iPhone, TikTok's in-app browser · **B** iPhone, Safari · **C** 
 | 4 | The clip autoplays muted; `video.playing 1` for the visitor in `/admin` (`excluded.smoke`) | verified in e2e with the VP9 test clip (video.spec) | | | |
 | 5 | Tapping the play button when the clip is not playing sends `tap play` and starts it | verified in e2e (video.spec: the tap precedes any video state) | | | |
 | 6 | The cookie survives a second visit: close the page, reopen the smoke link, `uniques` stays 1 in `excluded.smoke` | verified in e2e (cookie.spec) | | | |
-| 7 | "Reserve my free week" opens the plan sheet at step 1; `reserve_taps 1`, `seen 1` | verified in e2e (flow.spec) | | | |
+| 7 | "Reserve 2 free weeks" opens the plan sheet at step 1; `reserve_taps 1`, `seen 1` | verified in e2e (flow.spec) | | | |
 | 8 | Yearly is preselected; tapping Monthly flips the check; `plan_monthly_taps 1`, `via card` in the raw CSV | verified in e2e (flow.spec) | | | |
 | 9 | "Hold my spot" with no card tapped records the preselected plan (`via hold`), opens the email step, the **keyboard opens** and the sheet's button stays above it | verified in e2e (flow.spec; keyboard proxy in first-screen.spec) | | | |
 | 10 | A bad email shakes and shows the invalid border; a good one goes to "You're on the list."; `emails 1` with `plan` | verified in e2e (flow.spec) | | | |
@@ -96,7 +96,7 @@ Columns: **A** iPhone, TikTok's in-app browser · **B** iPhone, Safari · **C** 
 | 15 | `/privacy` and `/terms` open from the footer and link back | verified in e2e (routes.spec) | | | |
 | 16 | The typed link `/go` lands on the page with the typed tags (`sources.typed.content.endcard`) — do this in a browser that already has the smoke cookie | verified in e2e (routes.spec) | | | |
 | 17 | TikTok's Promote link check (the `Bulid/` user agent) and Meta's link check (`Instagram <digits>` + 2000×2000) land in `excluded.bot` | verified in e2e for every fixture user agent (Google's documented Googlebot string included: the stored `ua` is capped at 400 characters, see the README's Known limits), `navigator.webdriver` and the 2000×2000 screen (exclusions.spec) | | | |
-| 18 | A **double tap** on "Reserve my free week" opens the sheet at step 1 and nothing else: no plan row, `plan_taps` stays 0 until a card or "Hold my spot" is pressed on purpose (presses inside the sheet in its first half second are dropped, because the sheet's button slides in under the same spot) | verified in e2e (flow.spec: touch taps 60, 250 and 400 ms apart, and a dblclick) | | | |
+| 18 | A **double tap** on "Reserve 2 free weeks" opens the sheet at step 1 and nothing else: no plan row, `plan_taps` stays 0 until a card or "Hold my spot" is pressed on purpose (presses inside the sheet in its first half second are dropped, because the sheet's button slides in under the same spot) | verified in e2e (flow.spec: touch taps 60, 250 and 400 ms apart, and a dblclick) | | | |
 
 ### Where to look
 
