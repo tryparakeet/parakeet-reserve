@@ -225,6 +225,15 @@ test('index.html copy, verbatim', () => {
   assert.equal(count(/\bRestline\b/g, index) + count(/\brestline\b/g, index), 0);
 });
 
+// The landing page's header on both legal pages (DESIGN.md §4): the sky browser bar, the symbol the bird
+// needs, one bird in the band, the whole wordmark a link home, before the page's own heading.
+function legalHeader(html, name) {
+  assert.match(html, /<meta name="theme-color" content="#4FA8E8">/i, `${name}: theme-color is sky`);
+  assert.match(html, /<symbol id="pk-mark"/, `${name}: carries the bird symbol`);
+  assert.equal(count(/<use href="#pk-mark"\/>/g, html), 1, `${name}: the bird once, in the band`);
+  assert.match(html, /<header class="sky legal-sky">\s*<a class="wordmark" href="\/"><svg class="bird"[^>]*><use href="#pk-mark"\/><\/svg>Parakeet<\/a>\s*<\/header>\s*<main class="legal-main">/, `${name}: the sky band with the linked wordmark sits above the page`);
+}
+
 test('privacy.html: the cookie, the retention, the one email, never shared or sold, deletion, the address, the row contents', () => {
   const text = textOf(privacy);
   assert.ok(text.includes('pk_v'), 'names the cookie pk_v');
@@ -238,6 +247,7 @@ test('privacy.html: the cookie, the retention, the one email, never shared or so
   assert.match(text, /Nothing is charged/);
   assert.match(privacy, /<a href="mailto:app\.parakeet@gmail\.com">/);
   assert.match(privacy, /<link rel="stylesheet" href="\/styles\.css">/);
+  legalHeader(privacy, 'privacy');
 });
 
 test('terms.html: in development, launch prices, nothing charged, the address', () => {
@@ -246,6 +256,7 @@ test('terms.html: in development, launch prices, nothing charged, the address', 
     assert.ok(text.includes(s), `terms says: ${s}`);
   }
   assert.match(terms, /<link rel="stylesheet" href="\/styles\.css">/);
+  legalHeader(terms, 'terms');
 });
 
 test('robots.txt keeps crawlers off /admin and /api/', () => {

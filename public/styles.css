@@ -856,11 +856,15 @@ body.legal { display: block; }
   width: 100%;
   max-width: var(--col);
   margin: 0 auto;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) var(--gutter) 24px;
+  padding: 24px var(--gutter) 24px;
 }
 
-.legal-main .wordmark { height: auto; }
-.legal-main .wordmark a { text-decoration: none; }
+/* The landing page's header on the legal pages: the sky band with the white bird and wordmark, the
+   whole wordmark a link home (DESIGN.md §4). Only the band is sky; the text below stays ink on cream. */
+.legal-sky .wordmark {
+  color: var(--white);
+  text-decoration: none;
+}
 
 .legal-main h1 {
   margin-top: 28px;
