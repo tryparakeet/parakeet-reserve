@@ -1,6 +1,6 @@
 // Shared fixtures for the e2e specs: a harness per test with a frozen clock, baseURL pointed at it, a
 // passive same-origin guard on every request the browser makes, a CSP console-error guard, admin helpers,
-// waitForRows over the memory store, the clip path read from public/index.html, and hide()/show() which
+// waitForRows over the memory store, and hide()/show() which
 // dispatch pagehide / visibilitychange from inside the page (the beacons then land in the store).
 //
 //   test.use({ harnessOptions: { now: '2026-10-21T12:00:00.000Z', adminKey: null } })   per describe/file
@@ -11,7 +11,6 @@
 // frame navigates, and the row then arrives or not by chance. hide()/show() below stay inside the page.
 
 import { test as base, expect } from 'playwright/test';
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { startHarness } from '../helpers/harness.mjs';
@@ -24,23 +23,12 @@ export const RESULTS_DIR = join(ROOT, 'test-results');
 
 // The frozen clock every test starts with unless it says otherwise: Oct 25, mid-test, after GATE_START.
 export const CLOCK_START = '2026-10-25T12:00:00.000Z';
-export const GATE_START_ISO = '2026-10-23T05:00:00.000Z';
+export const GATE_START_ISO = '2026-10-24T05:00:00.000Z';
 
-export const TAGGED = { utm_source: 'tiktok', utm_medium: 'paid', utm_campaign: 'gate0', utm_content: 'fri23' };
-export const TAGGED_QS = '/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=fri23';
+export const TAGGED = { utm_source: 'tiktok', utm_medium: 'paid', utm_campaign: 'gate0', utm_content: 'sat24' };
+export const TAGGED_QS = '/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=sat24';
 export const SMOKE_QS = '/?utm_source=own&utm_campaign=smoke';
 export const TYPED_LOCATION = '/?utm_source=typed&utm_medium=organic&utm_campaign=gate0&utm_content=endcard';
-
-// The clip and poster paths as index.html ships them (Umyt's clip lands as -v2; no test changes).
-export function clipPaths() {
-  const html = readFileSync(join(ROOT, 'public', 'index.html'), 'utf8');
-  const video = /<video\b[^>]*>/i.exec(html);
-  if (!video) throw new Error('fixtures: no <video> in public/index.html');
-  const src = /\ssrc="([^"]+)"/.exec(video[0]);
-  const poster = /\sposter="([^"]+)"/.exec(video[0]);
-  if (!src) throw new Error('fixtures: the <video> has no src attribute');
-  return { clip: src[1], poster: poster ? poster[1] : '' };
-}
 
 // Rows of the events store matching `match`: an object of field equalities, or a predicate.
 export function rowsOf(blobs, match = {}) {

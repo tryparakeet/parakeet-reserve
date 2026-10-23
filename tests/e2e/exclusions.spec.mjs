@@ -156,7 +156,7 @@ test.describe('prestart', () => {
   });
 
   test.describe('one minute before the start', () => {
-    test.use({ harnessOptions: { now: '2026-10-23T04:59:00.000Z' } });
+    test.use({ harnessOptions: { now: '2026-10-24T04:59:00.000Z' } });
     test('a visit at 04:59:00Z is prestart', async ({ page, harness }) => {
       await page.goto(TAGGED_QS);
       const [pv] = await waitForRows(harness.blobs, { event: 'pageview' });

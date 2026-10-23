@@ -1,6 +1,7 @@
 /* Parakeet reserve page, built against DESIGN.md: the four colour tokens and their derived values
-   (§2), the system font stack and the type scale (§3). No font file. Heights in svh only: the full
-   viewport unit is wrong inside the in-app browsers. */
+   (§2), the system font stack and the type scale (§3), hero B and C1 (§4), the components (§5), flat
+   with the two page motions (§6). No font file. Heights in svh only: the full viewport unit is wrong
+   inside the in-app browsers. */
 
 :root {
   /* DESIGN.md §2: four colours, nothing else; the derived values are ink or white at a set opacity */
@@ -14,10 +15,17 @@
   --ink-22: rgba(14, 27, 38, 0.22);   /* strokes */
   --ink-10: rgba(14, 27, 38, 0.10);   /* hairlines */
   --sky-soft: #E3F1FC;                /* a selected row's fill */
+  --white-78: rgba(255, 255, 255, 0.78);   /* the week's header: "$" and its line (§5) */
+  --white-72: rgba(255, 255, 255, 0.72);   /* the page's answer line (§2) */
+  --white-60: rgba(255, 255, 255, 0.60);   /* the "est." outline (§5) */
+  --white-34: rgba(255, 255, 255, 0.34);   /* the meter's track (§5) */
   --col: 430px;
   --gutter: 20px;
-  --cta-h: 80px;
-  --bezel: 8px;
+  /* The pinned Reserve sheet's height: 20 + 56 + 12 + two 16px lines + the bottom padding. app.js
+     replaces it with the measured height (a third line on a narrow phone, a larger safe area). */
+  --sheet-pad-bottom: max(32px, calc(16px + env(safe-area-inset-bottom, 0px)));
+  --cta-h: calc(120px + var(--sheet-pad-bottom));
+  --phone-max: 457px;
   --vvh: 100svh;
 }
 
@@ -42,14 +50,13 @@ body {
   overflow-x: hidden;
 }
 
-h1, h2, h3, p, ul, ol { margin: 0; }
+h1, h2, h3, p, ul, ol, dl, dd { margin: 0; }
 ul, ol { padding: 0; list-style: none; }
 button { font: inherit; color: inherit; }
-img, svg, video { display: block; }
+img, svg { display: block; }
 a { color: inherit; }
 
 :focus { outline: 2px solid var(--ink); outline-offset: 2px; }
-.field:focus { outline-offset: 0; }
 
 @supports selector(:focus-visible) {
   :focus:not(:focus-visible) { outline: none; }
@@ -64,164 +71,380 @@ a { color: inherit; }
   white-space: nowrap;
 }
 
-/* First screen: the whole page at 100svh. Five rows; the clip row is the only
-   flexible one, so the clip shrinks first and the copy never. Everything sits on the
-   left edge of the gutter; only the phone frame is centred in its row. */
+/* The bird is defined once (a symbol) and drawn with <use> */
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.bird {
+  flex: none;
+  width: 22px;     /* the mark's crop is 572 x 856 */
+  height: 32px;
+}
+
+/* ---------- The first screen: hero B (DESIGN.md §4) ----------
+   The whole page at 100svh: the sky field (wordmark, H1, answer line), then the stage, the one
+   flexible row, which holds the phone. The pinned Reserve sheet covers the bottom --cta-h, so the
+   screen leaves that much room under the stage. The phone frame shrinks first; the copy never. */
 .screen {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-  row-gap: 10px;
-  justify-items: start;
-  align-items: start;
+  grid-template-rows: auto minmax(0, 1fr);
   width: 100%;
-  max-width: var(--col);
   height: 100svh;
-  margin: 0 auto;
-  padding: calc(10px + env(safe-area-inset-top, 0px)) var(--gutter) calc(var(--cta-h) + env(safe-area-inset-bottom, 0px));
-  text-align: left;
+  padding-bottom: var(--cta-h);
+  background: var(--cream);
+  overflow: hidden;
 }
 
 /* --screen-h is innerHeight in px, set by app.js only where svh is unknown */
 @supports not (height: 1svh) {
   .screen { height: var(--screen-h, auto); }
-  .clip-box { max-height: calc(0.4 * var(--screen-h, 0px)); }
   .sheet { max-height: calc(var(--vvh, 0px) - 12px); }
 }
 
-.wordmark {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 0.01em;
-  color: var(--ink-70);
+.sky {
+  padding-top: env(safe-area-inset-top, 0px);
+  background: var(--sky);
+  color: var(--white);
 }
 
-.wordmark a { text-decoration: none; }
+.sky > * {
+  max-width: var(--col);
+  margin-right: auto;
+  margin-left: auto;
+  padding: 0 var(--gutter);
+}
 
-h1 {
-  max-width: 9.5em;   /* "5 dinners that fit / your budget." at 393 and 430 wide too, never "… / budget." */
-  font-size: 34px;
+/* The wordmark: white on the sky, a logotype (DESIGN.md §4) */
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 64px;
+  font-size: 20px;
   font-weight: 700;
-  line-height: 1.08;
+  line-height: 24px;
   letter-spacing: -0.02em;
 }
 
-.lede {
-  max-width: 360px;
-  font-size: 15px;
-  line-height: 1.4;
-  color: var(--ink-70);
+/* The H1 and the answer line: white, centred, Umyt's exception (DESIGN.md §2, §4) */
+h1 {
+  margin-top: 12px;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-align: center;
+  text-wrap: balance;
 }
 
-/* The clip as the hero, in a phone frame. The frame (.clip-box) is the bezel: an 8px cream
-   surface around the video, a hairline and a soft shadow. The frame itself is 9:16 and at
-   most 40svh (as before Part B); the video fills the area inside the bezel with object-fit:
-   cover, which trims a few px off its sides. Centred in its row: on a tall screen the cap
-   leaves slack, which then splits above and below the frame instead of opening a band
-   between the frame and the facts. */
-.clip-box {
+/* The answer line crossfades once through three answers (about 2.5 s each, 400 ms fades) and stays
+   on the last (DESIGN.md §6). The two passing lines are aria-hidden; the last one is the readable
+   text and is what shows at rest, so a browser without animations shows it still. */
+.answer {
   position: relative;
-  justify-self: center;
-  align-self: center;
-  height: 100%;
-  max-height: 40svh;
-  aspect-ratio: 9 / 16;
-  padding: var(--bezel);
-  border: 1px solid var(--ink-10);
-  border-radius: 22px;
-  background: var(--cream);
-  isolation: isolate;
+  height: 48px;     /* two lines */
+  margin-top: 8px;
 }
 
-.clip {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 22px;
-  clip-path: inset(0 round 22px);   /* older WebKit ignores the radius on a playing video */
-  background: var(--cream);
-}
-
-.clip::-webkit-media-controls-start-playback-button {
-  display: none !important;
-  -webkit-appearance: none;
-}
-
-.clip::-webkit-media-controls { display: none !important; }
-
-/* The visible play control: shown whenever the clip is not playing; it covers the video
-   area exactly (inset by the bezel) */
-.play {
+.answer-line {
   position: absolute;
-  top: var(--bezel);
-  right: var(--bezel);
-  bottom: var(--bezel);
-  left: var(--bezel);
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 22px;
-  background: transparent;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+  top: 0;
+  right: var(--gutter);
+  left: var(--gutter);
+  font-size: 17px;
+  line-height: 24px;
+  color: var(--white-72);
+  text-align: center;
+  text-wrap: balance;
 }
 
-.play-disc {
-  width: 40%;
-  min-width: 36px;
-  max-width: 56px;
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
-  background: var(--white);
-  display: grid;
-  place-items: center;
+.answer-1, .answer-2 { opacity: 0; }
+
+@keyframes answer-1 {
+  0%, 86.2% { opacity: 1; }      /* 0 - 2.5 s */
+  100% { opacity: 0; }           /* 2.9 s */
 }
 
-.play-disc::after {
+@keyframes answer-2 {
+  0%, 46.3% { opacity: 0; }      /* 0 - 2.5 s */
+  53.7%, 92.6% { opacity: 1; }   /* 2.9 - 5.0 s */
+  100% { opacity: 0; }           /* 5.4 s */
+}
+
+@keyframes answer-3 {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.answer-1 { animation: answer-1 2.9s linear both; }
+.answer-2 { animation: answer-2 5.4s linear both; }
+.answer-3 { animation: answer-3 400ms linear 5s both; }
+
+/* The stage: the phone sits between the sky and the cream. The sky runs on behind the phone to the
+   same point of the frame as on the boards (46.8 % of its height). */
+.stage {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-items: start;
+  min-height: 0;
+  padding: 20px 0 16px;
+}
+
+.stage::before {
   content: "";
-  width: 0;
-  height: 0;
-  margin-left: 3px;
-  border-style: solid;
-  border-width: 9px 0 9px 15px;
-  border-color: transparent transparent transparent var(--ink);
-}
-
-.play:active .play-disc { filter: brightness(0.92); }
-.clip-box.is-playing .play { display: none; }
-
-/* Facts as proof lines: a 16px check glyph, a 10px gap, the sentence in the rest. The
-   glyph is placed, not a grid column: a grid li would make the sentence's nowrap span
-   its own item and split the sentence around it. */
-.facts {
-  display: grid;
-  row-gap: 6px;
-  width: 100%;
-  font-size: 15px;
-  line-height: 1.35;
-  color: var(--ink-70);
-}
-
-.facts li {
-  position: relative;
-  padding-left: 26px;
-}
-
-.facts svg {
   position: absolute;
-  top: 1px;
+  top: 0;
+  right: 0;
   left: 0;
-  width: 16px;
-  height: 16px;
+  height: calc(20px + 0.468 * min(100% - 36px, var(--phone-max)));
+  background: var(--sky);
+}
+
+/* Apple's bezel, used as is: the screen sits under its opening, the image on top at 0/0. All the
+   positions are the board's, as fractions of the 224 x 457 frame (10.43/9.05, 203.14 x 438.89,
+   radius 33.15). */
+.phone {
+  position: relative;
+  height: 100%;
+  max-height: var(--phone-max);
+  max-width: 100%;
+  aspect-ratio: 224 / 457;
+}
+
+.phone-screen {
+  position: absolute;
+  top: 1.9803%;
+  left: 4.6563%;
+  width: 90.6875%;
+  height: 96.0372%;
+  border-radius: 16.319% / 7.553%;
+  overflow: hidden;
+  background: var(--cream);
+  container-type: inline-size;
+}
+
+.bezel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- The result screen inside the phone ----------
+   The app's 393 x 852 screen at the size of the opening: one design pixel is --u (the screen is
+   393 design px plus a 1 px inset each side), so the mock scales with the frame. */
+.app {
+  --u: 0.25195cqw;
+  position: absolute;
+  top: 0.4923cqw;
+  left: 0.4923cqw;
+  width: calc(393 * var(--u));
+  height: calc(852 * var(--u));
+  background: var(--cream);
+  color: var(--ink);
+  font-size: calc(17 * var(--u));
+  line-height: 1.2;
+}
+
+/* The week's header (DESIGN.md §5): sky, white type, no eyebrow line */
+.week {
+  position: relative;
+  padding: calc(76 * var(--u)) calc(20 * var(--u)) calc(22 * var(--u));
+  border-radius: 0 0 calc(22 * var(--u)) calc(22 * var(--u));
+  background: var(--sky);
+  color: var(--white);
+}
+
+.week-bird {
+  position: absolute;
+  top: calc(70 * var(--u));
+  right: calc(14 * var(--u));
+  width: calc(32 * var(--u));
+  height: calc(48 * var(--u));
+}
+
+.week-total {
+  display: flex;
+  align-items: baseline;
+  font-size: calc(64 * var(--u));
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.week-dollar {
+  margin-right: calc(2 * var(--u));
+  font-size: calc(34 * var(--u));
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--white-78);
+}
+
+.week-est {
+  margin-left: calc(12 * var(--u));
+  padding: calc(3 * var(--u)) calc(7 * var(--u));
+  border: calc(1 * var(--u)) solid var(--white-60);
+  border-radius: 999px;
+  font-size: calc(13 * var(--u));
+  font-weight: 600;
+  line-height: calc(16 * var(--u));
+  letter-spacing: 0;
+}
+
+.week-of {
+  margin-top: calc(8 * var(--u));
+  font-size: calc(15 * var(--u));
+  line-height: calc(20 * var(--u));
+  color: var(--white-78);
+}
+
+.week-of b { font-weight: 700; color: var(--white); }
+
+.meter {
+  height: calc(8 * var(--u));
+  margin-top: calc(16 * var(--u));
+  border-radius: 999px;
+  background: var(--white-34);
+}
+
+.meter-fill {
+  width: 58.12%;     /* $58.12 of $100 */
+  height: 100%;
+  border-radius: 999px;
+  background: var(--white);
+}
+
+/* The dinner cards (DESIGN.md §5): the day on the right of the dish name, sky text, no pill */
+.dinners {
+  display: flex;
+  flex-direction: column;
+  gap: calc(12 * var(--u));
+  padding: calc(20 * var(--u)) calc(20 * var(--u)) 0;
+}
+
+.dinner {
+  padding: calc(12 * var(--u)) calc(12 * var(--u)) calc(4 * var(--u));
+  border: calc(1 * var(--u)) solid var(--ink-10);
+  border-radius: calc(22 * var(--u));
+  background: var(--white);
+}
+
+.dinner-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12 * var(--u));
+  padding: calc(4 * var(--u)) calc(4 * var(--u)) calc(8 * var(--u));
+}
+
+.dinner-name {
+  font-size: calc(16 * var(--u));
+  font-weight: 600;
+  line-height: calc(20 * var(--u));
+}
+
+.dinner-meta {
+  margin-top: calc(4 * var(--u));
+  font-size: calc(13 * var(--u));
+  line-height: calc(16 * var(--u));
   color: var(--ink-62);
 }
 
-.nowrap { white-space: nowrap; }
+.dinner-day {
+  flex: none;
+  font-size: calc(15 * var(--u));
+  font-weight: 600;
+  line-height: calc(20 * var(--u));
+  color: var(--sky);
+}
 
-/* Buttons: ink on the accent (white on #4FA8E8 is 2.6:1) */
+.dinner-photo {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: calc(14 * var(--u));
+  overflow: hidden;
+  background: var(--cream);
+}
+
+.dinner-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* the 1 px inner hairline, so a photo on white still reads as a photo */
+.dinner-photo::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border: calc(1 * var(--u)) solid var(--ink-10);
+  border-radius: inherit;
+}
+
+.dinner-actions {
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  padding-top: calc(4 * var(--u));
+}
+
+.dinner-actions svg {
+  width: calc(24 * var(--u));
+  height: calc(24 * var(--u));
+  margin: calc(10 * var(--u));
+}
+
+.dinner-actions .dinner-more { margin-left: auto; }
+
+/* Without container queries (iOS before 16) the phone keeps its smallest board size */
+@supports not (width: 1cqw) {
+  :root { --phone-max: 272px; }
+  .app { --u: 0.30667px; top: 1px; left: 1px; }
+}
+
+/* ---------- The pinned Reserve sheet (DESIGN.md §4, C1) ----------
+   The button and Umyt's line, and nothing else, pinned to the bottom while the page scrolls under it. */
+.cta {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px var(--gutter) var(--sheet-pad-bottom);
+  border: 1px solid var(--ink-10);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--white);
+}
+
+.cta > * {
+  width: 100%;
+  max-width: calc(var(--col) - 2 * var(--gutter));
+  margin: 0 auto;
+}
+
+.cta-note {
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--ink-62);
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* Primary button (DESIGN.md §5): pill, 56 px, ink 17/600 on sky (6.7:1); pressed 6% darker */
 .btn {
   display: flex;
   align-items: center;
@@ -235,7 +458,7 @@ h1 {
   color: var(--ink);
   font-size: 17px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  line-height: 20px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -243,76 +466,119 @@ h1 {
   -webkit-user-select: none;
 }
 
-.btn:active { filter: brightness(0.92); }
-.btn[disabled] { opacity: 0.7; cursor: default; }
+.btn:active { filter: brightness(0.94); }
 
-/* Fixed CTA, safe-area aware; --cta-h = 12 + 56 + 12 */
-.cta {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 5;
-  padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom, 0px));
-  background: var(--cream);
+.btn[disabled],
+.field:has(input:placeholder-shown) + .btn {
+  background: var(--ink-10);
+  color: var(--ink-48);
+  cursor: default;
+  filter: none;
 }
 
-.cta .btn {
-  max-width: calc(var(--col) - 2 * var(--gutter));
-  margin: 0 auto;
-}
-
-/* On load: the text block and the phone frame fade up, staggered. Only with .is-ready
-   (app.js adds it), so a script that never runs leaves the page visible. */
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.screen.is-ready .wordmark,
-.screen.is-ready h1,
-.screen.is-ready .lede,
-.screen.is-ready .clip-box {
-  animation: fade-up 240ms ease-out both;
-}
-
-.screen.is-ready h1 { animation-delay: 60ms; }
-.screen.is-ready .lede { animation-delay: 120ms; }
-.screen.is-ready .clip-box { animation-delay: 180ms; }
-
-/* Below the fold */
-.footer {
-  width: 100%;
+/* ---------- Below the first screen (DESIGN.md §4, C1): three rows on cream, then the footer ---------- */
+.below {
   max-width: var(--col);
   margin: 0 auto;
-  padding: 28px var(--gutter) calc(var(--cta-h) + 28px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--ink-10);
-  text-align: left;
-  font-size: 13px;
-  line-height: 1.5;
+  padding: 12px var(--gutter) calc(var(--cta-h) + 32px);
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: baseline;
+  padding: 20px 0;
+}
+
+.fact + .fact { border-top: 1px solid var(--ink-10); }
+
+.fact dt {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
   color: var(--ink-62);
 }
 
-.footer a { color: var(--ink-70); }
+.fact dd {
+  font-size: 17px;
+  line-height: 25px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--ink-22);
+  border-radius: 999px;
+  background: var(--white);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.chip-soon {
+  border-style: dashed;
+  background: none;
+  font-weight: 500;
+  color: var(--ink-62);
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  padding-top: 24px;
+  border-top: 1px solid var(--ink-10);
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ink-70);
+}
+
+.foot-contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+}
+
+.footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
 
 .foot-links {
   display: flex;
-  justify-content: flex-start;
   gap: 24px;
-  margin-top: 12px;
 }
 
-.foot-links a {
-  display: inline-block;
-  padding: 12px 0;
-  margin: -12px 0;
-  text-decoration: none;
-  color: var(--ink);
+.foot-copy {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--ink-62);
 }
 
-.foot-copy { margin-top: 12px; font-size: 13px; }
+/* The one-time scroll fade (DESIGN.md §6): app.js adds .in the first time a row or the footer enters
+   the viewport. At rest everything is fully visible, so nothing hides if the script never runs. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
 
-/* Sheet */
+[data-reveal].in { animation: rise 500ms ease-out both; }
+
+/* ---------- The sheet: plan, email, done ---------- */
 .sheet-root {
   position: fixed;
   top: 0;
@@ -336,21 +602,21 @@ h1 {
 
 .sheet {
   position: absolute;
-  left: 0;
   right: 0;
   bottom: 0;
-  margin: 0 auto;
+  left: 0;
   max-width: var(--col);
   max-height: calc(var(--vvh) - 12px);
+  margin: 0 auto;
+  padding: 12px var(--gutter) var(--sheet-pad-bottom);
+  border-radius: 22px 22px 0 0;
   background: var(--white);
   color: var(--ink);
-  border-radius: 22px 22px 0 0;
-  padding: 8px 20px calc(16px + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .sheet-root.open .sheet { transform: none; }
@@ -359,82 +625,66 @@ h1 {
 .grabber {
   width: 36px;
   height: 4px;
-  margin: 0 auto;
+  margin: 0 auto 16px;
   border-radius: 999px;
-  background: var(--ink-22);
+  background: var(--ink-10);
 }
 
 .sheet-x {
   position: absolute;
-  top: 10px;
+  top: 8px;
   right: 10px;
   width: 44px;
   height: 44px;
   padding: 0;
   border: 0;
+  border-radius: 999px;
   background: none;
-  color: var(--ink);
+  color: var(--ink-62);
   display: grid;
   place-items: center;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  border-radius: 50%;
 }
 
-.sheet-x::before {
-  content: "";
-  position: absolute;
-  top: 7px;
-  right: 7px;
-  bottom: 7px;
-  left: 7px;
-  border-radius: 50%;
-  background: var(--cream);
-}
-
-.sheet-x svg { position: relative; }
-
-.step { padding-top: 36px; }
+.step { padding-top: 24px; }
 .step[hidden] { display: none; }
 
+/* The sheet's title and small print are centred (Umyt's "center them all", DESIGN.md §4) */
 .sheet-title {
-  margin: 0;
-  padding-right: 44px;
-  font-size: 20px;
+  font-size: 28px;
   font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  text-align: left;
-}
-
-.sheet-body {
-  margin-top: 10px;
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--ink-70);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-align: center;
+  text-wrap: balance;
 }
 
 .sheet-small {
-  margin-top: 14px;
+  margin-top: 16px;
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 16px;
   color: var(--ink-62);
+  text-align: center;
+  text-wrap: balance;
 }
 
-/* Plan cards: a hairline each; the selected one gets the near-black border, 2px, drawn
-   as the border plus an inset ring so the card's size never changes */
+/* Selection rows (DESIGN.md §5): white, 14 px radius, hairline; selected = sky-soft fill, a 1.5 px
+   sky inset stroke and a sky tick with a white check. Each row is a tag over one line. */
 .plans {
   display: grid;
-  row-gap: 10px;
-  margin-top: 18px;
+  row-gap: 12px;
+  margin-top: 20px;
 }
 
 .plan {
-  position: relative;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
+  min-height: 64px;
   margin: 0;
-  padding: 14px 52px 14px 16px;
+  padding: 16px;
   border: 1px solid var(--ink-10);
   border-radius: 14px;
   background: var(--white);
@@ -445,94 +695,126 @@ h1 {
 }
 
 .plan[aria-checked="true"] {
-  border-color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--ink);
+  border-color: transparent;
+  background: var(--sky-soft);
+  box-shadow: inset 0 0 0 1.5px var(--sky);
 }
 
-.plan:active { filter: brightness(0.96); }
-
-.plan::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 16px;
-  width: 22px;
-  height: 22px;
-  margin-top: -11px;
-  border: 2px solid var(--ink-22);
-  border-radius: 50%;
-}
-
-.plan[aria-checked="true"]::before {
-  border-color: var(--ink);
-  background: var(--ink);
-}
-
-.plan[aria-checked="true"]::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 24px;
-  width: 5px;
-  height: 9px;
-  margin-top: -7px;
-  border: solid var(--white);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.plan-head {
+.plan-body {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.3;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
 }
 
-.badge {
-  display: inline-block;
-  padding: 3px 8px;
+.tag {
+  padding: 4px 8px;
   border-radius: 999px;
   background: var(--sky);
   color: var(--ink);
   font-size: 13px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 16px;
+}
+
+.tag-none {
+  padding: 3px 7px;
+  border: 1px dashed var(--ink);
+  background: none;
 }
 
 .plan-price {
-  display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: 15px;
-  line-height: 1.35;
+  line-height: 20px;
   color: var(--ink-70);
 }
 
-.plans + .sheet-small + .btn, .sheet form { margin-top: 18px; }
+.tick {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--ink-22);
+  border-radius: 999px;
+  color: transparent;
+}
 
-/* Field + shake */
+.plan[aria-checked="true"] .tick {
+  border-color: var(--sky);
+  background: var(--sky);
+  color: var(--white);
+}
+
+#hold { margin-top: 12px; }
+
+/* The step's primary button stays inside the visible panel when the panel has to scroll (short
+   viewport, open keyboard); the white halo hides text passing beneath. */
+#hold {
+  position: -webkit-sticky;
+  position: sticky;
+  bottom: 0;
+  box-shadow: 0 0 0 8px var(--white);
+}
+
+/* The email step and the done state (the boards' look) */
+#email-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+#email-form .sheet-small { margin-top: 0; }
+
 .field {
-  display: block;
-  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   height: 56px;
   padding: 0 16px;
   border: 1px solid var(--ink-22);
   border-radius: 14px;
   background: var(--white);
+  color: var(--ink-62);
+  cursor: text;
+}
+
+.field:focus-within {
+  border-color: var(--sky);
+  box-shadow: inset 0 0 0 0.5px var(--sky);
+}
+
+.field:focus-within svg,
+.field:has(input:not(:placeholder-shown)) svg { color: var(--ink); }
+
+.field:has(input[aria-invalid="true"]) {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 0.5px var(--ink);
+}
+
+.field input {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
   color: var(--ink);
   font: inherit;
   font-size: 17px;
+  line-height: 24px;
+  opacity: 1;
   -webkit-appearance: none;
   appearance: none;
-  outline: none;
 }
 
-.field::placeholder { color: var(--ink-62); opacity: 1; }
-.field:focus { border-color: var(--ink-62); box-shadow: inset 0 0 0 1px var(--ink-62); }
-.field[aria-invalid="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-.field.shake { animation: shake 0.3s ease-in-out; }
-.field + .btn { margin-top: 12px; }
+.field input::placeholder { color: var(--ink-62); opacity: 1; }
+.field input.shake { animation: shake 0.3s ease-in-out; }
 
 @keyframes shake {
   0%, 100% { transform: translate3d(0, 0, 0); }
@@ -542,35 +824,32 @@ h1 {
   80% { transform: translate3d(3px, 0, 0); }
 }
 
-#step-3 .btn { margin-top: 22px; }
+#step-3 { padding-top: 0; }
 
-/* The step's primary button stays inside the visible panel when the panel has to
-   scroll (short viewport, open keyboard); the halo hides text passing beneath.
-   The inset is measured from the panel's content edge, so 0 sits above the
-   panel's own bottom padding and safe area. */
-.sheet .btn {
-  position: -webkit-sticky;
-  position: sticky;
-  bottom: 0;
-  box-shadow: 0 0 0 8px var(--white);
+.done {
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--cream);
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--ink-70);
+  text-align: center;
 }
 
-/* The email step's button sits right under the field, so it is not sticky: pulled up
-   over the field (a short visual viewport with the keyboard open) its halo would cover
-   the field's bottom edge. At scrollTop 0 the field and the button both fit. */
-#email-form .btn {
-  position: static;
-  box-shadow: none;
-}
+.done b { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+
+/* The lines that depend on the plan picked (app.js keeps data-picked on the sheet) */
+#sheet:not([data-picked="monthly"]) .if-monthly,
+#sheet[data-picked="monthly"] .if-yearly { display: none; }
 
 html.sheet-open body {
   position: fixed;
-  left: 0;
   right: 0;
+  left: 0;
   overflow: hidden;
 }
 
-/* Legal pages */
+/* ---------- Legal pages ---------- */
 body.legal { display: block; }
 
 .legal-main {
@@ -580,14 +859,14 @@ body.legal { display: block; }
   padding: calc(16px + env(safe-area-inset-top, 0px)) var(--gutter) 24px;
 }
 
-.legal-main .wordmark { text-align: left; }
+.legal-main .wordmark { height: auto; }
+.legal-main .wordmark a { text-decoration: none; }
 
 .legal-main h1 {
-  max-width: none;
   margin-top: 28px;
   font-size: 28px;
   line-height: 1.2;
-  letter-spacing: -0.025em;
+  text-align: left;
 }
 
 .legal-main p {
@@ -600,22 +879,16 @@ body.legal { display: block; }
 .legal-main b { color: var(--ink); font-weight: 600; }
 .legal-main a { color: var(--ink); }
 
-body.legal .footer { padding-bottom: 36px; }
-
-/* Short viewports (an SE in Safari): the copy never shrinks, so the frame is about 70x124 and the
-   brief's 28/22 radii would round away most of its edges, the 36px disc most of its width */
-@media (max-height: 600px) {
-  .clip-box { border-radius: 14px; }
-  .clip, .play { border-radius: 14px; }
-  .clip { clip-path: inset(0 round 14px); }
-  .play-disc { min-width: 28px; }
+body.legal .footer {
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: 24px var(--gutter) calc(32px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .answer-1, .answer-2, .answer-3 { animation: none; }
+  .answer-1, .answer-2 { visibility: hidden; }
+  [data-reveal].in { animation: none; }
   .sheet { transition: none; }
-  .field.shake { animation: none; }
-  .screen.is-ready .wordmark,
-  .screen.is-ready h1,
-  .screen.is-ready .lede,
-  .screen.is-ready .clip-box { animation: none; }
+  .field input.shake { animation: none; }
 }

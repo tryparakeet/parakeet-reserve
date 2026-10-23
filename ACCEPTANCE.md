@@ -1,6 +1,6 @@
 # Acceptance: Parakeet reserve page, Gate 0
 
-Everything on this page happens before Gate 0 starts, or on the first morning. Work through it in order; fill the device cells by hand. Rows marked **verified in e2e** are checked by the Playwright suite against the local harness (`npm run test:e2e`) and still need the device cell.
+Everything on this page happens before Gate 0 starts, or on the morning of day 1. Work through it in order; fill the device cells by hand. Rows marked **verified in e2e** are checked by the Playwright suite against the local harness (`npm run test:e2e`) and still need the device cell.
 
 ## Facts
 
@@ -8,24 +8,27 @@ Everything on this page happens before Gate 0 starts, or on the first morning. W
 |---|---|
 | Site | `https://tryparakeet.netlify.app` (Netlify site `tryparakeet`, production branch `main`, no custom domain) |
 | Admin | `https://tryparakeet.netlify.app/admin?key=KEY` — `KEY` is the `ADMIN_KEY` environment variable in Netlify's site settings; it is never written in this repo, in a chat, or in a screenshot |
-| GATE_START | `2026-10-23T05:00:00.000Z` = **Thu Oct 23, 00:00 CDT**. A visitor whose first tagged pageview was received before it is `excluded.prestart` for good |
-| Window | Oct 23–29 CDT, read on Oct 30 |
-| Raw days are UTC | `days[]` and `table=raw&day=` are UTC days. Oct 29 CDT evening (after 7 pm) lands in `2026-10-30`; the read with no day params covers everything |
+| GATE_START | `2026-10-24T05:00:00.000Z` = **Sat Oct 24, 00:00 CDT**, the earliest possible day 1. A visitor whose first tagged pageview was received before it is `excluded.prestart` for good. An earlier start than the real day 1 costs nothing (no paid link is out before day 1); a later one would throw the first real days into `excluded.prestart` for good. The per-hour summary cache rebuilds by itself when GATE_START changes, and every visit before the new start resolves to `excluded.prestart` at read |
+| Day 1 | The day video 1 goes up with the paid link: target **Mon Oct 26**, or Sat Oct 24 / Sun Oct 25 if everything is ready sooner |
+| Window | Day 1 → day 7 (CDT), read the morning after day 7: a Monday start reads **Mon Nov 2**, a Saturday start reads Sat Oct 31, a Sunday start reads Sun Nov 1. The read's file is named for its day |
+| Raw days are UTC | `days[]` and `table=raw&day=` are UTC days. CDT evening rows after 7 pm land on the next UTC day; Dallas leaves CDT on Sun Nov 1 at 2 am, and from then on it is after 6 pm. The read with no day params covers everything |
 | The number | `total.sources.tiktok.plan_rate` = `plan_taps ÷ uniques` for the paid links |
 
 ## Tags
 
-Seven paid links, one per day. `utm_content` is the day the creative goes up; it is what `sources.tiktok.content.<day>` splits on.
+One paid link per day from Sat Oct 24 to Sun Nov 1; seven of them are used, from the real day 1. `utm_content` is the day the creative goes up; it is what `sources.tiktok.content.<day>` splits on.
 
 | Day | Link |
 |---|---|
-| Fri Oct 23 | `https://tryparakeet.netlify.app/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=fri23` |
 | Sat Oct 24 | `https://tryparakeet.netlify.app/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=sat24` |
 | Sun Oct 25 | `https://tryparakeet.netlify.app/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=sun25` |
 | Mon Oct 26 | `https://tryparakeet.netlify.app/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=mon26` |
 | Tue Oct 27 | `https://tryparakeet.netlify.app/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=tue27` |
 | Wed Oct 28 | `https://tryparakeet.netlify.app/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=wed28` |
 | Thu Oct 29 | `https://tryparakeet.netlify.app/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=thu29` |
+| Fri Oct 30 | `https://tryparakeet.netlify.app/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=fri30` |
+| Sat Oct 31 | `https://tryparakeet.netlify.app/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=sat31` |
+| Sun Nov 1 | `https://tryparakeet.netlify.app/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=sun01` |
 
 | Purpose | Link |
 |---|---|
@@ -80,18 +83,18 @@ Columns: **A** iPhone, TikTok's in-app browser · **B** iPhone, Safari · **C** 
 | # | Check | Harness | A | B | C |
 |---|---|---|---|---|---|
 | 1 | The smoke link opens; the first smoke visit shows in `/admin` under `total.excluded.smoke.uniques` and in `days[]` | verified in e2e (exclusions.spec) | | | |
-| 2 | The whole first screen fits with **no scrolling**: wordmark, H1, line, clip, three facts, fixed button all visible at once (note the model and whether the toolbars were showing) | verified in e2e at 375×553, 375×617, 375×667, 393×659, 360×640 (first-screen.spec) | | | |
-| 3 | Clip box visible, 9:16, the **play button tappable** (not hidden under the fixed button) | verified in e2e (first-screen.spec; clip ≤ 40 % of the viewport, ≥ 80 px) | | | |
-| 4 | The clip autoplays muted; `video.playing 1` for the visitor in `/admin` (`excluded.smoke`) | verified in e2e with the VP9 test clip (video.spec) | | | |
-| 5 | Tapping the play button when the clip is not playing sends `tap play` and starts it | verified in e2e (video.spec: the tap precedes any video state) | | | |
+| 2 | The whole first screen fits with **no scrolling**: wordmark, H1, answer line, phone, button, the line under it all visible at once (note the model and whether the toolbars were showing) | verified in e2e at 375×667, 393×852, 375×617, 393×659, 360×640 and 375×553 (first-screen.spec) | | | |
+| 3 | n/a on hero B | — | | | |
+| 4 | n/a on hero B | — | | | |
+| 5 | n/a on hero B | — | | | |
 | 6 | The cookie survives a second visit: close the page, reopen the smoke link, `uniques` stays 1 in `excluded.smoke` | verified in e2e (cookie.spec) | | | |
 | 7 | "Reserve 2 free weeks" opens the plan sheet at step 1; `reserve_taps 1`, `seen 1` | verified in e2e (flow.spec) | | | |
-| 8 | Yearly is preselected; tapping Monthly flips the check; `plan_monthly_taps 1`, `via card` in the raw CSV | verified in e2e (flow.spec) | | | |
+| 8 | The "2 free weeks" row is preselected; tapping the "No free weeks" row flips the check; `plan_monthly_taps 1`, `via card` in the raw CSV | verified in e2e (flow.spec) | | | |
 | 9 | "Hold my spot" with no card tapped records the preselected plan (`via hold`), opens the email step, the **keyboard opens** and the sheet's button stays above it | verified in e2e (flow.spec; keyboard proxy in first-screen.spec) | | | |
-| 10 | A bad email shakes and shows the invalid border; a good one goes to "You're on the list."; `emails 1` with `plan` | verified in e2e (flow.spec) | | | |
-| 11 | Done closes the sheet; the × and the backdrop close it; the page behind did not scroll | verified in e2e (flow.spec, first-screen.spec) | | | |
+| 10 | A bad email shakes and shows the invalid border; a good one shows the done message for the plan picked ("Your 2 free weeks are reserved for …" or "Your spot is saved for …"); `emails 1` with `plan` | verified in e2e (flow.spec, one case per plan) | | | |
+| 11 | The ×, Escape and the backdrop close the sheet; the page behind did not scroll; scrolling the page keeps the Reserve button pinned at the bottom | verified in e2e (flow.spec, first-screen.spec) | | | |
 | 12 | Closing the in-app browser (the ×) sends the leave: `leave.n 1`, `avg_seconds` about the time on the page | verified in e2e (flow.spec: visibilitychange + pagehide) | | | |
-| 13 | **Blocked video** (procedure below): poster + play button shown, `video.blocked 1` after leaving, `video.playing 0` | verified in e2e (video.spec: clip URL 404) | | | |
+| 13 | n/a on hero B | — | | | |
 | 14 | The raw CSV row of the pageview carries the real `ua`, `device` (`ios`/`android`) and `inapp` (`tiktok` inside TikTok, `none` in Safari) | verified in e2e for `safari_ios`, `tiktok_ios`, `instagram_ios` user agents (exclusions.spec) | | | |
 | 15 | `/privacy` and `/terms` open from the footer and link back | verified in e2e (routes.spec) | | | |
 | 16 | The typed link `/go` lands on the page with the typed tags (`sources.typed.content.endcard`) — do this in a browser that already has the smoke cookie | verified in e2e (routes.spec) | | | |
@@ -108,23 +111,21 @@ Your own device's rows are under `excluded.smoke` (the whole visitor moves there
 
 Read **`total`** for every own-device check and for the number: exclusion is complete only there, where a visitor is resolved across every day read. `days[]` resolves within each UTC day, so a device whose smoke visit was on an earlier day shows under that day's `sources.tiktok` (and in the per-day lines of the summary CSV) while `total` keeps it in `excluded.smoke`.
 
-### Blocked video, how to produce it
+### Hero B has no clip
 
-Primary: iPhone → Settings → Battery → **Low Power Mode on**. Safari and the in-app browsers then refuse autoplay: the poster and the play button stay, no `video playing` row; leave the page (close the browser tab or the in-app browser) → one `leave` row with `video blocked` → `video.blocked 1`. Then come back, tap the play button → `tap play` and `video playing`; the visitor ends in `video.both`.
-
-Secondary: airplane mode after the page has loaded but before the clip has (open the link, switch airplane mode on within a second): the clip fails, the poster stays, the leave carries `blocked`.
+The walkthrough clip is not on the first screen (hero B), so rows 3–5 and 13 are n/a: no `video` row is sent, the leave carries no video state, and nothing sends `tap play` (the name stays allowlisted in the function; video.spec checks that nothing emits it).
 
 ### The timing rule
 
-**Every test visit happens before GATE_START, or the smoke link is opened first in that same browser.** The function flags a visitor at write and resolves it at read in the order bot > smoke > prestart > gate > no_utm: a tagged test visit *after* the start from a device and browser that never opened the smoke link is gate traffic for good and moves `plan_rate`.
+**From Sat Oct 24, 00:00 CDT, every test visit opens the smoke link first in that same browser.** A private window forgets it when it closes, so open the smoke link again in each new one. The function flags a visitor at write and resolves it at read in the order bot > smoke > prestart > gate > no_utm: a tagged test visit *after* the start from a device and browser that never opened the smoke link is gate traffic for good and moves `plan_rate`.
 
-- Before the start (any time up to Oct 23 00:00 CDT): tagged visits are `excluded.prestart`; smoke visits are `excluded.smoke`. Either way they never count. Test freely, but open the smoke link anyway, so the cookie that outlives the start is a smoke cookie.
+- Before the start (any time up to Sat Oct 24, 00:00 CDT): tagged visits are `excluded.prestart`; smoke visits are `excluded.smoke`. Either way they never count. Test freely, but open the smoke link anyway, so the cookie that outlives the start is a smoke cookie.
 - The Promote-redirect check (does TikTok's link open the page with the tags?): use a **smoke-tagged** preview link before the start (`?utm_source=own&utm_campaign=smoke&utm_content=promote`), never a paid link.
-- The live tagged check is the **first thing on the morning of Oct 23**, from a device that opened the smoke link before: open the day's paid link, confirm `total.excluded.smoke.pageviews` went up by one while `total.sources.tiktok` did not, and that the raw CSV row carries `utm_content fri23` (the row is stored with its tags and flag `gate`; the visitor is resolved smoke at read in `total`; that day's `days[]` entry shows it under `sources.tiktok`, see Where to look), then stop.
+- The live tagged check is the **first thing on the morning of day 1**, from a device that opened the smoke link before: open the day's paid link, confirm `total.excluded.smoke.pageviews` went up by one while `total.sources.tiktok` did not, and that the raw CSV row carries that day's `utm_content` (`mon26` on a Monday start) (the row is stored with its tags and flag `gate`; the visitor is resolved smoke at read in `total`; that day's `days[]` entry shows it under `sources.tiktok`, see Where to look), then stop.
 
-### The Oct 30 read
+### The read (the morning after day 7)
 
-1. `curl -s "https://tryparakeet.netlify.app/admin?key=$KEY" > ~/gate0/gate0-2026-10-30.json` — **outside the repo**: the JSON carries the emails and the repo is public. No `day`/`from`/`to` params: the pre-start exclusion needs every day, and per-day uniques must never be summed.
+1. `curl -s "https://tryparakeet.netlify.app/admin?key=$KEY" > ~/gate0/gate0-2026-11-02.json` — named for the read's day (`gate0-2026-11-02.json` on a Monday start, `-10-31` Saturday, `-11-01` Sunday), **outside the repo**: the JSON carries the emails and the repo is public. No `day`/`from`/`to` params: the pre-start exclusion needs every day, and per-day uniques must never be summed.
 2. Check `partial` is `false` and `pending` is `[]`. If not (the 8 s budget ran out on cold hours), call again a minute later; the closed hours are cached after the first read, so the second call is fast and complete.
 3. The bar: `total.sources.tiktok.uniques` and `.plan_taps` → `.plan_rate`.
 4. Beside it: `total.sources.typed` (the end card), `total.blended` (everything tagged, once per visitor), `total.excluded.{smoke,no_utm,bot,prestart}` (what was kept out, with its own counts), and `total.sources.tiktok.content.<day>` per creative.
@@ -136,11 +137,7 @@ jq '{partial, pending, generated,
      creatives:(.total.sources.tiktok.content // {} | map_values({uniques, plan_taps, plan_rate})),
      typed:    (.total.sources.typed // {}  | {uniques, plan_taps, plan_rate}),
      blended:  (.total.blended | {uniques, plan_taps, plan_rate}),
-     excluded: (.total.excluded | map_values({uniques, plan_taps}))}' ~/gate0/gate0-2026-10-30.json
+     excluded: (.total.excluded | map_values({uniques, plan_taps}))}' ~/gate0/gate0-2026-11-02.json
 ```
 
 Then `&table=emails&format=csv` → `parakeet-emails.csv`, saved next to the JSON, outside the repo.
-
-### The clip swap
-
-The placeholder is `public/media/walkthrough-v1.mp4` + `walkthrough-v1-poster.jpg`. When the real walkthrough arrives: `scripts/make-placeholder-media.sh encode <file> v2` writes `walkthrough-v2.mp4` and its poster (frame 0 of the encoded clip); change the `<video>` `src` and `poster` in `public/index.html` to the `-v2` names; commit and redeploy. `/media/*` is cached immutable for a year, which is why the name is versioned rather than overwritten. The e2e reads the clip path from `index.html`, so no test changes; run `npm run test:e2e` once after the swap and repeat matrix rows 3–5 and 13 on one phone.

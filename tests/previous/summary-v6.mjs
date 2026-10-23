@@ -5,7 +5,7 @@
 // prestart on the same boundary. Do not edit.
 
 export const SUMMARY_VERSION = 6;
-export const GATE_START = Date.parse('2026-10-23T05:00:00.000Z');
+export const GATE_START = Date.parse('2026-10-24T05:00:00.000Z');
 export const EVENTS = new Set(['pageview', 'tap', 'email', 'answer', 'video', 'seen', 'leave']);
 export const BUTTONS = new Set(['card', 'bar']);
 export const BOT_UA = /facebookexternalhit|Facebot|meta-external|Bytespider|TikTokSpider|Googlebot|AdsBot|HeadlessChrome|PhantomJS|Lighthouse|Bulid\//i;

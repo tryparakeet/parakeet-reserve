@@ -17,9 +17,10 @@
 import { getStore as blobStore } from '@netlify/blobs';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 
-// Gate 0 starts 2026-10-23 12:00 AM CDT. A visitor with a gate pageview received (server time) before it is
-// excluded for good. It is also part of the per-hour summary cache's version (see hourSummary).
-export const GATE_START = Date.parse('2026-10-23T05:00:00.000Z');
+// Gate 0 starts 2026-10-24 12:00 AM CDT (Sat), the earliest possible day 1. A visitor with a gate pageview
+// received (server time) before it is excluded for good. It is also part of the per-hour summary cache's
+// version (see hourSummary).
+export const GATE_START = Date.parse('2026-10-24T05:00:00.000Z');
 export const EVENTS = new Set(['pageview', 'tap', 'email', 'video', 'seen', 'leave']);
 export const BUTTONS = new Set(['reserve', 'play', 'plan_yearly', 'plan_monthly']);
 // How a plan tap happened: the card was pressed, or "Hold my spot" was pressed with the preselected plan.

@@ -61,8 +61,8 @@ test('identity scrub: nothing of Restline ships', () => {
 });
 
 test('event.mjs: GATE_START literal, SITE_ORIGINS of .netlify.app origins only, the CSV filenames', () => {
-  assert.match(eventSrc, /export const GATE_START = Date\.parse\('2026-10-23T05:00:00\.000Z'\);/);
-  assert.equal(mod.GATE_START, Date.parse('2026-10-23T05:00:00.000Z'));
+  assert.match(eventSrc, /export const GATE_START = Date\.parse\('2026-10-24T05:00:00\.000Z'\);/);
+  assert.equal(mod.GATE_START, Date.parse('2026-10-24T05:00:00.000Z'));
   const origins = /const SITE_ORIGINS = \[([^\]]*)\];/.exec(eventSrc);
   assert.ok(origins, 'SITE_ORIGINS literal');
   const list = [...origins[1].matchAll(/'([^']*)'/g)].map((m) => m[1]);

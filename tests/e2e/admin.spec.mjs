@@ -31,7 +31,7 @@ test('the empty summary: version 7, gate_start, partial false, pending [], no da
   expect(res.headers()['x-robots-tag']).toBe('noindex, nofollow');
   const out = await res.json();
   expect(out.version).toBe(7);
-  expect(out.gate_start).toBe('2026-10-23T05:00:00.000Z');
+  expect(out.gate_start).toBe('2026-10-24T05:00:00.000Z');
   expect(out.generated).toBe('2026-10-25T12:00:00.000Z');
   expect(out.partial).toBe(false);
   expect(out.pending).toEqual([]);

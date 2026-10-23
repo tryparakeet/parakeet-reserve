@@ -88,38 +88,57 @@ test('traversal is rejected after decoding, unknown paths are 404, static assets
   expect(asset.status()).toBe(200);
   expect(asset.headers()['content-type']).toContain('image/svg+xml');
   expect(asset.headers()['cache-control']).toContain('max-age=604800');
-  const media = await request.head('/media/walkthrough-v1-poster.jpg');
-  if (media.status() === 200) expect(media.headers()['cache-control']).toBe('public, max-age=31536000, immutable');
+  const media = await request.head('/media/iphone-bezel-v1.webp');
+  expect(media.status()).toBe(200);
+  expect(media.headers()['content-type']).toBe('image/webp');
+  expect(media.headers()['cache-control']).toBe('public, max-age=31536000, immutable');
 });
 
-// The acceptance record: the first screen and the three sheet steps at 375x553 (an iPhone SE in Safari with
-// its toolbars) and 375x667, written to test-results/screenshots/ on every run (Playwright empties
-// test-results/ when a run starts, so the set is always the current page).
-for (const vp of [{ width: 375, height: 553 }, { width: 375, height: 667 }]) {
-  test(`screenshots at ${vp.width}x${vp.height}: the first screen and the three sheet steps`, async ({ page }) => {
-    const size = `${vp.width}x${vp.height}`;
-    const dir = join(RESULTS_DIR, 'screenshots');
-    mkdirSync(dir, { recursive: true });
-    await page.setViewportSize(vp);
-    await page.goto(TAGGED_QS);
-    await expect(page.locator('h1')).toBeVisible();
-    await page.waitForTimeout(600);   // past the 420 ms load fade (240 ms, staggered 60 ms over four elements)
-    await page.screenshot({ path: join(dir, `first-${size}.png`), fullPage: false });
+// The acceptance record (brief 2, step 10): at 375x667 and 393x852, the first screen (after the answer
+// line's one pass), the page scrolled to the footer, the plan sheet, the email step, and both done states,
+// written to test-results/screenshots/ on every run (Playwright empties test-results/ when a run starts,
+// so the set is always the current page).
+async function settleMotion(page) {
+  await page.evaluate(() => { for (const a of document.getAnimations()) a.finish(); });
+  await page.waitForTimeout(100);
+}
 
-    await page.locator('[data-tap="reserve"]').click();
-    await sheetSettled(page);
-    await page.screenshot({ path: join(dir, `sheet-step1-${size}.png`), fullPage: false });
+for (const vp of [{ width: 375, height: 667 }, { width: 393, height: 852 }]) {
+  for (const plan of ['yearly', 'monthly']) {
+    test(`screenshots at ${vp.width}x${vp.height}, ${plan}: the first screen, the footer, the plan sheet, the email step, done`, async ({ page }) => {
+      const size = `${vp.width}x${vp.height}`;
+      const dir = join(RESULTS_DIR, 'screenshots');
+      mkdirSync(dir, { recursive: true });
+      const shot = (name) => page.screenshot({ path: join(dir, `${size}-${name}.png`), fullPage: false });
+      await page.setViewportSize(vp);
+      await page.goto(TAGGED_QS);
+      await expect(page.locator('h1')).toBeVisible();
+      await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
+      await settleMotion(page);
+      if (plan === 'yearly') {
+        await shot('1-first-screen');
+        for (let y = 100; y <= 1400; y += 100) await page.evaluate((top) => window.scrollTo(0, top), y);
+        await page.waitForTimeout(700);   // past the 500 ms scroll fade
+        await shot('2-footer');
+        await page.evaluate(() => window.scrollTo(0, 0));
+      }
 
-    await page.locator('#hold').click();
-    await expect(page.locator('#step-2')).toBeVisible();
-    await expect(page.locator('#email')).toBeFocused();
-    await page.waitForTimeout(200);
-    await page.screenshot({ path: join(dir, `sheet-step2-${size}.png`), fullPage: false });
+      await page.locator('[data-tap="reserve"]').click();
+      await sheetSettled(page);
+      if (plan === 'monthly') await page.locator('[data-tap="plan_monthly"]').click();
+      if (plan === 'yearly') await shot('3-plan-sheet');
 
-    await page.locator('#email').fill('test@example.com');
-    await page.locator('#email-form button[type="submit"]').click();
-    await expect(page.locator('#step-3')).toBeVisible();
-    await page.waitForTimeout(200);
-    await page.screenshot({ path: join(dir, `sheet-step3-${size}.png`), fullPage: false });
-  });
+      await page.locator('#hold').click();
+      await expect(page.locator('#step-2')).toBeVisible();
+      await expect(page.locator('#email')).toBeFocused();
+      await page.waitForTimeout(200);
+      if (plan === 'yearly') await shot('4-email-step');
+
+      await page.locator('#email').fill('you@example.com');
+      await page.locator('#email-form button[type="submit"]').click();
+      await expect(page.locator('#step-3')).toBeVisible();
+      await page.waitForTimeout(200);
+      await shot(`5-done-${plan}`);
+    });
+  }
 }

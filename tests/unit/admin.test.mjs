@@ -1,4 +1,4 @@
-// GET /admin through createHandler(): auth, the empty summary, a scripted week read on Oct 30, the per-hour
+// GET /admin through createHandler(): auth, the empty summary, a scripted week read on Oct 31, the per-hour
 // cache (version + GATE_START, open hour never cached, no re-reads), partial / pending, the CSV tables.
 
 import { test } from 'node:test';
@@ -10,8 +10,8 @@ import { vid, ZERO_BUCKET } from '../helpers/rows.mjs';
 import { BOT_UAS, REAL_UAS } from '../fixtures/user-agents.mjs';
 
 const { SUMMARY_VERSION, GATE_START, SUMMARY_COLUMNS, RAW_COLUMNS, EMAIL_COLUMNS } = mod;
-const GATE_START_ISO = '2026-10-23T05:00:00.000Z';
-const READ_AT = '2026-10-30T12:00:00.000Z';
+const GATE_START_ISO = '2026-10-24T05:00:00.000Z';
+const READ_AT = '2026-10-31T12:00:00.000Z';
 
 const TT = (content) => ({ utm_source: 'tiktok', utm_medium: 'paid', utm_campaign: 'gate0', utm_content: content });
 const TYPED = { utm_source: 'typed', utm_medium: 'organic', utm_campaign: 'gate0', utm_content: 'endcard' };
@@ -22,7 +22,7 @@ const E = vid('week-E'), S = vid('week-S'), X = vid('week-X'), N = vid('week-N')
 
 // The scripted week: every POST goes through the handler with the clock moving; 37 rows.
 async function scriptedWeek({ blobs = createMemoryBlobs() } = {}) {
-  const t = createTestHandler({ t0: '2026-10-22T20:00:00.000Z', blobs });
+  const t = createTestHandler({ t0: '2026-10-23T20:00:00.000Z', blobs });
   const { handler, clock } = t;
   const send = async (body) => {
     const res = await post(handler, body);
@@ -33,30 +33,30 @@ async function scriptedWeek({ blobs = createMemoryBlobs() } = {}) {
   const ctxA = { device: 'ios', inapp: 'tiktok', ref: 'https://www.tiktok.com' };
   const inTikTok = { ...ctxA, ua: REAL_UAS.tiktok_ios, scr: '390x844' };
   const ctxB = { device: 'android', inapp: 'tiktok' };
-  // Oct 22, before the start: P opens a paid link
-  await send({ event: 'pageview', vid: P, ...TT('fri23'), ...ios });
-  clock.set('2026-10-23T06:00:00.000Z');
-  await send({ event: 'tap', vid: P, ...TT('fri23'), button: 'reserve' });
-  await send({ event: 'pageview', vid: A, ...TT('fri23'), ...inTikTok });
-  await send({ event: 'video', vid: A, ...TT('fri23'), ...ctxA, video: 'playing' });
-  await send({ event: 'tap', vid: A, ...TT('fri23'), ...ctxA, button: 'reserve' });
-  await send({ event: 'seen', vid: A, ...TT('fri23'), ...ctxA });
-  await send({ event: 'tap', vid: A, ...TT('fri23'), ...ctxA, button: 'plan_yearly', via: 'card' });
-  await send({ event: 'email', vid: A, ...TT('fri23'), ...ctxA, email: 'a@example.com', plan: 'yearly' });
-  await send({ event: 'leave', vid: A, ...TT('fri23'), ...ctxA, seconds: 40 });
-  await send({ event: 'pageview', vid: B, ...TT('fri23'), ...ctxB, ua: REAL_UAS.tiktok_android, scr: '412x915' });
-  await send({ event: 'tap', vid: B, ...TT('fri23'), ...ctxB, button: 'reserve' });
-  await send({ event: 'seen', vid: B, ...TT('fri23'), ...ctxB });
-  await send({ event: 'tap', vid: B, ...TT('fri23'), ...ctxB, button: 'plan_monthly', via: 'hold' });
-  await send({ event: 'leave', vid: B, ...TT('fri23'), ...ctxB, seconds: 25, video_final: 'blocked' });
-  await send({ event: 'pageview', vid: C, ...TT('fri23'), ...ios });
-  await send({ event: 'leave', vid: C, ...TT('fri23'), seconds: 5, video: 'blocked' });
-  clock.set('2026-10-24T10:00:00.000Z');
-  await send({ event: 'pageview', vid: D, ...TT('sat24'), ...ios });
-  await send({ event: 'tap', vid: D, ...TT('sat24'), button: 'reserve' });
-  await send({ event: 'tap', vid: D, ...TT('sat24'), button: 'play' });
-  await send({ event: 'tap', vid: D, ...TT('sat24'), button: 'plan_yearly', via: 'card' });
-  await send({ event: 'leave', vid: D, ...TT('sat24'), seconds: 20 });
+  // Oct 23, before the start: P opens a paid link
+  await send({ event: 'pageview', vid: P, ...TT('sat24'), ...ios });
+  clock.set('2026-10-24T06:00:00.000Z');
+  await send({ event: 'tap', vid: P, ...TT('sat24'), button: 'reserve' });
+  await send({ event: 'pageview', vid: A, ...TT('sat24'), ...inTikTok });
+  await send({ event: 'video', vid: A, ...TT('sat24'), ...ctxA, video: 'playing' });
+  await send({ event: 'tap', vid: A, ...TT('sat24'), ...ctxA, button: 'reserve' });
+  await send({ event: 'seen', vid: A, ...TT('sat24'), ...ctxA });
+  await send({ event: 'tap', vid: A, ...TT('sat24'), ...ctxA, button: 'plan_yearly', via: 'card' });
+  await send({ event: 'email', vid: A, ...TT('sat24'), ...ctxA, email: 'a@example.com', plan: 'yearly' });
+  await send({ event: 'leave', vid: A, ...TT('sat24'), ...ctxA, seconds: 40 });
+  await send({ event: 'pageview', vid: B, ...TT('sat24'), ...ctxB, ua: REAL_UAS.tiktok_android, scr: '412x915' });
+  await send({ event: 'tap', vid: B, ...TT('sat24'), ...ctxB, button: 'reserve' });
+  await send({ event: 'seen', vid: B, ...TT('sat24'), ...ctxB });
+  await send({ event: 'tap', vid: B, ...TT('sat24'), ...ctxB, button: 'plan_monthly', via: 'hold' });
+  await send({ event: 'leave', vid: B, ...TT('sat24'), ...ctxB, seconds: 25, video_final: 'blocked' });
+  await send({ event: 'pageview', vid: C, ...TT('sat24'), ...ios });
+  await send({ event: 'leave', vid: C, ...TT('sat24'), seconds: 5, video: 'blocked' });
+  clock.set('2026-10-25T10:00:00.000Z');
+  await send({ event: 'pageview', vid: D, ...TT('sun25'), ...ios });
+  await send({ event: 'tap', vid: D, ...TT('sun25'), button: 'reserve' });
+  await send({ event: 'tap', vid: D, ...TT('sun25'), button: 'play' });
+  await send({ event: 'tap', vid: D, ...TT('sun25'), button: 'plan_yearly', via: 'card' });
+  await send({ event: 'leave', vid: D, ...TT('sun25'), seconds: 20 });
   await send({ event: 'pageview', vid: E, ...TYPED, ...ios });
   await send({ event: 'tap', vid: E, ...TYPED, button: 'reserve' });
   await send({ event: 'tap', vid: E, ...TYPED, button: 'plan_yearly', via: 'hold' });
@@ -64,17 +64,17 @@ async function scriptedWeek({ blobs = createMemoryBlobs() } = {}) {
   await send({ event: 'pageview', vid: S, ...SMOKE, ...ios });
   await send({ event: 'tap', vid: S, ...SMOKE, button: 'reserve' });
   await send({ event: 'tap', vid: S, ...SMOKE, button: 'plan_yearly', via: 'card' });
-  await send({ event: 'pageview', vid: X, ...TT('sat24'), device: 'other', ua: BOT_UAS.headless_chrome, scr: '800x600' });
-  await send({ event: 'tap', vid: X, ...TT('sat24'), button: 'reserve' });
-  await send({ event: 'tap', vid: X, ...TT('sat24'), button: 'plan_yearly', via: 'card' });
+  await send({ event: 'pageview', vid: X, ...TT('sun25'), device: 'other', ua: BOT_UAS.headless_chrome, scr: '800x600' });
+  await send({ event: 'tap', vid: X, ...TT('sun25'), button: 'reserve' });
+  await send({ event: 'tap', vid: X, ...TT('sun25'), button: 'plan_yearly', via: 'card' });
   await send({ event: 'pageview', vid: N, ...ios });
   await send({ event: 'tap', vid: N, button: 'reserve' });
-  clock.set('2026-10-25T15:00:00.000Z');
+  clock.set('2026-10-26T15:00:00.000Z');
   await send({ event: 'pageview', vid: A, ...inTikTok, ref: '' });
   await send({ event: 'tap', vid: A, button: 'plan_monthly', via: 'card' });
-  clock.set('2026-10-29T23:30:00.000Z');
-  await send({ event: 'pageview', vid: F, ...TT('thu29'), ...ios });
-  await send({ event: 'tap', vid: F, ...TT('thu29'), button: 'reserve' });
+  clock.set('2026-10-30T23:30:00.000Z');
+  await send({ event: 'pageview', vid: F, ...TT('fri30'), ...ios });
+  await send({ event: 'tap', vid: F, ...TT('fri30'), button: 'reserve' });
   assert.equal(blobs.rows('events').length, 37);
   return t;
 }
@@ -137,7 +137,7 @@ test('the empty summary is exactly this JSON', async () => {
   assert.equal(out.answers, undefined);
 });
 
-test('the scripted week read on Oct 30 with no day params', async () => {
+test('the scripted week read on Oct 31 with no day params', async () => {
   const { handler, clock } = await scriptedWeek();
   clock.set(READ_AT);
   const out = await read(handler);
@@ -146,9 +146,9 @@ test('the scripted week read on Oct 30 with no day params', async () => {
   assert.equal(out.generated, READ_AT);
   assert.equal(out.partial, false);
   assert.deepEqual(out.pending, []);
-  assert.equal(out.from, '2026-10-22');
-  assert.equal(out.to, '2026-10-29');
-  assert.deepEqual(out.days.map((d) => d.day), ['2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25', '2026-10-29']);
+  assert.equal(out.from, '2026-10-23');
+  assert.equal(out.to, '2026-10-30');
+  assert.deepEqual(out.days.map((d) => d.day), ['2026-10-23', '2026-10-24', '2026-10-25', '2026-10-26', '2026-10-30']);
   assert.equal(out.total.day, 'all');
   assert.equal(out.total.rows, 37);
 
@@ -176,29 +176,29 @@ test('the scripted week read on Oct 30 with no day params', async () => {
   assert.deepEqual(tt.leave, { n: 4, avg_seconds: 23 }, '(40 + 25 + 5 + 20) / 4 = 22.5');
   assert.deepEqual(tt.device, { ios: 5, android: 1, other: 1 });
   assert.deepEqual(tt.inapp, { tiktok: 2, instagram: 0, facebook: 0, none: 5 });
-  assert.deepEqual(Object.keys(tt.content), ['fri23', 'sat24', 'thu29']);
+  assert.deepEqual(Object.keys(tt.content), ['fri30', 'sat24', 'sun25']);
 
-  const fri = tt.content.fri23;
-  assert.equal(fri.uniques, 3);
-  assert.equal(fri.reserve_taps, 2);
-  assert.equal(fri.plan_taps, 2);
-  assert.equal(fri.plan_yearly_taps, 1);
-  assert.equal(fri.plan_monthly_taps, 2);
-  assert.equal(fri.plan_rate, 0.6667);
-  assert.equal(fri.emails, 1);
-  assert.equal(fri.pageviews, 4);
-  assert.equal(fri.seen, 2);
-  assert.deepEqual(fri.video, { playing: 1, blocked: 2, both: 0 });
-  assert.deepEqual(fri.leave, { n: 3, avg_seconds: 23 });
-  assert.equal(fri.tap_events, 5);
-  const sat = tt.content.sat24;
-  assert.equal(sat.uniques, 1);
-  assert.equal(sat.plan_taps, 1);
-  assert.equal(sat.play_taps, 1);
-  assert.equal(sat.pageviews, 2);
-  assert.equal(sat.tap_events, 5);
-  assert.deepEqual(sat.leave, { n: 1, avg_seconds: 20 });
-  assert.equal(tt.content.thu29.uniques, 1);
+  const sat24 = tt.content.sat24;
+  assert.equal(sat24.uniques, 3);
+  assert.equal(sat24.reserve_taps, 2);
+  assert.equal(sat24.plan_taps, 2);
+  assert.equal(sat24.plan_yearly_taps, 1);
+  assert.equal(sat24.plan_monthly_taps, 2);
+  assert.equal(sat24.plan_rate, 0.6667);
+  assert.equal(sat24.emails, 1);
+  assert.equal(sat24.pageviews, 4);
+  assert.equal(sat24.seen, 2);
+  assert.deepEqual(sat24.video, { playing: 1, blocked: 2, both: 0 });
+  assert.deepEqual(sat24.leave, { n: 3, avg_seconds: 23 });
+  assert.equal(sat24.tap_events, 5);
+  const sun = tt.content.sun25;
+  assert.equal(sun.uniques, 1);
+  assert.equal(sun.plan_taps, 1);
+  assert.equal(sun.play_taps, 1);
+  assert.equal(sun.pageviews, 2);
+  assert.equal(sun.tap_events, 5);
+  assert.deepEqual(sun.leave, { n: 1, avg_seconds: 20 });
+  assert.equal(tt.content.fri30.uniques, 1);
 
   const typed = out.total.sources.typed;
   assert.equal(typed.uniques, 1);
@@ -235,7 +235,7 @@ test('the scripted week read on Oct 30 with no day params', async () => {
   assert.equal(ex.prestart.reserve_taps, 1);
   assert.equal(ex.prestart.pageviews, 0);
 
-  // per day: Oct 22 holds only P's pageview, already excluded on its own day
+  // per day: Oct 23 holds only P's pageview, already excluded on its own day
   assert.equal(out.days[0].rows, 1);
   assert.equal(out.days[0].sources.tiktok.uniques, 0);
   assert.equal(out.days[0].sources.tiktok.pageviews, 1);
@@ -251,7 +251,7 @@ test('the scripted week read on Oct 30 with no day params', async () => {
   assert.equal(out.emails[0].plan, 'yearly');
   assert.equal(out.emails[0].vid, A);
   assert.equal(out.emails[0].flag, 'gate');
-  assert.equal(out.emails[0].utm_content, 'fri23');
+  assert.equal(out.emails[0].utm_content, 'sat24');
   assert.equal(out.emails[0].inapp, 'tiktok');
   assert.equal(out.emails[1].email, 'e@example.com');
   assert.equal(out.emails[1].plan, 'monthly');
@@ -263,22 +263,22 @@ test('the scripted week read on Oct 30 with no day params', async () => {
 test('day, from and to limit the days; the pre-start exclusion still comes from every earlier day', async () => {
   const { handler, clock } = await scriptedWeek();
   clock.set(READ_AT);
-  const one = await read(handler, { day: '2026-10-24' });
-  assert.deepEqual(one.days.map((d) => d.day), ['2026-10-24']);
-  assert.equal(one.from, '2026-10-24');
-  assert.equal(one.to, '2026-10-24');
+  const one = await read(handler, { day: '2026-10-25' });
+  assert.deepEqual(one.days.map((d) => d.day), ['2026-10-25']);
+  assert.equal(one.from, '2026-10-25');
+  assert.equal(one.to, '2026-10-25');
   assert.equal(one.total.rows, 17, 'D 5, E 4, S 3, X 3, N 2');
   assert.equal(one.total.sources.tiktok.uniques, 1);
   assert.equal(one.total.sources.typed.uniques, 1);
   assert.equal(one.total.excluded.bot.uniques, 1);
   assert.equal(one.total.excluded.smoke.uniques, 1);
   assert.equal(one.total.excluded.no_utm.uniques, 1);
-  const range = await read(handler, { from: '2026-10-23', to: '2026-10-25' });
-  assert.deepEqual(range.days.map((d) => d.day), ['2026-10-23', '2026-10-24', '2026-10-25']);
-  assert.equal(range.total.excluded.prestart.uniques, 1, "P's Oct 22 pageview is outside the range but still excludes it");
+  const range = await read(handler, { from: '2026-10-24', to: '2026-10-26' });
+  assert.deepEqual(range.days.map((d) => d.day), ['2026-10-24', '2026-10-25', '2026-10-26']);
+  assert.equal(range.total.excluded.prestart.uniques, 1, "P's Oct 23 pageview is outside the range but still excludes it");
   assert.equal(range.total.excluded.prestart.reserve_taps, 1);
   assert.equal(range.total.sources.tiktok.uniques, 4);
-  const bad = await read(handler, { day: '20261024' });
+  const bad = await read(handler, { day: '20261025' });
   assert.equal(bad.days.length, 5, 'a malformed day param is ignored');
   const none = await read(handler, { from: '2026-11-01' });
   assert.deepEqual(none.days, []);
@@ -288,11 +288,11 @@ test('day, from and to limit the days; the pre-start exclusion still comes from 
 
 test('the closed hours are cached with v and gs; the open hour never is', async () => {
   const { handler, clock, blobs } = await scriptedWeek();
-  clock.set('2026-10-29T23:45:00.000Z');
+  clock.set('2026-10-30T23:45:00.000Z');
   const open = await read(handler);
-  assert.equal(open.total.sources.tiktok.content.thu29.uniques, 1, 'the open hour is counted');
+  assert.equal(open.total.sources.tiktok.content.fri30.uniques, 1, 'the open hour is counted');
   const cached = blobs.dump('summaries');
-  assert.deepEqual(Object.keys(cached), ['2026-10-22/20', '2026-10-23/06', '2026-10-24/10', '2026-10-25/15']);
+  assert.deepEqual(Object.keys(cached), ['2026-10-23/20', '2026-10-24/06', '2026-10-25/10', '2026-10-26/15']);
   for (const [key, s] of Object.entries(cached)) {
     assert.equal(s.v, SUMMARY_VERSION, key);
     assert.equal(s.gs, GATE_START, key);
@@ -300,15 +300,15 @@ test('the closed hours are cached with v and gs; the open hour never is', async 
     assert.equal(s.hour, key.slice(11));
     assert.equal(s.failed, 0);
   }
-  assert.equal(cached['2026-10-23/06'].rows, 15);
-  assert.deepEqual(cached['2026-10-22/20'].pre, [P]);
+  assert.equal(cached['2026-10-24/06'].rows, 15);
+  assert.deepEqual(cached['2026-10-23/20'].pre, [P]);
   // 1 h + 2 min after the hour started it is still open; 1 ms later it is closed
-  clock.set('2026-10-30T00:02:00.000Z');
+  clock.set('2026-10-31T00:02:00.000Z');
   await read(handler);
-  assert.equal(blobs.dump('summaries')['2026-10-29/23'], undefined);
+  assert.equal(blobs.dump('summaries')['2026-10-30/23'], undefined);
   clock.advance(1);
   await read(handler);
-  assert.equal(blobs.dump('summaries')['2026-10-29/23'].rows, 2);
+  assert.equal(blobs.dump('summaries')['2026-10-30/23'].rows, 2);
 });
 
 test('a second read serves the cached hours: no row reads but the email keys, no listing of those hours', async () => {
@@ -334,7 +334,7 @@ test('a cached hour is served as is; a v 6 or other-GATE_START entry is rebuilt'
   clock.set(READ_AT);
   await read(handler);
   const summaries = blobs.getStore({ name: 'summaries' });
-  const key = '2026-10-23/06';
+  const key = '2026-10-24/06';
   const good = blobs.dump('summaries')[key];
   // same v and gs, tampered rows: served from the cache
   await summaries.setJSON(key, { ...good, rows: 999 });
@@ -378,15 +378,15 @@ test('a failing row makes the read partial, keeps that hour out of the cache and
   const blobs = createMemoryBlobs();
   const { handler, clock } = await scriptedWeek({ blobs });
   clock.set(READ_AT);
-  const key = Object.entries(blobs.dump('events')).find(([k, row]) => k.startsWith('2026-10-24/10/') && row.event === 'pageview' && row.vid === D)[0];
+  const key = Object.entries(blobs.dump('events')).find(([k, row]) => k.startsWith('2026-10-25/10/') && row.event === 'pageview' && row.vid === D)[0];
   blobs.failing.add(key);
   const out = await read(handler);
   assert.equal(out.partial, true);
   assert.deepEqual(out.pending, []);
-  assert.equal(out.days[2].rows, 16, 'one of the 17 Oct 24 rows is missing');
+  assert.equal(out.days[2].rows, 16, 'one of the 17 Oct 25 rows is missing');
   assert.equal(out.days[2].sources.tiktok.pageviews, 1, "D's pageview is the missing row; X's is still there");
   assert.equal(out.days[2].sources.tiktok.uniques, 1, 'D still counts through its taps');
-  assert.equal(blobs.dump('summaries')['2026-10-24/10'], undefined, 'the hour with a failed read is not cached');
+  assert.equal(blobs.dump('summaries')['2026-10-25/10'], undefined, 'the hour with a failed read is not cached');
   assert.equal(Object.keys(blobs.dump('summaries')).length, 4);
   blobs.failing.delete(key);
   blobs.failOnce.add(key);
@@ -394,7 +394,7 @@ test('a failing row makes the read partial, keeps that hour out of the cache and
   assert.equal(retried.partial, false);
   assert.equal(retried.days[2].rows, 17);
   assert.equal(retried.days[2].sources.tiktok.pageviews, 2);
-  assert.equal(blobs.dump('summaries')['2026-10-24/10'].rows, 17);
+  assert.equal(blobs.dump('summaries')['2026-10-25/10'].rows, 17);
   assert.equal(blobs.failOnce.size, 0, 'the one failure was consumed by the retry');
 });
 
@@ -426,7 +426,7 @@ test('the summary CSV: SUMMARY_COLUMNS, CRLF, the filename, X-Partial', async ()
   assert.equal(text.indexOf('\n'), text.indexOf('\r\n') + 1, 'every newline is CRLF');
   const lines = text.slice(0, -2).split('\r\n');
   assert.equal(lines[0], SUMMARY_COLUMNS.join(','));
-  assert.equal(lines[1].slice(0, 25), '2026-10-22,gate,tiktok,,0');
+  assert.equal(lines[1].slice(0, 25), '2026-10-23,gate,tiktok,,0');
   for (const line of lines) assert.equal(line.split(',').length, SUMMARY_COLUMNS.length);
   const total = lines.filter((l) => l.startsWith('all,gate,tiktok,,'));
   assert.equal(total.length, 1);
@@ -438,27 +438,27 @@ test('the summary CSV: SUMMARY_COLUMNS, CRLF, the filename, X-Partial', async ()
   assert.equal(col('video_blocked'), '2');
   assert.equal(col('video_events_blocked'), '2');
   assert.equal(col('leave_avg_seconds'), '23');
-  assert.ok(lines.some((l) => l.startsWith('all,gate,tiktok,fri23,3')));
+  assert.ok(lines.some((l) => l.startsWith('all,gate,tiktok,sat24,3')));
   assert.ok(lines.some((l) => l.startsWith('all,gate,blended,,6')));
   assert.ok(lines.some((l) => l.startsWith('all,excluded,prestart,,1')));
 });
 
 test('the raw table needs a day; CSV and JSON carry RAW_COLUMNS with via, plan and video; cells are escaped', async () => {
   const { handler, clock, blobs } = await scriptedWeek();
-  clock.set('2026-10-26T09:00:00.000Z');
+  clock.set('2026-10-27T09:00:00.000Z');
   const V = vid('raw-escape');
   await post(handler, { event: 'pageview', vid: V, utm_source: 'tiktok', utm_medium: '=cmd()', utm_campaign: 'gate0', utm_content: 'a,"b"' });
   const noDay = await adminGet(handler, { table: 'raw' });
   assert.equal(noDay.status, 400);
   assert.match((await noDay.json()).error, /day=/);
-  const res = await adminGet(handler, { table: 'raw', day: '2026-10-26', format: 'csv' });
-  assert.equal(res.headers.get('content-disposition'), 'attachment; filename="parakeet-raw-2026-10-26.csv"');
+  const res = await adminGet(handler, { table: 'raw', day: '2026-10-27', format: 'csv' });
+  assert.equal(res.headers.get('content-disposition'), 'attachment; filename="parakeet-raw-2026-10-27.csv"');
   const lines = (await res.text()).slice(0, -2).split('\r\n');
   assert.equal(lines[0], RAW_COLUMNS.join(','));
   assert.equal(lines.length, 2);
   assert.ok(lines[1].includes(",'=cmd(),"), 'a formula-leading cell is prefixed');
   assert.ok(lines[1].includes(',"a,""b""",'), 'commas and quotes are quoted and doubled');
-  const day23 = await adminGet(handler, { table: 'raw', day: '2026-10-23', format: 'csv' });
+  const day23 = await adminGet(handler, { table: 'raw', day: '2026-10-24', format: 'csv' });
   const rows23 = (await day23.text()).slice(0, -2).split('\r\n');
   assert.equal(rows23.length, 16);
   const col = (line, name) => line.split(',')[RAW_COLUMNS.indexOf(name)];
@@ -468,8 +468,8 @@ test('the raw table needs a day; CSV and JSON carry RAW_COLUMNS with via, plan a
   assert.equal(col(rows23.find((l) => col(l, 'event') === 'email'), 'plan'), 'yearly');
   const leaves = rows23.filter((l) => col(l, 'event') === 'leave');
   assert.deepEqual(leaves.map((l) => col(l, 'video')).sort(), ['', 'blocked', 'blocked']);
-  const json = await read(handler, { table: 'raw', day: '2026-10-23' });
-  assert.equal(json.day, '2026-10-23');
+  const json = await read(handler, { table: 'raw', day: '2026-10-24' });
+  assert.equal(json.day, '2026-10-24');
   assert.equal(json.partial, false);
   assert.equal(json.rows.length, 15);
   assert.ok(json.rows.every((r, i) => i === 0 || r.received >= json.rows[i - 1].received), 'sorted by received');
@@ -489,7 +489,7 @@ test('the emails table: EMAIL_COLUMNS with plan, as JSON and CSV', async () => {
   const lines = (await res.text()).slice(0, -2).split('\r\n');
   assert.equal(lines[0], EMAIL_COLUMNS.join(','));
   assert.equal(lines.length, 3);
-  assert.ok(lines[1].startsWith('2026-10-23T06:00:00.000Z,a@example.com,'));
+  assert.ok(lines[1].startsWith('2026-10-24T06:00:00.000Z,a@example.com,'));
   assert.ok(lines[1].endsWith(',yearly'));
   assert.ok(lines[2].endsWith(',monthly'));
   const answers = await read(handler, { table: 'answers' });
@@ -512,14 +512,14 @@ test('the directory form with a trailing slash reads the same', async () => {
 
 test('rows after a read land in the summary on the next read (the open hour is re-read every time)', async () => {
   const { handler, clock } = await scriptedWeek();
-  clock.set('2026-10-29T23:40:00.000Z');
+  clock.set('2026-10-30T23:40:00.000Z');
   const before = await read(handler);
-  assert.equal(before.total.sources.tiktok.content.thu29.reserve_taps, 1);
+  assert.equal(before.total.sources.tiktok.content.fri30.reserve_taps, 1);
   clock.advance(MINUTE);
-  const res = await post(handler, { event: 'tap', vid: F, ...TT('thu29'), button: 'plan_yearly', via: 'hold' });
+  const res = await post(handler, { event: 'tap', vid: F, ...TT('fri30'), button: 'plan_yearly', via: 'hold' });
   assert.equal(res.status, 204);
   const after = await read(handler);
-  assert.equal(after.total.sources.tiktok.content.thu29.plan_taps, 1);
+  assert.equal(after.total.sources.tiktok.content.fri30.plan_taps, 1);
   assert.equal(after.total.rows, 38);
   clock.advance(2 * HOUR);
   const closed = await read(handler);

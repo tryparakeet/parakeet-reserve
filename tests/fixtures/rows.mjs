@@ -1,4 +1,4 @@
-// A deterministic week of rows (Oct 22-29, seeded) in the shape the function stores, shared by the counts,
+// A deterministic week of rows (Oct 22-30, seeded) in the shape the function stores, shared by the counts,
 // resolution and differential tests: tiktok paid visitors across the seven creatives, typed /go visitors,
 // own-device smoke visits, untagged visits, bots, multi-load visitors, leaves with and without the video's
 // final state, standalone video rows, pre-start visitors. EDGE_ROWS are hand-written corner cases.
@@ -6,8 +6,8 @@
 import { BOT_UAS, REAL_UAS } from './user-agents.mjs';
 import { vid, pageview, tap, email, video, seen, leave, TIKTOK, TYPED, SMOKE, NO_UTM } from '../helpers/rows.mjs';
 
-export const CREATIVES = ['fri23', 'sat24', 'sun25', 'mon26', 'tue27', 'wed28', 'thu29'];
-export const DAYS = ['2026-10-23', '2026-10-24', '2026-10-25', '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29'];
+export const CREATIVES = ['sat24', 'sun25', 'mon26', 'tue27', 'wed28', 'thu29', 'fri30'];
+export const DAYS = ['2026-10-24', '2026-10-25', '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30'];
 
 // mulberry32: a tiny seeded generator so the fixture is the same on every run
 function rng(seed) {
@@ -117,8 +117,8 @@ export function makeFixture(seed = 7) {
   for (let k = 0; k < 3; k++) {
     const v = next('pre');
     const ctx = context();
-    load(v, at('2026-10-22', 20 + k, 60), TIKTOK, 'fri23', ctx);
-    load(v, at('2026-10-23', 7 + k, 60), TIKTOK, 'fri23', ctx);
+    load(v, at('2026-10-22', 20 + k, 60), TIKTOK, 'sat24', ctx);
+    load(v, at('2026-10-24', 7 + k, 60), TIKTOK, 'sat24', ctx);
   }
 
   // bots: every evidence kind once, each with a tap so the whole row set must move
@@ -131,9 +131,9 @@ export function makeFixture(seed = 7) {
   for (const e of evidence) {
     const v = next(`bot-${e.name}`);
     const t = at(pick(DAYS), 12, 7);
-    rows.push(pageview(v, t, { tags: TIKTOK, utm_content: 'fri23', ua: e.ua, wd: e.wd, scr: e.scr, device: 'other' }));
-    rows.push(tap(v, 'reserve', t + 1000, { tags: TIKTOK, utm_content: 'fri23', device: 'other' }));
-    rows.push(tap(v, 'plan_yearly', t + 2000, { tags: TIKTOK, utm_content: 'fri23', device: 'other', via: 'card' }));
+    rows.push(pageview(v, t, { tags: TIKTOK, utm_content: 'sat24', ua: e.ua, wd: e.wd, scr: e.scr, device: 'other' }));
+    rows.push(tap(v, 'reserve', t + 1000, { tags: TIKTOK, utm_content: 'sat24', device: 'other' }));
+    rows.push(tap(v, 'plan_yearly', t + 2000, { tags: TIKTOK, utm_content: 'sat24', device: 'other', via: 'card' }));
   }
 
   rows.sort((a, b) => (a.received < b.received ? -1 : a.received > b.received ? 1 : 0));
@@ -155,15 +155,15 @@ export const EDGE_VIDS = {
 };
 
 export const EDGE_ROWS = [
-  pageview(EDGE_VIDS.boundaryGate, '2026-10-23T05:00:00.000Z', { utm_content: 'fri23' }),
-  tap(EDGE_VIDS.boundaryGate, 'reserve', '2026-10-23T05:00:03.000Z', { utm_content: 'fri23' }),
-  pageview(EDGE_VIDS.boundaryPre, '2026-10-23T04:59:59.999Z', { utm_content: 'fri23' }),
-  tap(EDGE_VIDS.boundaryPre, 'reserve', '2026-10-23T05:00:02.000Z', { utm_content: 'fri23' }),
+  pageview(EDGE_VIDS.boundaryGate, '2026-10-24T05:00:00.000Z', { utm_content: 'sat24' }),
+  tap(EDGE_VIDS.boundaryGate, 'reserve', '2026-10-24T05:00:03.000Z', { utm_content: 'sat24' }),
+  pageview(EDGE_VIDS.boundaryPre, '2026-10-24T04:59:59.999Z', { utm_content: 'sat24' }),
+  tap(EDGE_VIDS.boundaryPre, 'reserve', '2026-10-24T05:00:02.000Z', { utm_content: 'sat24' }),
   pageview(EDGE_VIDS.twoSources, '2026-10-24T10:00:00.000Z', { utm_content: 'sat24' }),
   pageview(EDGE_VIDS.twoSources, '2026-10-24T11:00:00.000Z', { tags: TYPED }),
   tap(EDGE_VIDS.twoSources, 'reserve', '2026-10-24T11:00:05.000Z', { tags: TYPED }),
   pageview(EDGE_VIDS.joinsCreative, '2026-10-26T10:00:00.000Z', { utm_content: 'mon26' }),
-  pageview(EDGE_VIDS.joinsCreative, '2026-10-26T12:00:00.000Z', { utm_content: 'fri23' }),
+  pageview(EDGE_VIDS.joinsCreative, '2026-10-26T12:00:00.000Z', { utm_content: 'fri30' }),
   pageview(EDGE_VIDS.joinsCreative, '2026-10-27T12:00:00.000Z', { tags: NO_UTM }),
   tap(EDGE_VIDS.joinsCreative, 'reserve', '2026-10-27T12:00:04.000Z', { tags: NO_UTM }),
   tap(EDGE_VIDS.joinsCreative, 'plan_monthly', '2026-10-27T12:00:09.000Z', { tags: NO_UTM, via: 'card' }),

@@ -104,8 +104,8 @@ test('nothing inline and no Netlify Forms in any html', () => {
 
 test('index.html head: title, description, theme-color, viewport flags, one deferred /app.js, one /styles.css', () => {
   assert.match(index, /<title>Parakeet<\/title>/);
-  assert.match(index, /<meta name="description" content="5 dinners that fit your budget\.">/);
-  assert.match(index, /<meta name="theme-color" content="#FBF6EC">/i);
+  assert.match(index, /<meta name="description" content="What’s for dinner this week\?">/);
+  assert.match(index, /<meta name="theme-color" content="#4FA8E8">/i);
   assert.match(index, /<meta name="color-scheme" content="light">/);
   const viewport = /<meta name="viewport" content="([^"]+)">/.exec(index);
   assert.ok(viewport, 'viewport meta');
@@ -124,91 +124,104 @@ test('index.html head: title, description, theme-color, viewport flags, one defe
 });
 
 test('index.html ids: each required id exactly once', () => {
-  for (const id of ['clip', 'clip-box', 'price', 'sheet', 'sheet-panel', 'step-1', 'step-2', 'step-3', 'sheet-title-1', 'hold', 'email-form', 'email']) {
+  for (const id of ['price', 'sheet', 'sheet-panel', 'step-1', 'step-2', 'step-3', 'sheet-title-1', 'sheet-title-2', 'hold', 'email-form', 'email', 'pk-mark']) {
     assert.equal(count(new RegExp(`\\sid="${id}"`, 'g'), index), 1, `id="${id}" exactly once`);
   }
 });
 
-test('index.html data-tap: exactly the four BUTTONS of event.mjs, each once', () => {
+test('index.html data-tap: the BUTTONS of event.mjs but play, each once; play stays allowlisted and nothing emits it', () => {
   const taps = [...index.matchAll(/\sdata-tap="([^"]*)"/g)].map((m) => m[1]);
-  assert.equal(taps.length, 4, 'four data-tap attributes');
-  assert.deepEqual([...taps].sort(), [...BUTTONS].sort());
-  assert.deepEqual([...BUTTONS].sort(), ['plan_monthly', 'plan_yearly', 'play', 'reserve']);
+  assert.equal(taps.length, 3, 'three data-tap attributes');
+  assert.deepEqual([...taps].sort(), ['plan_monthly', 'plan_yearly', 'reserve']);
+  assert.deepEqual([...BUTTONS].sort(), ['plan_monthly', 'plan_yearly', 'play', 'reserve'], 'play is still allowlisted');
+  assert.doesNotMatch(app, /'play'/, 'app.js never sends play');
   assert.match(index, /<button[^>]*\sdata-tap="reserve"[^>]*>/);
-  assert.match(index, /<button[^>]*\sdata-tap="play"[^>]*>/);
   assert.match(index, /<button[^>]*\srole="radio"[^>]*\sdata-tap="plan_yearly"[^>]*\sdata-plan="yearly"[^>]*\saria-checked="true"/);
   assert.match(index, /<button[^>]*\srole="radio"[^>]*\sdata-tap="plan_monthly"[^>]*\sdata-plan="monthly"[^>]*\saria-checked="false"/);
   assert.match(index, /<button[^>]*\sid="hold"[^>]*>/);
   assert.doesNotMatch(index, /data-tap="[^"]*"[^>]*data-tap=/, 'no element carries two data-tap attributes');
 });
 
-test('index.html video: muted, autoplay, playsinline, a versioned /media mp4 src and a /media poster; the price is the seen target', () => {
-  const video = /<video\b[^>]*>/i.exec(index);
-  assert.ok(video, 'a <video>');
-  const tag = video[0];
-  for (const attr of ['muted', 'autoplay', 'playsinline', 'loop']) assert.match(tag, new RegExp(`\\s${attr}(\\s|>)`), `video has ${attr}`);
-  assert.match(tag, /\ssrc="\/media\/[A-Za-z0-9_-]+-v\d+\.mp4"/, 'src is a versioned /media mp4');
-  assert.match(tag, /\sposter="\/media\/[^"]+"/, 'poster under /media/');
-  assert.match(tag, /\sid="clip"/);
-  assert.doesNotMatch(index, /<source\b/i, 'src attribute, not <source> (error fires on the element)');
-  assert.match(index, /<span[^>]*\sid="price"[^>]*>14 days free, then \$29\.99 a year<\/span>/);
-  assert.match(index, /<button[^>]*\sdata-tap="play"[^>]*\saria-label="[^"]+"/, 'the play button has a label');
+test('index.html hero B: no clip; the bird inline (currentColor); every img sized and decoded async under /media; the price is the seen target', () => {
+  assert.doesNotMatch(index, /<video\b/i, 'no video on hero B');
+  assert.doesNotMatch(index, /walkthrough/, 'the walkthrough clip is gone from the page');
+  assert.match(index, /<symbol id="pk-mark" viewBox="228 90 572 856"><g fill="currentColor">/);
+  assert.equal(count(/<use href="#pk-mark"\/>/g, index), 2, 'the bird twice: the wordmark and the week header');
+  const imgs = index.match(/<img\b[^>]*>/gi) || [];
+  assert.equal(imgs.length, 3, 'two dish photos and the bezel');
+  for (const img of imgs) {
+    assert.match(img, /\ssrc="\/media\/[a-z0-9-]+\.webp"/, `${img}: a WebP under /media`);
+    assert.match(img, /\swidth="\d+"/, `${img}: width`);
+    assert.match(img, /\sheight="\d+"/, `${img}: height`);
+    assert.match(img, /\sdecoding="async"/, `${img}: decoding async`);
+    assert.match(img, /\salt=""/, `${img}: decorative (the phone carries the label)`);
+  }
+  assert.match(index, /<div class="phone" role="img" aria-label="[^"]*\$58\.12[^"]*\$100 budget[^"]*">/);
+  assert.match(index, /<span class="plan-price" id="price">14 days free, then just \$29\.99\/year\.<\/span>/);
 });
 
-test('index.html facts: one aria-hidden check glyph (xmlns only, 16px, currentColor) as the first child of each li, no text added', () => {
-  const items = index.match(/<li>[\s\S]*?<\/li>/g) || [];
-  assert.equal(items.length, 3, 'three facts');
-  for (const li of items) {
-    const svg = /^<li><svg\b([^>]*)>([\s\S]*?)<\/svg>/.exec(li);
-    assert.ok(svg, 'the li starts with an svg');
-    assert.match(svg[1], /\saria-hidden="true"/);
-    assert.match(svg[1], /\sxmlns="[^"]+"/);
-    assert.match(svg[1], /\swidth="16"/);
-    assert.match(svg[1], /\sheight="16"/);
-    assert.match(svg[1], /\sstroke="currentColor"/);
-    assert.match(svg[1], /\sstroke-width="1\.75"/);
-    assert.equal(svg[2].replace(/<[^>]+>/g, '').trim(), '', 'no text inside the glyph');
-  }
+test('index.html answer line: the two passing answers are aria-hidden, the last is the readable text', () => {
+  const lines = [...index.matchAll(/<p class="answer-line [^"]*"([^>]*)>([^<]*)<\/p>/g)];
+  assert.deepEqual(lines.map((m) => m[2]), ['This week’s dinners, priced at your store.', 'Groceries add up. We’ll do the adding.', 'Know what dinner costs before you shop.']);
+  assert.match(lines[0][1], /aria-hidden="true"/);
+  assert.match(lines[1][1], /aria-hidden="true"/);
+  assert.doesNotMatch(lines[2][1], /aria-hidden/);
 });
 
 test('index.html copy, verbatim', () => {
   const text = textOf(index);
   const strings = [
     'Parakeet',
-    '5 dinners that fit your budget.',
-    "Pick your store and your budget. Get the week's dinners and one grocery list, with the total added up before you shop.",
-    'Totals are estimates from regular shelf prices at Walmart, Kroger, Target and Aldi.',
-    'Every recipe was cooked by a real person first — a creator on camera or a tested public kitchen. No AI-made recipes.',
-    'Nothing is charged today. Reserve now and your free week becomes two at launch.',
+    'What’s for dinner this week?',
+    'This week’s dinners, priced at your store.',
+    'Groceries add up. We’ll do the adding.',
+    'Know what dinner costs before you shop.',
     'Reserve 2 free weeks',
-    'Parakeet launches in January. Which plan should your 2 free weeks start on?',
-    'Yearly',
-    '2 FREE WEEKS',
-    '14 days free, then $29.99 a year',
-    'Monthly',
-    '$9.99 a month, starts at launch, no free weeks',
-    'Nothing is charged today. At launch your free weeks come first; billing is through Apple and you can cancel anytime in Settings.',
-    'Hold my spot',
-    'Where should we send your invite?',
-    'Send my invite',
-    'One email when we launch. Never shared. Your 2 free weeks are tied to this email.',
-    "You're on the list.",
-    "Your 2 free weeks are reserved. We'll email you once, when Parakeet is live.",
-    'Done',
-    "Parakeet is an app in development. Prices are what you'd pay at launch. Contact: app.parakeet@gmail.com",
+    'We don’t charge anything today. Reserve the yearly plan now and you will have 2 free weeks at launch.',
+    'Stores', 'Walmart', 'Kroger', 'Target', 'Aldi', 'More soon',
+    'Prices',
+    'We use the regular price for the whole pack you’d actually buy. Your total at the register may come out a little different.',
+    'Recipes',
+    'Real people will cook every recipe before we add it. Some will come from food creators, and some will be tested recipes from the USDA. None will be made by AI.',
+    'Parakeet is an app in development. The plan prices are what you’d pay at launch.',
+    'Contact: app.parakeet@gmail.com',
     'Privacy',
-    'Terms'
+    'Terms',
+    '© 2026 Parakeet.',
+    'We plan to launch in January. Which plan do you want?',
+    '2 free weeks 14 days free, then just $29.99/year.',
+    'No free weeks $9.99/month, starts at launch.',
+    'Nothing will be charged today. Billing is through Apple, and you can cancel anytime in Settings.',
+    'Hold my spot',
+    'Where should we send it?',
+    'Send my invite',
+    'Your 2 free weeks are reserved for . We’ll email you once, when Parakeet is live.',
+    'Your spot is saved for . We’ll email you once, when Parakeet is live.',
+    'One email when we launch. Your 2 free weeks are tied to this email.',
+    'One email when we launch, nothing else.'
   ];
   for (const s of strings) assert.ok(text.includes(s), `index.html says: ${s}`);
-  assert.match(index, /<h1>5 dinners that fit your budget\.<\/h1>/);
-  assert.match(index, /<p class="wordmark">Parakeet<\/p>/);
+  for (const gone of ['5 dinners that fit your budget.', 'Yearly', 'Monthly', 'FREE WEEKS', 'Totals are estimates', 'cooked by a real person first', "You're on the list.", 'Done']) {
+    assert.ok(!text.includes(gone), `index.html no longer says: ${gone}`);
+  }
+  assert.match(index, /<h1>What’s for dinner this week\?<\/h1>/);
+  assert.match(index, /<p class="wordmark"><svg class="bird" aria-hidden="true" focusable="false"><use href="#pk-mark"\/><\/svg>Parakeet<\/p>/);
+  assert.match(index, /<h2 class="sheet-title" id="sheet-title-1">We plan to launch in January\.<br> Which plan do you want\?<\/h2>/);
+  assert.match(index, /<span class="tag">2 free weeks<\/span>/);
+  assert.match(index, /<span class="tag tag-none">No free weeks<\/span>/);
+  assert.match(index, /<span class="tick" aria-hidden="true">/);
   assert.match(index, /<button[^>]*data-tap="reserve"[^>]*>Reserve 2 free weeks<\/button>/);
   assert.match(index, /<button[^>]*id="hold"[^>]*>Hold my spot<\/button>/);
   assert.match(index, /<button[^>]*type="submit"[^>]*>Send my invite<\/button>/);
-  assert.match(index, /<h2[^>]*>You're on the list\.<\/h2>/);
+  assert.match(index, /<input id="email"[^>]*\splaceholder="Your email address"/);
+  assert.match(index, /<p class="done if-yearly">Your 2 free weeks are reserved for <b class="done-email"><\/b>\. We’ll email you once, when Parakeet is live\.<\/p>/);
+  assert.match(index, /<p class="done if-monthly">Your spot is saved for <b class="done-email"><\/b>\. We’ll email you once, when Parakeet is live\.<\/p>/);
+  assert.match(index, /<p class="sheet-small if-yearly">One email when we launch\. Your 2 free weeks are tied to this email\.<\/p>/);
+  assert.match(index, /<p class="sheet-small if-monthly">One email when we launch, nothing else\.<\/p>/);
   assert.match(index, /<a href="mailto:app\.parakeet@gmail\.com">app\.parakeet@gmail\.com<\/a>/);
   assert.match(index, /<a href="\/privacy">Privacy<\/a>/);
   assert.match(index, /<a href="\/terms">Terms<\/a>/);
+  assert.equal(count(/\sdata-reveal\b/g, index), 4, 'three rows and the footer fade in once');
   assert.equal(count(/\bRestline\b/g, index) + count(/\brestline\b/g, index), 0);
 });
 
@@ -240,7 +253,7 @@ test('robots.txt keeps crawlers off /admin and /api/', () => {
   assert.deepEqual(lines, ['User-agent: *', 'Disallow: /admin', 'Disallow: /api/']);
 });
 
-test('app.js: the endpoint, the cookie name, the transport, no http literal', () => {
+test('app.js: the endpoint, the cookie name, the transport, no http literal, no video state, the scroll fade', () => {
   assert.match(app, /ENDPOINT = '\/api\/event'/);
   assert.match(app, /COOKIE = 'pk_v'/);
   for (const s of ['sendBeacon', 'keepalive', 'visibilitychange', 'pagehide', 'pageshow', 'IntersectionObserver', 'visualViewport']) {
@@ -248,12 +261,13 @@ test('app.js: the endpoint, the cookie name, the transport, no http literal', ()
   }
   assert.doesNotMatch(app, /http/, 'no http literal in app.js');
   assert.doesNotMatch(app, /'answer'/, 'the answer event is gone');
-  assert.match(app, /'video'/);
-  assert.match(app, /'blocked'/);
-  assert.match(app, /'playing'/);
+  assert.doesNotMatch(app, /'video'|'blocked'|'playing'/, 'hero B has no clip: no video row, no video state');
   assert.match(app, /via(: | = )'card'/, 'a card press is recorded as via card');
   assert.match(app, /via(: | = )'hold'/, 'Hold my spot records the preselected plan as via hold');
+  assert.match(app, /send\('email', \{ email: v, plan: selectedPlan \}\)/, 'the email row carries the plan as before');
   assert.match(app, /\.style\.setProperty\('--vvh'/, 'the sheet height follows the visual viewport');
+  assert.match(app, /classList\.add\('in'\)/, 'the scroll fade adds .in');
+  assert.match(app, /setAttribute\('data-picked', plan\)/, 'the plan-dependent lines follow the plan');
 });
 
 test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradient or glow, svh, the system font stack', () => {
@@ -284,4 +298,12 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradie
   assert.match(css, /100svh/);
   assert.match(css, /-apple-system/);
   assert.doesNotMatch(css, /Inter/);
+  assert.match(css, /\.cta\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*0/, 'the Reserve sheet is pinned to the bottom');
+  assert.match(css, /--sheet-pad-bottom:[^;]*env\(safe-area-inset-bottom/, 'with the bottom safe-area inset');
+  assert.match(css, /\[data-reveal\]\.in\s*\{\s*animation:\s*rise 500ms/, 'the scroll fade: 500 ms, only once .in is added');
+  assert.doesNotMatch(cssNoComments, /\[data-reveal\](?!\.in)[^{,]*\{[^}]*opacity:\s*0/, 'the rows are visible at rest');
+  assert.match(css, /@keyframes rise\s*\{\s*from\s*\{\s*opacity:\s*0;\s*transform:\s*translateY\(14px\)/);
+  assert.match(css, /\.answer-3\s*\{\s*animation:\s*answer-3 400ms linear 5s both;/, 'the last answer fades in at 5 s and stays');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[^}]*\.answer-1, \.answer-2, \.answer-3\s*\{\s*animation:\s*none;/, 'reduced motion: the answers do not move');
+  assert.doesNotMatch(cssNoComments, /box-shadow:\s*0\s+\d+px\s+\d+px/, 'flat: no drop shadow');
 });

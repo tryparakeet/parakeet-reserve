@@ -9,17 +9,6 @@
   var COOKIE = 'pk_v';
   var NINETY_DAYS = 90 * 24 * 60 * 60;
 
-  /* ---------- is-ready: the first screen fades up (styles.css); nothing waits on it ---------- */
-
-  function markReady() {
-    try {
-      var main = doc.querySelector('main.screen');
-      if (main) main.classList.add('is-ready');
-    } catch (e) {}
-  }
-  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', markReady);
-  else markReady();   // the script is deferred: the document is already parsed here
-
   /* ---------- --screen-h: innerHeight in px, only where svh units are unknown ---------- */
 
   var hasSvh = false;
@@ -32,6 +21,18 @@
     win.addEventListener('resize', setScreenH);
     win.addEventListener('orientationchange', setScreenH);
   }
+
+  /* ---------- --cta-h: the pinned Reserve sheet's measured height (styles.css has a fallback) ---------- */
+
+  var cta = doc.querySelector('.cta');
+  function setCtaH() {
+    try { if (cta && cta.offsetHeight) root.style.setProperty('--cta-h', cta.offsetHeight + 'px'); } catch (e) {}
+  }
+  setCtaH();
+  try {
+    if (cta && win.ResizeObserver) new win.ResizeObserver(setCtaH).observe(cta);
+    else win.addEventListener('resize', setCtaH);
+  } catch (e) {}
 
   /* ---------- visitor id (one first-party cookie) ---------- */
 
@@ -166,7 +167,6 @@
     try { send('tap', extra); } catch (e) {}
     try {
       if (button === 'reserve') openSheet();
-      else if (button === 'play') tryPlay();
       else if (plan) selectPlan(plan);
     } catch (e) {}
   }
@@ -183,66 +183,19 @@
   } catch (e) { evidence = {}; }
   send('pageview', evidence);
 
-  /* video final state: per-load flags, never reset */
-  var video = doc.getElementById('clip');
-  var clipBox = doc.getElementById('clip-box');
-  var videoPlaying = false;      // a playing row was sent this load
-  var videoBlockedSent = false;  // the blocked state rode on a leave beacon this load
-
+  /* hero B has no clip: no video row and no video state on the leave beacon */
   var t0 = Date.now();
   var left = false;
   function leave() {
     if (left) return;
     left = true;
-    var extra = { seconds: Math.max(0, Math.round((Date.now() - t0) / 1000)) };
-    if (!videoPlaying && !videoBlockedSent) {
-      extra.video = 'blocked';   // the clip never played: folded into the first leave only
-      videoBlockedSent = true;
-    }
-    beacon('leave', extra);
+    beacon('leave', { seconds: Math.max(0, Math.round((Date.now() - t0) / 1000)) });
   }
   win.addEventListener('pagehide', leave);
   win.addEventListener('pageshow', function () { left = false; });
   doc.addEventListener('visibilitychange', function () {
     if (doc.visibilityState === 'hidden') leave(); else left = false;
   });
-
-  function setPlayingClass(on) {
-    try { if (clipBox) clipBox.classList[on ? 'add' : 'remove']('is-playing'); } catch (e) {}
-  }
-
-  function markPlaying() {
-    setPlayingClass(true);
-    if (videoPlaying) return;
-    videoPlaying = true;
-    send('video', { video: 'playing' });
-  }
-
-  function tryPlay() {
-    if (!video) return;
-    try {
-      video.defaultMuted = true;
-      video.muted = true;
-      var p = video.play();
-      if (p && typeof p.then === 'function') {
-        // a rejection is not a report: in-app browsers reject before first paint and autoplay anyway
-        p.then(function () { if (!video.paused) markPlaying(); }, function () {});
-      }
-    } catch (e) {}
-  }
-
-  try { if (video) {
-    video.addEventListener('playing', markPlaying);
-    video.addEventListener('timeupdate', function () {
-      // closes the race where the autoplay attribute started a cached clip before this script bound
-      if (!videoPlaying && !video.paused && video.currentTime > 0) markPlaying();
-    });
-    video.addEventListener('pause', function () { setPlayingClass(false); });
-    video.addEventListener('ended', function () { setPlayingClass(false); });
-    video.addEventListener('error', function () { setPlayingClass(false); });  // no report
-    if (!video.paused && video.currentTime > 0) markPlaying();
-    tryPlay();
-  } } catch (e) {}
 
   var price = doc.getElementById('price');
   try { if (price && 'IntersectionObserver' in win) {
@@ -259,10 +212,24 @@
     seenObs.observe(price);
   } } catch (e) {}
 
-  /* ---------- sheet ---------- */
-
-  var reduced = false;   // closeSheet reads it: no transition to wait for
+  var reduced = false;   // closeSheet and the scroll fade read it
   try { reduced = !!(win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+
+  /* ---------- the scroll fade: each row and the footer, once, the first time they enter the viewport ---------- */
+
+  try { if (!reduced && 'IntersectionObserver' in win) {
+    var reveals = doc.querySelectorAll('[data-reveal]');
+    var revealObs = new IntersectionObserver(function (entries) {
+      for (var i = 0; i < entries.length; i++) {
+        if (!entries[i].isIntersecting) continue;
+        entries[i].target.classList.add('in');
+        revealObs.unobserve(entries[i].target);
+      }
+    });
+    for (var rv = 0; rv < reveals.length; rv++) revealObs.observe(reveals[rv]);
+  } } catch (e) {}
+
+  /* ---------- sheet ---------- */
 
   var sheetRoot = doc.getElementById('sheet');
   var panel = doc.getElementById('sheet-panel');
@@ -271,6 +238,8 @@
   var holdButton = doc.getElementById('hold');
   var emailForm = doc.getElementById('email-form');
   var emailInput = doc.getElementById('email');
+  var sendButton = emailForm.querySelector('button[type="submit"]');
+  var doneEmails = doc.querySelectorAll('.done-email');
   var lastFocus = null;
   var scrollY = 0;
   var sheetOpen = false;
@@ -279,14 +248,23 @@
   var openedAt = 0;
   var settleTimer = 0;
 
+  /* Step 3 (done) sits inside the email step, as on the boards: it shows under the emptied field */
   function showStep(n) {
-    for (var i = 0; i < steps.length; i++) steps[i].hidden = (i + 1) !== n;
-    panel.setAttribute('aria-labelledby', 'sheet-title-' + n);
+    for (var i = 0; i < steps.length; i++) steps[i].hidden = !((i + 1) === n || (n === 3 && i === 1));
+    panel.setAttribute('aria-labelledby', 'sheet-title-' + (n === 3 ? 2 : n));
     panel.scrollTop = 0;
+  }
+
+  /* The done state: the emptied field and the button are disabled. While the field is empty the button only
+     looks disabled (styles.css, :placeholder-shown), so an autofill that fires no input event never blocks it. */
+  function setEmailState(done) {
+    emailInput.disabled = done;
+    sendButton.disabled = done;
   }
 
   function selectPlan(plan) {
     selectedPlan = plan;
+    sheetRoot.setAttribute('data-picked', plan);   // the lines that depend on the plan (styles.css)
     for (var i = 0; i < planCards.length; i++) {
       var on = planCards[i].getAttribute('data-plan') === plan;
       planCards[i].setAttribute('aria-checked', on ? 'true' : 'false');
@@ -327,6 +305,7 @@
     emailInput.value = '';
     emailInput.removeAttribute('aria-invalid');
     emailInput.classList.remove('shake');
+    setEmailState(false);
     sheetRoot.hidden = false;
     root.classList.add('sheet-open');
     fitSheet();
@@ -446,6 +425,9 @@
     emailInput.removeAttribute('aria-invalid');
     send('email', { email: v, plan: selectedPlan });
     try { emailInput.blur(); } catch (e) {}
+    for (var d = 0; d < doneEmails.length; d++) doneEmails[d].textContent = v;
+    emailInput.value = '';
+    setEmailState(true);
     showStep(3);
     win.requestAnimationFrame(function () {
       try { panel.focus({ preventScroll: true }); } catch (e) {}

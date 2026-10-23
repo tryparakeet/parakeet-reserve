@@ -117,11 +117,11 @@ test('with gate pageviews on two creatives the untagged rows join the first crea
   const tt = total.sources.tiktok;
   assert.equal(tt.uniques, 1);
   assert.equal(tt.plan_taps, 1);
-  assert.equal(tt.content.fri23.plan_taps, 1, 'fri23 < mon26');
-  assert.equal(tt.content.fri23.reserve_taps, 1);
+  assert.equal(tt.content.fri30.plan_taps, 1, 'fri30 < mon26');
+  assert.equal(tt.content.fri30.reserve_taps, 1);
   assert.equal(tt.content.mon26.plan_taps, 0);
   assert.equal(tt.content.mon26.uniques, 1, 'the vid stays in every creative it viewed');
-  assert.equal(tt.content.fri23.uniques, 1);
+  assert.equal(tt.content.fri30.uniques, 1);
 });
 
 test('a no_utm visitor with no gate pageview stays in excluded.no_utm', () => {

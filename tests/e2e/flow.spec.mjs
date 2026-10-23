@@ -1,6 +1,7 @@
 // The whole visit through the browser, asserted from the store: pageview with the tags and the evidence,
-// reserve, seen once, the plan cards (press and keyboard), Hold my spot, the email step, Done, the three
-// ways to close, the leave beacon, and the summary the admin would read for it. Then Hold my spot without
+// reserve, seen once, the plan rows (press and keyboard), Hold my spot, the email step, the done state, the
+// three ways to close, the leave beacon, and the summary the admin would read for it. The lines that depend
+// on the plan picked, once per plan. Then Hold my spot without
 // a card press (via: hold, and the via column of the raw CSV), the leave max across hides, and the double
 // tap on "Reserve 2 free weeks": the second tap lands inside the sheet and is dropped (no plan row).
 //
@@ -9,7 +10,7 @@
 
 import { test, expect, TAGGED, TAGGED_QS, waitForRows, rowsOf, settle, hide, show, sheetSettled, ADMIN_KEY } from './fixtures.mjs';
 
-test('tagged visit: reserve, seen, plan cards, Hold my spot, email, Done, close paths, leave, summary', async ({ page, harness }) => {
+test('tagged visit: reserve, seen, plan rows, Hold my spot, email, the done state, close paths, leave, summary', async ({ page, harness }) => {
   const { blobs } = harness;
   await page.goto(TAGGED_QS);
 
@@ -37,7 +38,7 @@ test('tagged visit: reserve, seen, plan cards, Hold my spot, email, Done, close 
   expect(tapReserve.via).toBeUndefined();
   await expect(page.locator('#sheet')).toBeVisible();
   await expect(page.locator('#step-1')).toBeVisible();
-  await expect(page.locator('#sheet-title-1')).toHaveText('Parakeet launches in January. Which plan should your 2 free weeks start on?');
+  await expect(page.locator('#sheet-title-1')).toHaveText('We plan to launch in January. Which plan do you want?');
   const [seen] = await waitForRows(blobs, { event: 'seen' });
   expect(seen.vid).toBe(vid);
   await sheetSettled(page);
@@ -99,11 +100,15 @@ test('tagged visit: reserve, seen, plan cards, Hold my spot, email, Done, close 
   expect(emailRow.vid).toBe(vid);
   expect(emailRow.flag).toBe('gate');
   await expect(page.locator('#step-3')).toBeVisible();
-  await expect(page.getByRole('heading', { name: "You're on the list." })).toBeVisible();
-  await expect(page.getByText("Your 2 free weeks are reserved. We'll email you once, when Parakeet is live.")).toBeVisible();
+  await expect(page.locator('#step-2'), 'the done state sits under the email step, as on the boards').toBeVisible();
+  await expect(page.locator('#sheet-panel')).toHaveAttribute('aria-labelledby', 'sheet-title-2');
+  await expect(page.getByText('Your 2 free weeks are reserved for test@example.com. We’ll email you once, when Parakeet is live.')).toBeVisible();
+  await expect(page.locator('#email')).toHaveValue('');
+  await expect(page.locator('#email')).toBeDisabled();
+  await expect(page.locator('#email-form button[type="submit"]')).toBeDisabled();
 
-  // Done closes; focus returns to the reserve button
-  await page.locator('#step-3 [data-close]').click();
+  // the close button closes; focus returns to the reserve button
+  await page.locator('.sheet-x').click();
   await expect(page.locator('#sheet')).toBeHidden();
   await expect(reserve).toBeFocused();
 
@@ -111,6 +116,8 @@ test('tagged visit: reserve, seen, plan cards, Hold my spot, email, Done, close 
   await reserve.click();
   await expect(page.locator('#sheet')).toBeVisible();
   await expect(page.locator('#step-1'), 'reopen starts at step 1').toBeVisible();
+  await expect(page.locator('#step-3')).toBeHidden();
+  await expect(page.locator('#email')).toBeEnabled();
   await page.keyboard.press('Escape');
   await expect(page.locator('#sheet')).toBeHidden();
 
@@ -145,8 +152,8 @@ test('tagged visit: reserve, seen, plan cards, Hold my spot, email, Done, close 
   expect(tt.pageviews).toBe(1);
   expect(tt.tap_events_reserve, 'the sheet was opened four times').toBe(4);
   expect(tt.leave.n).toBe(1);
-  expect(tt.content.fri23.uniques).toBe(1);
-  expect(tt.content.fri23.plan_rate).toBe(1);
+  expect(tt.content.sat24.uniques).toBe(1);
+  expect(tt.content.sat24.plan_rate).toBe(1);
   expect(out.total.blended.uniques).toBe(1);
   expect(out.total.blended.plan_rate).toBe(1);
   for (const k of ['smoke', 'no_utm', 'bot', 'prestart']) expect(out.total.excluded[k].uniques, `excluded.${k}`).toBe(0);
@@ -307,3 +314,55 @@ test('a backdrop press in the first frames after opening is dropped too: the she
   await sheetSettled(page);
   await expect(page.locator('#step-1')).toBeVisible();
 });
+
+// The two lines that depend on the plan picked (the small print under the email field and the done message),
+// once per plan; the email row carries the plan as before.
+const PLAN_LINES = {
+  yearly: {
+    small: 'One email when we launch. Your 2 free weeks are tied to this email.',
+    done: (email) => `Your 2 free weeks are reserved for ${email}. We’ll email you once, when Parakeet is live.`
+  },
+  monthly: {
+    small: 'One email when we launch, nothing else.',
+    done: (email) => `Your spot is saved for ${email}. We’ll email you once, when Parakeet is live.`
+  }
+};
+
+for (const [plan, lines] of Object.entries(PLAN_LINES)) {
+  const other = plan === 'yearly' ? PLAN_LINES.monthly : PLAN_LINES.yearly;
+  test(`${plan}: the email step's small print and the done message are the ${plan} lines`, async ({ page, harness }) => {
+    const { blobs } = harness;
+    await page.goto(TAGGED_QS);
+    await waitForRows(blobs, { event: 'pageview' });
+    await page.locator('[data-tap="reserve"]').click();
+    await sheetSettled(page);
+    // each row's accessible name is its visible text; no plan names on the rows
+    await expect(page.getByRole('radio', { name: '2 free weeks 14 days free, then just $29.99/year.' })).toHaveAttribute('data-plan', 'yearly');
+    await expect(page.getByRole('radio', { name: 'No free weeks $9.99/month, starts at launch.' })).toHaveAttribute('data-plan', 'monthly');
+    if (plan === 'monthly') {
+      await page.locator('[data-tap="plan_monthly"]').click();
+      await waitForRows(blobs, { event: 'tap', button: 'plan_monthly' });
+    }
+    await page.locator('#hold').click();
+    await expect(page.locator('#step-2')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Where should we send it?' })).toBeVisible();
+    await expect(page.locator('#email')).toHaveAttribute('placeholder', 'Your email address');
+    const send = page.locator('#email-form button[type="submit"]');
+    const fill = () => send.evaluate((b) => getComputedStyle(b).backgroundColor);
+    expect(await fill(), 'nothing to send yet: the button looks disabled').toBe('rgba(14, 27, 38, 0.1)');
+    await expect(page.getByText(lines.small, { exact: true })).toBeVisible();
+    await expect(page.getByText(other.small, { exact: true })).toBeHidden();
+
+    const address = `${plan}@example.com`;
+    await page.locator('#email').fill(address);
+    expect(await fill()).toBe('rgb(79, 168, 232)');
+    await send.click();
+    const [row] = await waitForRows(blobs, { event: 'email' });
+    expect(row.plan).toBe(plan);
+    expect(row.email).toBe(address);
+    await expect(page.locator('#step-3')).toBeVisible();
+    await expect(page.getByText(lines.done(address), { exact: true })).toBeVisible();
+    await expect(page.getByText(other.done(address), { exact: true })).toBeHidden();
+    await expect(page.getByText(lines.small, { exact: true }), 'the small print stays under the done message').toBeVisible();
+  });
+}
