@@ -256,16 +256,32 @@ test('app.js: the endpoint, the cookie name, the transport, no http literal', ()
   assert.match(app, /\.style\.setProperty\('--vvh'/, 'the sheet height follows the visual viewport');
 });
 
-test('styles.css: the colours, the accent only on the button and the badge, svh, the system font stack', () => {
-  assert.match(css, /--bg:\s*#FBF6EC/i);
-  assert.match(css, /--accent:\s*#4FA8E8/i);
-  assert.match(css, /--accent-ink:\s*#0E1B26/i);
-  assert.match(css, /\.btn\s*\{[^}]*color:\s*var\(--accent-ink\)/, 'the button label is the accent ink');
+test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradient or glow, svh, the system font stack', () => {
+  const tokens = {
+    '--sky': '#4FA8E8', '--ink': '#0E1B26', '--cream': '#FBF6EC', '--white': '#FFFFFF', '--sky-soft': '#E3F1FC',
+    '--ink-70': 'rgba(14, 27, 38, 0.70)', '--ink-62': 'rgba(14, 27, 38, 0.62)', '--ink-48': 'rgba(14, 27, 38, 0.48)',
+    '--ink-22': 'rgba(14, 27, 38, 0.22)', '--ink-10': 'rgba(14, 27, 38, 0.10)'
+  };
+  const root = /:root\s*\{([^}]*)\}/.exec(css);
+  assert.ok(root, ':root block');
+  for (const [name, value] of Object.entries(tokens)) {
+    const m = new RegExp(`${name}:\\s*([^;]+);`).exec(root[1]);
+    assert.ok(m, `${name} is defined`);
+    assert.equal(m[1].trim().toUpperCase(), value.toUpperCase(), `${name} is ${value}`);
+  }
   const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.equal(count(/#4FA8E8/gi, cssNoComments), 1, 'the accent is defined once (as the token), used only through var(--accent)');
-  assert.equal(count(/var\(--accent\)/g, cssNoComments), 2, 'var(--accent) is used exactly twice: the button and the badge');
+  const outsideRoot = cssNoComments.replace(/:root\s*\{[^}]*\}/, '');
+  const colorDecl = (m) => !/^#(FBF6EC|0E1B26|4FA8E8|FFFFFF|E3F1FC)$/i.test(m);
+  assert.deepEqual((cssNoComments.match(/#[0-9a-f]{3,8}\b/gi) || []).filter(colorDecl), [], 'no hex colour outside the four tokens and sky-soft');
+  assert.deepEqual(outsideRoot.match(/#[0-9a-f]{3,8}\b/gi) || [], [], 'hex colours live in :root only');
+  assert.deepEqual(outsideRoot.match(/rgba?\([^)]*\)/gi) || [], [], 'derived colours live in :root only');
+  for (const old of ['--bg', '--bg-2', '--surface', '--sheet', '--fg', '--fg-2', '--fg-3', '--accent', '--accent-ink', '--hairline', '--hair-strong', '--shadow', '--focus']) {
+    assert.doesNotMatch(cssNoComments, new RegExp(`${old}\\b(?!-)`), `the old token ${old} is gone`);
+  }
+  assert.doesNotMatch(cssNoComments, /gradient\(/, 'no gradient');
+  assert.match(css, /html, body \{ background-color: var\(--cream\); \}/, 'the page is cream');
+  assert.match(css, /\.btn\s*\{[^}]*background:\s*var\(--sky\)[^}]*color:\s*var\(--ink\)/, 'the button is ink on sky');
   assert.match(css, /100svh/);
-  assert.match(css, /max-height:\s*40svh/);
   assert.match(css, /-apple-system/);
   assert.doesNotMatch(css, /Inter/);
 });

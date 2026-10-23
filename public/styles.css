@@ -1,46 +1,40 @@
-/* Parakeet reserve page. Cream, near-black, one sky-blue accent (the button and the
-   2 FREE WEEKS badge). System font stack, no font file. Heights in svh only: the full
+/* Parakeet reserve page, built against DESIGN.md: the four colour tokens and their derived values
+   (§2), the system font stack and the type scale (§3). No font file. Heights in svh only: the full
    viewport unit is wrong inside the in-app browsers. */
 
 :root {
-  --bg: #FBF6EC;
-  --bg-2: #EFE9DC;
-  --surface: #F3EDDF;
-  --sheet: #FFFFFF;
-  --fg: #141414;
-  --fg-2: #4A4A4A;
-  --fg-3: #6B6B6B;
-  --accent: #4FA8E8;
-  --accent-ink: #0E1B26;
-  --hairline: rgba(20, 20, 20, 0.12);
-  --hair-strong: rgba(20, 20, 20, 0.24);
-  --shadow: 0 12px 32px rgba(20, 20, 20, 0.12);
-  --focus: rgba(20, 20, 20, 0.45);
+  /* DESIGN.md §2: four colours, nothing else; the derived values are ink or white at a set opacity */
+  --sky: #4FA8E8;
+  --ink: #0E1B26;
+  --cream: #FBF6EC;
+  --white: #FFFFFF;
+  --ink-70: rgba(14, 27, 38, 0.70);   /* secondary text */
+  --ink-62: rgba(14, 27, 38, 0.62);   /* hints and captions: the floor for text */
+  --ink-48: rgba(14, 27, 38, 0.48);   /* disabled text (§5) */
+  --ink-22: rgba(14, 27, 38, 0.22);   /* strokes */
+  --ink-10: rgba(14, 27, 38, 0.10);   /* hairlines */
+  --sky-soft: #E3F1FC;                /* a selected row's fill */
   --col: 430px;
   --gutter: 20px;
-  --cta-h: 76px;
+  --cta-h: 80px;
   --bezel: 8px;
   --vvh: 100svh;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html, body { background-color: var(--bg); }
+html, body { background-color: var(--cream); }
 
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
-/* A faint sky glow at the top of the first screen; the colour underneath stays the cream */
 body {
   margin: 0;
-  background-image: radial-gradient(120% 60% at 50% -10%, rgba(79, 168, 232, 0.16), transparent 60%);
-  background-repeat: no-repeat;
-  background-size: 100% 100svh;
-  color: var(--fg);
+  color: var(--ink);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -54,7 +48,7 @@ button { font: inherit; color: inherit; }
 img, svg, video { display: block; }
 a { color: inherit; }
 
-:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
+:focus { outline: 2px solid var(--ink); outline-offset: 2px; }
 .field:focus { outline-offset: 0; }
 
 @supports selector(:focus-visible) {
@@ -99,7 +93,7 @@ a { color: inherit; }
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0.01em;
-  color: var(--fg-2);
+  color: var(--ink-70);
 }
 
 .wordmark a { text-decoration: none; }
@@ -114,9 +108,9 @@ h1 {
 
 .lede {
   max-width: 360px;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.4;
-  color: var(--fg-2);
+  color: var(--ink-70);
 }
 
 /* The clip as the hero, in a phone frame. The frame (.clip-box) is the bezel: an 8px cream
@@ -133,10 +127,9 @@ h1 {
   max-height: 40svh;
   aspect-ratio: 9 / 16;
   padding: var(--bezel);
-  border: 1px solid var(--hairline);
-  border-radius: 28px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--ink-10);
+  border-radius: 22px;
+  background: var(--cream);
   isolation: isolate;
 }
 
@@ -146,7 +139,7 @@ h1 {
   object-fit: cover;
   border-radius: 22px;
   clip-path: inset(0 round 22px);   /* older WebKit ignores the radius on a playing video */
-  background: var(--bg-2);
+  background: var(--cream);
 }
 
 .clip::-webkit-media-controls-start-playback-button {
@@ -182,8 +175,7 @@ h1 {
   max-width: 56px;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
-  background: #FFFFFF;
-  box-shadow: 0 2px 10px rgba(20, 20, 20, 0.18);
+  background: var(--white);
   display: grid;
   place-items: center;
 }
@@ -195,7 +187,7 @@ h1 {
   margin-left: 3px;
   border-style: solid;
   border-width: 9px 0 9px 15px;
-  border-color: transparent transparent transparent var(--fg);
+  border-color: transparent transparent transparent var(--ink);
 }
 
 .play:active .play-disc { filter: brightness(0.92); }
@@ -208,9 +200,9 @@ h1 {
   display: grid;
   row-gap: 6px;
   width: 100%;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.35;
-  color: var(--fg-2);
+  color: var(--ink-70);
 }
 
 .facts li {
@@ -224,7 +216,7 @@ h1 {
   left: 0;
   width: 16px;
   height: 16px;
-  color: var(--fg-3);
+  color: var(--ink-62);
 }
 
 .nowrap { white-space: nowrap; }
@@ -235,12 +227,12 @@ h1 {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 52px;
+  height: 56px;
   padding: 0 20px;
   border: 0;
-  border-radius: 14px;
-  background: var(--accent);
-  color: var(--accent-ink);
+  border-radius: 999px;
+  background: var(--sky);
+  color: var(--ink);
   font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -254,7 +246,7 @@ h1 {
 .btn:active { filter: brightness(0.92); }
 .btn[disabled] { opacity: 0.7; cursor: default; }
 
-/* Fixed CTA, safe-area aware; --cta-h = 12 + 52 + 12 */
+/* Fixed CTA, safe-area aware; --cta-h = 12 + 56 + 12 */
 .cta {
   position: fixed;
   right: 0;
@@ -262,7 +254,7 @@ h1 {
   left: 0;
   z-index: 5;
   padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(to bottom, rgba(251, 246, 236, 0), var(--bg) 30%);
+  background: var(--cream);
 }
 
 .cta .btn {
@@ -294,14 +286,14 @@ h1 {
   max-width: var(--col);
   margin: 0 auto;
   padding: 28px var(--gutter) calc(var(--cta-h) + 28px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--ink-10);
   text-align: left;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--fg-3);
+  color: var(--ink-62);
 }
 
-.footer a { color: var(--fg-2); }
+.footer a { color: var(--ink-70); }
 
 .foot-links {
   display: flex;
@@ -315,10 +307,10 @@ h1 {
   padding: 12px 0;
   margin: -12px 0;
   text-decoration: none;
-  color: var(--fg);
+  color: var(--ink);
 }
 
-.foot-copy { margin-top: 12px; font-size: 12px; }
+.foot-copy { margin-top: 12px; font-size: 13px; }
 
 /* Sheet */
 .sheet-root {
@@ -338,7 +330,7 @@ h1 {
   right: 0;
   bottom: 0;
   left: 0;
-  background: rgba(20, 20, 20, 0.45);
+  background: var(--ink-48);
   touch-action: none;
 }
 
@@ -350,9 +342,9 @@ h1 {
   margin: 0 auto;
   max-width: var(--col);
   max-height: calc(var(--vvh) - 12px);
-  background: var(--sheet);
-  color: var(--fg);
-  border-radius: 20px 20px 0 0;
+  background: var(--white);
+  color: var(--ink);
+  border-radius: 22px 22px 0 0;
   padding: 8px 20px calc(16px + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -366,10 +358,10 @@ h1 {
 
 .grabber {
   width: 36px;
-  height: 5px;
+  height: 4px;
   margin: 0 auto;
-  border-radius: 3px;
-  background: var(--hair-strong);
+  border-radius: 999px;
+  background: var(--ink-22);
 }
 
 .sheet-x {
@@ -381,7 +373,7 @@ h1 {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--fg);
+  color: var(--ink);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -397,7 +389,7 @@ h1 {
   bottom: 7px;
   left: 7px;
   border-radius: 50%;
-  background: var(--bg-2);
+  background: var(--cream);
 }
 
 .sheet-x svg { position: relative; }
@@ -408,7 +400,7 @@ h1 {
 .sheet-title {
   margin: 0;
   padding-right: 44px;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -417,16 +409,16 @@ h1 {
 
 .sheet-body {
   margin-top: 10px;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.45;
-  color: var(--fg-2);
+  color: var(--ink-70);
 }
 
 .sheet-small {
   margin-top: 14px;
   font-size: 13px;
   line-height: 1.4;
-  color: var(--fg-3);
+  color: var(--ink-62);
 }
 
 /* Plan cards: a hairline each; the selected one gets the near-black border, 2px, drawn
@@ -443,9 +435,9 @@ h1 {
   width: 100%;
   margin: 0;
   padding: 14px 52px 14px 16px;
-  border: 1px solid var(--hairline);
-  border-radius: 16px;
-  background: var(--sheet);
+  border: 1px solid var(--ink-10);
+  border-radius: 14px;
+  background: var(--white);
   text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -453,8 +445,8 @@ h1 {
 }
 
 .plan[aria-checked="true"] {
-  border-color: var(--fg);
-  box-shadow: inset 0 0 0 1px var(--fg);
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
 }
 
 .plan:active { filter: brightness(0.96); }
@@ -467,13 +459,13 @@ h1 {
   width: 22px;
   height: 22px;
   margin-top: -11px;
-  border: 2px solid var(--hair-strong);
+  border: 2px solid var(--ink-22);
   border-radius: 50%;
 }
 
 .plan[aria-checked="true"]::before {
-  border-color: var(--fg);
-  background: var(--fg);
+  border-color: var(--ink);
+  background: var(--ink);
 }
 
 .plan[aria-checked="true"]::after {
@@ -484,7 +476,7 @@ h1 {
   width: 5px;
   height: 9px;
   margin-top: -7px;
-  border: solid #FFFFFF;
+  border: solid var(--white);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
@@ -502,13 +494,11 @@ h1 {
   display: inline-block;
   padding: 3px 8px;
   border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 12px;
-  font-weight: 700;
+  background: var(--sky);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1.2;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .plan-price {
@@ -516,7 +506,7 @@ h1 {
   margin-top: 3px;
   font-size: 15px;
   line-height: 1.35;
-  color: var(--fg-2);
+  color: var(--ink-70);
 }
 
 .plans + .sheet-small + .btn, .sheet form { margin-top: 18px; }
@@ -525,12 +515,12 @@ h1 {
 .field {
   display: block;
   width: 100%;
-  height: 50px;
+  height: 56px;
   padding: 0 16px;
-  border: 1px solid var(--hair-strong);
+  border: 1px solid var(--ink-22);
   border-radius: 14px;
-  background: var(--sheet);
-  color: var(--fg);
+  background: var(--white);
+  color: var(--ink);
   font: inherit;
   font-size: 17px;
   -webkit-appearance: none;
@@ -538,9 +528,9 @@ h1 {
   outline: none;
 }
 
-.field::placeholder { color: var(--fg-3); opacity: 1; }
-.field:focus { border-color: var(--fg-3); box-shadow: inset 0 0 0 1px var(--fg-3); }
-.field[aria-invalid="true"] { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
+.field::placeholder { color: var(--ink-62); opacity: 1; }
+.field:focus { border-color: var(--ink-62); box-shadow: inset 0 0 0 1px var(--ink-62); }
+.field[aria-invalid="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 .field.shake { animation: shake 0.3s ease-in-out; }
 .field + .btn { margin-top: 12px; }
 
@@ -562,7 +552,7 @@ h1 {
   position: -webkit-sticky;
   position: sticky;
   bottom: 0;
-  box-shadow: 0 0 0 8px var(--sheet);
+  box-shadow: 0 0 0 8px var(--white);
 }
 
 /* The email step's button sits right under the field, so it is not sticky: pulled up
@@ -602,22 +592,22 @@ body.legal { display: block; }
 
 .legal-main p {
   margin-top: 16px;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.5;
-  color: var(--fg-2);
+  color: var(--ink-70);
 }
 
-.legal-main b { color: var(--fg); font-weight: 600; }
-.legal-main a { color: var(--fg); }
+.legal-main b { color: var(--ink); font-weight: 600; }
+.legal-main a { color: var(--ink); }
 
 body.legal .footer { padding-bottom: 36px; }
 
 /* Short viewports (an SE in Safari): the copy never shrinks, so the frame is about 70x124 and the
    brief's 28/22 radii would round away most of its edges, the 36px disc most of its width */
 @media (max-height: 600px) {
-  .clip-box { border-radius: 18px; }
-  .clip, .play { border-radius: 12px; }
-  .clip { clip-path: inset(0 round 12px); }
+  .clip-box { border-radius: 14px; }
+  .clip, .play { border-radius: 14px; }
+  .clip { clip-path: inset(0 round 14px); }
   .play-disc { min-width: 28px; }
 }
 
