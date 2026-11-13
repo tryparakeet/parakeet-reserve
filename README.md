@@ -60,7 +60,7 @@ Hero B has no clip. The first screen's images are under `public/media/` (served 
 
 ## Icons
 
-`public/favicon.svg`, `favicon.ico` and `public/assets/*.png` are a **placeholder** for Gate 0: a sky-blue rounded square with a near-black "P", made by `scripts/make-icons.mjs`. Not the identity; the bird replaces it later.
+`public/favicon.svg`, `favicon.ico` and `public/assets/*.png` are the app icon (DESIGN.md §7: the head close up, white on sky), made by `scripts/make-icons.mjs` from `scripts/parakeet-icon.svg`, a byte-for-byte copy of parakeet-app's `docs/brand/parakeet-icon.svg` used as it is: rounded at 32 px and in `favicon.svg`, full bleed at 180 px. When the app icon changes, copy the new file over it, run the script and raise the `?v=` on the icon links in the three pages (`/assets/` is cached for a year).
 
 ## Node
 
