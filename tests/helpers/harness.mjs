@@ -15,7 +15,8 @@
 //   3. a static file under public/ (a directory serves its index.html), with a MIME map, Range support
 //      and the toml's [[headers]] rules applied to static responses only (Netlify never applies them to
 //      function responses or redirects)
-//   4. the non-forced rewrites /privacy -> privacy.html and /terms -> terms.html (static headers apply)
+//   4. the non-forced rewrites /privacy -> privacy.html, /terms -> terms.html and /support -> support.html
+//      (static headers apply)
 //   5. 404
 //
 // `now` may be an ISO string / epoch ms (a frozen clock starts there), a function, or a clock object from
@@ -141,6 +142,7 @@ export async function startHarness({ port = 0, adminKey = ADMIN_KEY, now = T0, b
     // 4. non-forced rewrites
     if (/^\/privacy\/?$/.test(pathname) && (await sendStatic(req, res, '/privacy.html', pathname))) return;
     if (/^\/terms\/?$/.test(pathname) && (await sendStatic(req, res, '/terms.html', pathname))) return;
+    if (/^\/support\/?$/.test(pathname) && (await sendStatic(req, res, '/support.html', pathname))) return;
 
     // 5.
     return text(res, 404, 'Not found', staticHeadersFor(headerRules, pathname));

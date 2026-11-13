@@ -1,7 +1,7 @@
-// public/: what ships. No vh units (svh only), no external URL, nothing inline, no Netlify Forms; the
-// page's ids, the four data-tap values equal to BUTTONS, the one script and the one stylesheet, the
-// viewport flags, the video element, the exact copy; the legal pages' promises; robots.txt; app.js's
-// endpoint, cookie name and transport.
+// public/: what ships. No vh units (svh only), no external URL but Support's one link to Apple, nothing
+// inline, no Netlify Forms; the page's ids, the four data-tap values equal to BUTTONS, the one script and
+// the one stylesheet, the viewport flags, the video element, the exact copy; every page's footer; the legal
+// pages' promises; Support's words; robots.txt; app.js's endpoint, cookie name and transport.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -32,8 +32,13 @@ const rel = (f) => relative(ROOT, f);
 const index = read('index.html');
 const privacy = read('privacy.html');
 const terms = read('terms.html');
+const support = read('support.html');
 const css = read('styles.css');
 const app = read('app.js');
+
+// The one link off the site: Support sends refunds to Apple. A visitor follows it; the page loads nothing
+// from it (the CSP allows only 'self'), so it is the one http(s) URL allowed in public/.
+const APPLE_LINK = '<a href="https://reportaproblem.apple.com">reportaproblem.apple.com</a>';
 
 // Text as a visitor reads it: tags removed, entities decoded, whitespace collapsed.
 function textOf(html) {
@@ -51,7 +56,7 @@ function count(re, s) {
 }
 
 test('the public dir has the expected text files', () => {
-  for (const name of ['index.html', 'styles.css', 'app.js', 'privacy.html', 'terms.html', 'robots.txt', 'favicon.svg']) {
+  for (const name of ['index.html', 'styles.css', 'app.js', 'privacy.html', 'terms.html', 'support.html', 'robots.txt', 'favicon.svg']) {
     assert.ok(files.some((f) => f === join(PUBLIC, name)), `public/${name} exists`);
   }
 });
@@ -63,10 +68,11 @@ test('no vh, dvh or lvh unit anywhere in public/ (svh only)', () => {
   }
 });
 
-test('no external URL in public/: no http(s)://, no protocol-relative URL, no @import, url(https) or data: in CSS', () => {
+test('no external URL in public/ but the one link to Apple on Support: no http(s)://, no protocol-relative URL, no @import, url(https) or data: in CSS', () => {
   for (const f of textFiles) {
     let src = readFileSync(f, 'utf8');
     if (extname(f) === '.svg' || extname(f) === '.html') src = src.replace(/\sxmlns(:[a-z]+)?="[^"]*"/g, '');
+    if (f === join(PUBLIC, 'support.html')) src = src.replace(APPLE_LINK, '');   // the first one only
     assert.doesNotMatch(src, /https?:\/\//, `${rel(f)} has an http(s) URL`);
     assert.doesNotMatch(src, /(src|href|action|poster|content)=["']\/\//i, `${rel(f)} has a protocol-relative URL`);
     assert.doesNotMatch(src, /url\(\s*["']?\/\//i, `${rel(f)} has a protocol-relative url()`);
@@ -168,6 +174,13 @@ test('index.html answer line: the two passing answers are aria-hidden, the last 
   assert.doesNotMatch(lines[2][1], /aria-hidden/);
 });
 
+// Every page's footer: the address, then Privacy, Terms and Support under one label. The old address is gone.
+function pageFooter(html, name) {
+  assert.match(html, /<p class="foot-contact">Contact: <a href="mailto:support\.parakeet@gmail\.com">support\.parakeet@gmail\.com<\/a><\/p>/, `${name}: the contact line`);
+  assert.match(html, /<nav class="foot-links" aria-label="Support and legal"><a href="\/privacy">Privacy<\/a><a href="\/terms">Terms<\/a><a href="\/support">Support<\/a><\/nav>/, `${name}: Privacy, Terms, then Support, labelled "Support and legal"`);
+  assert.ok(!html.includes('app.parakeet@'), `${name}: the old address is gone`);
+}
+
 test('index.html copy, verbatim', () => {
   const text = textOf(index);
   const strings = [
@@ -187,6 +200,7 @@ test('index.html copy, verbatim', () => {
     'Contact: support.parakeet@gmail.com',
     'Privacy',
     'Terms',
+    'Support',
     '© 2026 Parakeet.',
     'We plan to launch in January. Which plan do you want?',
     '2 free weeks 14 days free, then just $29.99/year.',
@@ -221,12 +235,14 @@ test('index.html copy, verbatim', () => {
   assert.match(index, /<a href="mailto:support\.parakeet@gmail\.com">support\.parakeet@gmail\.com<\/a>/);
   assert.match(index, /<a href="\/privacy">Privacy<\/a>/);
   assert.match(index, /<a href="\/terms">Terms<\/a>/);
+  assert.match(index, /<a href="\/support">Support<\/a>/);
+  pageFooter(index, 'index');
   assert.equal(count(/\sdata-reveal\b/g, index), 4, 'three rows and the footer fade in once');
   assert.equal(count(/\bRestline\b/g, index) + count(/\brestline\b/g, index), 0);
 });
 
-// The landing page's header on both legal pages (DESIGN.md §4): the sky browser bar, the symbol the bird
-// needs, one bird in the band, the whole wordmark a link home, before the page's own heading.
+// The landing page's header on Privacy, Terms and Support (DESIGN.md §4): the sky browser bar, the symbol the
+// bird needs, one bird in the band, the whole wordmark a link home, before the page's own heading.
 function legalHeader(html, name) {
   assert.match(html, /<meta name="theme-color" content="#4FA8E8">/i, `${name}: theme-color is sky`);
   assert.match(html, /<symbol id="pk-mark"/, `${name}: carries the bird symbol`);
@@ -248,6 +264,7 @@ test('privacy.html: the cookie, the retention, the one email, never shared or so
   assert.match(privacy, /<a href="mailto:support\.parakeet@gmail\.com">/);
   assert.match(privacy, /<link rel="stylesheet" href="\/styles\.css">/);
   legalHeader(privacy, 'privacy');
+  pageFooter(privacy, 'privacy');
 });
 
 test('terms.html: in development, launch prices, nothing charged, the address', () => {
@@ -257,6 +274,38 @@ test('terms.html: in development, launch prices, nothing charged, the address', 
   }
   assert.match(terms, /<link rel="stylesheet" href="\/styles\.css">/);
   legalHeader(terms, 'terms');
+  pageFooter(terms, 'terms');
+});
+
+test('support.html: word for word (the address, five questions and their answers), the one link to Apple, the questions at 20/700', () => {
+  const main = /<main class="legal-main">([\s\S]*?)<\/main>/.exec(support);
+  assert.ok(main, 'the main');
+  // inline tags (the two links) drop out without a space, so each line reads as written
+  const plain = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const blocks = /<(h1|h2|p)>([\s\S]*?)<\/\1>/g;
+  assert.deepEqual([...main[1].matchAll(blocks)].map((m) => [m[1], plain(m[2])]), [
+    ['h1', 'Support'],
+    ['p', 'Write to us at support.parakeet@gmail.com with a question, a problem or an idea. We read every email.'],
+    ['h2', 'How do I cancel?'],
+    ['p', 'On your iPhone, open Settings, tap your name, then Subscriptions. Tap Parakeet and cancel it there. If you don’t want to pay after your free week, cancel at least a day before it ends.'],
+    ['h2', 'Can I get a refund?'],
+    ['p', 'Apple handles every payment, so refunds come from Apple. You can ask for one at reportaproblem.apple.com.'],
+    ['h2', 'How do I get my plan back on a new iPhone?'],
+    ['p', 'Use the same Apple Account, open Parakeet and tap Restore purchases on the screen with the plans.'],
+    ['h2', 'Why is my total different at the register?'],
+    ['p', 'Every price is an estimate of the regular shelf price, never a sale price, and prices don’t include tax. When you type what you paid, Parakeet remembers it for that item at that store.'],
+    ['h2', 'Do I need an account?'],
+    ['p', 'No. There’s no account and no sign-in. Your weeks, your lists and the prices you type stay on your iPhone.']
+  ]);
+  assert.equal(main[1].replace(blocks, '').trim(), '', 'nothing else in the main');
+  assert.match(main[1], /<p>Write to us at <a href="mailto:support\.parakeet@gmail\.com">support\.parakeet@gmail\.com<\/a> with /);
+  assert.equal(support.split(APPLE_LINK).length, 2, 'the one link to Apple, as written');
+  assert.match(support, /<title>Support — Parakeet<\/title>/);
+  assert.match(support, /<link rel="stylesheet" href="\/styles\.css">/);
+  assert.match(css, /\.legal-main h2 \{[^}]*font-size: 20px;[^}]*font-weight: 700;[^}]*color: var\(--ink\);/, 'the questions are the H2 of DESIGN.md §3: 20/700, ink');
+  assert.match(css, /\.legal-main h2 \+ p \{ margin-top: 6px; \}/, 'each answer sits close under its question');
+  legalHeader(support, 'support');
+  pageFooter(support, 'support');
 });
 
 test('robots.txt keeps crawlers off /admin and /api/', () => {

@@ -1,6 +1,6 @@
 // The site's routes as the harness reproduces the toml: /go (302 with the exact Location, and the landing
-// counted under sources.typed.content.endcard), /privacy, /terms, /robots.txt, the CSP header on / and
-// /privacy, traversal rejected, 404; plus the screenshots for the acceptance record.
+// counted under sources.typed.content.endcard), /privacy, /terms, /support, /robots.txt, the CSP header on
+// /, /privacy and /support, traversal rejected, 404; plus the screenshots for the acceptance record.
 
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -34,7 +34,7 @@ test('page.goto(/go) lands with the typed tags and is counted under sources.type
   expect(out.total.blended.uniques).toBe(1);
 });
 
-test('/privacy and /terms serve the legal pages; /robots.txt keeps the crawlers off /admin and /api/', async ({ request }) => {
+test('/privacy, /terms and /support serve their pages; /robots.txt keeps the crawlers off /admin and /api/', async ({ request }) => {
   const privacy = await request.get('/privacy');
   expect(privacy.status()).toBe(200);
   expect(privacy.headers()['content-type']).toContain('text/html');
@@ -50,15 +50,23 @@ test('/privacy and /terms serve the legal pages; /robots.txt keeps the crawlers 
   expect(termsText).toContain('<title>Terms');
   expect(termsText).toContain('Nothing is charged');
 
+  const support = await request.get('/support');
+  expect(support.status()).toBe(200);
+  expect(support.headers()['content-type']).toContain('text/html');
+  const supportText = await support.text();
+  expect(supportText).toContain('<title>Support');
+  expect(supportText).toContain('support.parakeet@gmail.com');
+  expect(supportText).toContain('How do I cancel?');
+
   const robots = await request.get('/robots.txt');
   expect(robots.status()).toBe(200);
   expect(robots.headers()['content-type']).toContain('text/plain');
   expect((await robots.text()).trim().split(/\r?\n/)).toEqual(['User-agent: *', 'Disallow: /admin', 'Disallow: /api/']);
 });
 
-test('the CSP header is on / and /privacy, is the toml\'s, and connect-src is self', async ({ request }) => {
+test('the CSP header is on /, /privacy and /support, is the toml\'s, and connect-src is self', async ({ request }) => {
   expect(CSP).toBeTruthy();
-  for (const path of ['/', '/privacy']) {
+  for (const path of ['/', '/privacy', '/support']) {
     const res = await request.get(path);
     expect(res.status(), path).toBe(200);
     const h = res.headers();

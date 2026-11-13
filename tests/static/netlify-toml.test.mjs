@@ -1,6 +1,6 @@
 // netlify.toml, by regex over the file: the publish and functions dirs, Node 22, esbuild, the two forced
-// function rewrites, /privacy and /terms, the /go rule exactly, a CSP whose every directive is 'self' or
-// 'none' with connect-src 'self', a Referrer-Policy that is not no-referrer, nosniff, DENY and HSTS.
+// function rewrites, /privacy, /terms and /support, the /go rule exactly, a CSP whose every directive is
+// 'self' or 'none' with connect-src 'self', a Referrer-Policy that is not no-referrer, nosniff, DENY and HSTS.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -58,13 +58,16 @@ test('the two function rewrites are forced and come first', () => {
   assert.equal(redirects.filter((r) => /functions\//.test(r.to || '') && !/\/event$/.test(r.to)).length, 0, 'no other function');
 });
 
-test('/privacy and /terms rewrite to the html files with status 200', () => {
+test('/privacy, /terms and /support rewrite to the html files with status 200', () => {
   const privacy = redirects.find((r) => r.from === '/privacy');
   const terms = redirects.find((r) => r.from === '/terms');
+  const support = redirects.find((r) => r.from === '/support');
   assert.deepEqual({ to: privacy.to, status: privacy.status }, { to: '/privacy.html', status: '200' });
   assert.deepEqual({ to: terms.to, status: terms.status }, { to: '/terms.html', status: '200' });
+  assert.deepEqual({ to: support.to, status: support.status }, { to: '/support.html', status: '200' });
   assert.notEqual(privacy.force, 'true');
   assert.notEqual(terms.force, 'true');
+  assert.notEqual(support.force, 'true');
 });
 
 test('the /go rule exactly: 302, forced, to the typed tags', () => {
