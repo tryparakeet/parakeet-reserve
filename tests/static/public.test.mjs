@@ -195,7 +195,7 @@ test('index.html copy, verbatim', () => {
     'Prices',
     'We use the regular price for the whole pack you’d actually buy. Your total at the register may come out a little different.',
     'Recipes',
-    'Real people will cook every recipe before we add it. Each one shows who made it and links to the original. None will be made by AI.',
+    'Real people will cook every recipe before we add it. Each one will show who made it and link to the original. None will be made by AI.',
     'Parakeet is an app in development. The plan prices are what you’d pay at launch.',
     'Contact: support.parakeet@gmail.com',
     'Privacy',
