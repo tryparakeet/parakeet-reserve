@@ -195,7 +195,7 @@ test('index.html copy, verbatim', () => {
     'Prices',
     'We use the regular price for the whole pack you’d actually buy. Your total at the register may come out a little different.',
     'Recipes',
-    'Real people will cook every recipe before we add it. Some will come from food creators, and some will be tested recipes from the USDA. None will be made by AI.',
+    'Real people will cook every recipe before we add it. Each one shows who made it and links to the original. None will be made by AI.',
     'Parakeet is an app in development. The plan prices are what you’d pay at launch.',
     'Contact: support.parakeet@gmail.com',
     'Privacy',
@@ -215,7 +215,7 @@ test('index.html copy, verbatim', () => {
     'One email when we launch, nothing else.'
   ];
   for (const s of strings) assert.ok(text.includes(s), `index.html says: ${s}`);
-  for (const gone of ['5 dinners that fit your budget.', 'Yearly', 'Monthly', 'FREE WEEKS', 'Totals are estimates', 'cooked by a real person first', "You're on the list.", 'Done']) {
+  for (const gone of ['5 dinners that fit your budget.', 'Yearly', 'Monthly', 'FREE WEEKS', 'Totals are estimates', 'cooked by a real person first', 'Some will come from food creators, and some will be tested recipes from the USDA.', "You're on the list.", 'Done']) {
     assert.ok(!text.includes(gone), `index.html no longer says: ${gone}`);
   }
   assert.match(index, /<h1>What’s for dinner this week\?<\/h1>/);
