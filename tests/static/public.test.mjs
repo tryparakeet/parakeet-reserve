@@ -184,7 +184,7 @@ test('index.html copy, verbatim', () => {
     'Recipes',
     'Real people will cook every recipe before we add it. Some will come from food creators, and some will be tested recipes from the USDA. None will be made by AI.',
     'Parakeet is an app in development. The plan prices are what you’d pay at launch.',
-    'Contact: app.parakeet@gmail.com',
+    'Contact: support.parakeet@gmail.com',
     'Privacy',
     'Terms',
     '© 2026 Parakeet.',
@@ -218,7 +218,7 @@ test('index.html copy, verbatim', () => {
   assert.match(index, /<p class="done if-monthly">Your spot is saved for <b class="done-email"><\/b>\. We’ll email you once, when Parakeet is live\.<\/p>/);
   assert.match(index, /<p class="sheet-small if-yearly">One email when we launch\. Your 2 free weeks are tied to this email\.<\/p>/);
   assert.match(index, /<p class="sheet-small if-monthly">One email when we launch, nothing else\.<\/p>/);
-  assert.match(index, /<a href="mailto:app\.parakeet@gmail\.com">app\.parakeet@gmail\.com<\/a>/);
+  assert.match(index, /<a href="mailto:support\.parakeet@gmail\.com">support\.parakeet@gmail\.com<\/a>/);
   assert.match(index, /<a href="\/privacy">Privacy<\/a>/);
   assert.match(index, /<a href="\/terms">Terms<\/a>/);
   assert.equal(count(/\sdata-reveal\b/g, index), 4, 'three rows and the footer fade in once');
@@ -237,7 +237,7 @@ function legalHeader(html, name) {
 test('privacy.html: the cookie, the retention, the one email, never shared or sold, deletion, the address, the row contents', () => {
   const text = textOf(privacy);
   assert.ok(text.includes('pk_v'), 'names the cookie pk_v');
-  for (const s of ['90 days', 'launch plus 90 days', 'one email', 'never shared', 'sold', 'deleted', 'app.parakeet@gmail.com']) {
+  for (const s of ['90 days', 'launch plus 90 days', 'one email', 'never shared', 'sold', 'deleted', 'support.parakeet@gmail.com']) {
     assert.ok(text.toLowerCase().includes(s.toLowerCase()), `privacy says: ${s}`);
   }
   for (const s of ['tapped', 'seconds on the page', 'device type', 'TikTok', 'Instagram', 'Facebook', 'video', 'email']) {
@@ -245,14 +245,14 @@ test('privacy.html: the cookie, the retention, the one email, never shared or so
   }
   assert.match(text, /in development/);
   assert.match(text, /Nothing is charged/);
-  assert.match(privacy, /<a href="mailto:app\.parakeet@gmail\.com">/);
+  assert.match(privacy, /<a href="mailto:support\.parakeet@gmail\.com">/);
   assert.match(privacy, /<link rel="stylesheet" href="\/styles\.css">/);
   legalHeader(privacy, 'privacy');
 });
 
 test('terms.html: in development, launch prices, nothing charged, the address', () => {
   const text = textOf(terms);
-  for (const s of ['in development', 'launch', 'Nothing is charged', '$29.99', '$9.99', 'app.parakeet@gmail.com', 'Apple']) {
+  for (const s of ['in development', 'launch', 'Nothing is charged', '$29.99', '$9.99', 'support.parakeet@gmail.com', 'Apple']) {
     assert.ok(text.includes(s), `terms says: ${s}`);
   }
   assert.match(terms, /<link rel="stylesheet" href="\/styles\.css">/);

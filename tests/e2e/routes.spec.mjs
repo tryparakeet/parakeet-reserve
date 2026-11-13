@@ -41,7 +41,7 @@ test('/privacy and /terms serve the legal pages; /robots.txt keeps the crawlers 
   const privacyText = await privacy.text();
   expect(privacyText).toContain('<title>Privacy');
   expect(privacyText).toContain('pk_v');
-  expect(privacyText).toContain('app.parakeet@gmail.com');
+  expect(privacyText).toContain('support.parakeet@gmail.com');
 
   const terms = await request.get('/terms');
   expect(terms.status()).toBe(200);
