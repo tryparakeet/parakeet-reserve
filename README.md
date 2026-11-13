@@ -12,8 +12,8 @@ The instrument (the function, the client script, the sheet mechanics, the visito
 
 ```
 netlify/functions/event.mjs   the one function: POST /api/event, GET /admin
-public/                       index.html, styles.css, app.js, privacy.html, terms.html, robots.txt, icons, media/
-netlify.toml                  rewrites (/api/*, /admin → the function; /go → 302; /privacy, /terms), headers (CSP)
+public/                       index.html, styles.css, app.js, privacy.html, terms.html, support.html, robots.txt, icons, media/
+netlify.toml                  rewrites (/api/*, /admin → the function; /go → 302; /privacy, /terms, /support), headers (CSP)
 scripts/                      serve.mjs (local harness), make-placeholder-media.sh, make-test-clip.sh, make-icons.mjs
 tests/unit                    the function and the summary (node --test, no browser)
 tests/static                  netlify.toml, public/, repo checks (node --test)
@@ -60,7 +60,7 @@ Hero B has no clip. The first screen's images are under `public/media/` (served 
 
 ## Icons
 
-`public/favicon.svg`, `favicon.ico` and `public/assets/*.png` are the app icon (DESIGN.md §7: the head close up, white on sky), made by `scripts/make-icons.mjs` from `scripts/parakeet-icon.svg`, a byte-for-byte copy of parakeet-app's `docs/brand/parakeet-icon.svg` used as it is: rounded at 32 px and in `favicon.svg`, full bleed at 180 px. When the app icon changes, copy the new file over it, run the script and raise the `?v=` on the icon links in the three pages (`/assets/` is cached for a year).
+`public/favicon.svg`, `favicon.ico` and `public/assets/*.png` are the app icon (DESIGN.md §7: the head close up, white on sky), made by `scripts/make-icons.mjs` from `scripts/parakeet-icon.svg`, a byte-for-byte copy of parakeet-app's `docs/brand/parakeet-icon.svg` used as it is: rounded at 32 px and in `favicon.svg`, full bleed at 180 px. When the app icon changes, copy the new file over it, run the script and raise the `?v=` on the icon links in the four pages (`/assets/` is cached for a year).
 
 ## Node
 
@@ -72,4 +72,4 @@ Netlify builds the function on Node 22 (`NODE_VERSION = "22"` in `netlify.toml`)
 - The TikTok in-app regex (`BytedanceWebview|musical_ly|TikTok`) has not run on real traffic; the raw `ua` column is the check. A wrong `inapp` never moves `plan_rate`.
 - `total` resolves visitors across every day read (bot > smoke > prestart > gate > no_utm); `days[]` resolves within each UTC day, so a device whose smoke visit was on an earlier day appears under that day's `sources.tiktok` while `total` keeps it in `excluded.smoke`. The read and every own-device check use `total`.
 - A press inside the plan sheet during its first 500 ms is dropped and sends no row: the sheet's button and the cards slide in under the spot where "Reserve 2 free weeks" was pressed, so the second half of a double tap would otherwise count as a plan tap. `tests/e2e/flow.spec.mjs` asserts the drop; in-sheet clicks in the e2e await `sheetSettled()`.
-- Nothing under `public/` carries a third-party URL, binaries included; an image or clip with encoder metadata naming a URL fails the static test `no http(s) URL inside the binary files`.
+- Nothing under `public/` carries a third-party URL, binaries included, except Support's one link to `https://reportaproblem.apple.com` (a link a visitor follows; the page loads nothing from it); an image or clip with encoder metadata naming a URL fails the static test `no http(s) URL inside the binary files`.

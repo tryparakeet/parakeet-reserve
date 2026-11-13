@@ -37,6 +37,11 @@
   to = "/terms.html"
   status = 200
 
+[[redirects]]
+  from = "/support"
+  to = "/support.html"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]

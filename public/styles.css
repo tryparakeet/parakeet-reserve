@@ -880,6 +880,9 @@ body.legal { display: block; }
   color: var(--ink-70);
 }
 
+.legal-main h2 { margin-top: 24px; font-size: 20px; font-weight: 700; line-height: 1.3; color: var(--ink); }
+.legal-main h2 + p { margin-top: 6px; }
+
 .legal-main b { color: var(--ink); font-weight: 600; }
 .legal-main a { color: var(--ink); }
 
