@@ -38,7 +38,7 @@ test('tagged visit: reserve, seen, plan rows, Hold my spot, email, the done stat
   expect(tapReserve.via).toBeUndefined();
   await expect(page.locator('#sheet')).toBeVisible();
   await expect(page.locator('#step-1')).toBeVisible();
-  await expect(page.locator('#sheet-title-1')).toHaveText('We plan to launch in January. Which plan do you want?');
+  await expect(page.locator('#sheet-title-1')).toHaveText('Parakeet is coming soon. Which plan do you want?');
   const [seen] = await waitForRows(blobs, { event: 'seen' });
   expect(seen.vid).toBe(vid);
   await sheetSettled(page);
