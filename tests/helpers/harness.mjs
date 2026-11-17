@@ -1,15 +1,16 @@
 // A local stand-in for the Netlify site: http://localhost:PORT serving public/ as static files and the
-// one function behind the toml's rewrites, so the page, the client script and the function can be driven
+// functions behind the toml's rewrites, so the page, the client script and the functions can be driven
 // together by a browser (the Playwright e2e) or by curl (scripts/serve.mjs).
 //
-// startHarness({ port = 0, adminKey = ADMIN_KEY, now = T0, blobs = createMemoryBlobs(), publicDir })
-//   -> { url, origin, port, server, blobs, clock, env, handler, admin(), adminResponse(), close() }
+// startHarness({ port = 0, adminKey = ADMIN_KEY, beaconKey = 'dev', now = T0, blobs = createMemoryBlobs(), publicDir })
+//   -> { url, origin, port, server, blobs, clock, env, handler, beacon, admin(), adminResponse(), close() }
 //
 // What it reproduces, in the order Netlify applies it:
 //   1. the path is decoded; anything containing ".." after decoding is rejected (404)
 //   2. forced rules first, for any status and whether or not a static file exists:
-//        /api/*  and  /admin   -> createHandler({ getStore, env, now }) through a buffered Request/Response
-//                                 conversion (every Set-Cookie goes out separately via getSetCookie())
+//        /beacon and /admin/app -> beacon.mjs's createHandler({ getStore, env, now }), the beacon's receiver and read
+//        /api/*  and  /admin   -> event.mjs's createHandler({ getStore, env, now }); both through a buffered
+//                                 Request/Response conversion (every Set-Cookie goes out separately via getSetCookie())
 //        /go                   -> 302 with the exact Location of the toml rule (the request's own query is
 //                                 dropped, as Netlify does when `to` carries one)
 //   3. a static file under public/ (a directory serves its index.html), with a MIME map, Range support
@@ -21,7 +22,8 @@
 //
 // `now` may be an ISO string / epoch ms (a frozen clock starts there), a function, or a clock object from
 // tests/helpers/http.mjs ({ now, advance, set }); the returned `clock` is always the object form so a test
-// can advance the function's time. `adminKey: null` starts the harness without ADMIN_KEY (the 503 case).
+// can advance the function's time. `adminKey: null` starts the harness without ADMIN_KEY (the 503 case), and
+// `beaconKey: null` without BEACON_KEY.
 // Chromium stores the function's `Secure` cookie from http://localhost, so no TLS is needed here.
 
 import { createServer } from 'node:http';
@@ -29,6 +31,7 @@ import { createReadStream, promises as fs } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, normalize, resolve, sep, extname } from 'node:path';
 import { createHandler } from '../../netlify/functions/event.mjs';
+import { createHandler as createBeaconHandler } from '../../netlify/functions/beacon.mjs';
 import { createMemoryBlobs } from './memory-blobs.mjs';
 import { clock as makeClock, ADMIN_KEY, T0 } from './http.mjs';
 
@@ -101,14 +104,16 @@ function toClock(now) {
   return makeClock(now === undefined ? T0 : now);
 }
 
-export async function startHarness({ port = 0, adminKey = ADMIN_KEY, now = T0, blobs = createMemoryBlobs(), publicDir = PUBLIC_DIR, quiet = true } = {}) {
+export async function startHarness({ port = 0, adminKey = ADMIN_KEY, beaconKey = 'dev', now = T0, blobs = createMemoryBlobs(), publicDir = PUBLIC_DIR, quiet = true } = {}) {
   const clock = toClock(now);
   const env = { ...process.env };
   // the three Netlify origin variables never leak in from the shell: the function's allowed origins are
   // SITE_ORIGINS plus localhost here
   for (const k of ['URL', 'DEPLOY_PRIME_URL', 'DEPLOY_URL']) delete env[k];
   if (adminKey === null || adminKey === undefined) delete env.ADMIN_KEY; else env.ADMIN_KEY = adminKey;
+  if (beaconKey === null || beaconKey === undefined) delete env.BEACON_KEY; else env.BEACON_KEY = beaconKey;
   const handler = createHandler({ getStore: blobs.getStore, env, now: clock.now });
+  const beacon = createBeaconHandler({ getStore: blobs.getStore, env, now: clock.now, logger: quiet ? { log() {}, error() {} } : console });
   const headerRules = parseHeaderRules(await fs.readFile(TOML_PATH, 'utf8'));
   const publicRoot = resolve(publicDir);
 
@@ -128,6 +133,7 @@ export async function startHarness({ port = 0, adminKey = ADMIN_KEY, now = T0, b
     if (!pathname.startsWith('/')) pathname = '/' + pathname;
 
     // 2. forced rules
+    if (/^\/beacon\/?$/.test(pathname) || /^\/admin\/app\/?$/.test(pathname)) return viaFunction(req, res, beacon);
     if (pathname.startsWith('/api/') || /^\/admin\/?$/.test(pathname)) return viaFunction(req, res);
     if (/^\/go\/?$/.test(pathname)) {
       res.statusCode = 302;
@@ -210,7 +216,7 @@ export async function startHarness({ port = 0, adminKey = ADMIN_KEY, now = T0, b
   }
 
   // Buffers the Node request into a fetch Request, runs the function, and writes its Response back.
-  async function viaFunction(req, res) {
+  async function viaFunction(req, res, fn = handler) {
     const chunks = [];
     for await (const c of req) chunks.push(c);
     const body = Buffer.concat(chunks);
@@ -223,7 +229,7 @@ export async function startHarness({ port = 0, adminKey = ADMIN_KEY, now = T0, b
     const init = { method: req.method, headers };
     if (req.method !== 'GET' && req.method !== 'HEAD') init.body = body;
     const request = new Request(`${origin()}${req.url}`, init);
-    const response = await handler(request);
+    const response = await fn(request);
     res.statusCode = response.status;
     for (const [k, v] of response.headers) if (k.toLowerCase() !== 'set-cookie') res.setHeader(k, v);
     const cookies = typeof response.headers.getSetCookie === 'function' ? response.headers.getSetCookie() : [];
@@ -264,7 +270,7 @@ export async function startHarness({ port = 0, adminKey = ADMIN_KEY, now = T0, b
     });
   }
 
-  return { url: origin(), origin: origin(), port: port_, server, blobs, clock, env, handler, admin, adminResponse, close };
+  return { url: origin(), origin: origin(), port: port_, server, blobs, clock, env, handler, beacon, admin, adminResponse, close };
 }
 
 function lowerKeys(o) {

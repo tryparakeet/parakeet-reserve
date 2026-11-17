@@ -1,6 +1,7 @@
 // The repo as a whole: package.json (one dependency, one pinned devDependency, the scripts), the identity
 // scrub over everything that ships, event.mjs's constants and exports, the cookie name agreeing across the
-// function, the client and the privacy page, .gitignore.
+// function, the client and the privacy page, .gitignore; the functions folder; beacon.mjs's exports, limits and
+// allowlist against parakeet-app's docs/BEACON.md §3, and the request headers it may read; beacon-prune.mjs's schedule.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,6 +9,8 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve, relative } from 'node:path';
 import * as mod from '../../netlify/functions/event.mjs';
+import * as beacon from '../../netlify/functions/beacon.mjs';
+import * as beaconPrune from '../../netlify/functions/beacon-prune.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rel = (f) => relative(ROOT, f);
@@ -119,6 +122,99 @@ test('the cookie name agrees across event.mjs, app.js and privacy.html', () => {
 test('.gitignore keeps node_modules, test output and env files out', () => {
   const lines = readFileSync(join(ROOT, '.gitignore'), 'utf8').split(/\r?\n/).map((l) => l.trim());
   for (const entry of ['node_modules/', '.netlify/', 'test-results/', 'playwright-report/', '.env']) assert.ok(lines.includes(entry), `.gitignore has ${entry}`);
+});
+
+test('netlify/functions holds the three functions and the ZIP3 table, nothing else Netlify would deploy as one', () => {
+  assert.deepEqual(readdirSync(join(ROOT, 'netlify', 'functions')).sort(), ['beacon-prune.mjs', 'beacon.mjs', 'event.mjs', 'zip3-states.json']);
+});
+
+const beaconSrc = readFileSync(join(ROOT, 'netlify', 'functions', 'beacon.mjs'), 'utf8');
+const pruneSrc = readFileSync(join(ROOT, 'netlify', 'functions', 'beacon-prune.mjs'), 'utf8');
+
+test('beacon.mjs exports: createHandler, a default handler, prune and the pure functions; never config or handler', () => {
+  assert.match(beaconSrc, /^export function createHandler\(/m);
+  assert.match(beaconSrc, /^export default createHandler\(\);/m);
+  assert.doesNotMatch(beaconSrc, /^export const config\b/m, 'no export const config: a schedule would take its routes away');
+  assert.doesNotMatch(beaconSrc, /^export (const|function|async function) handler\b/m, 'no named handler export');
+  assert.equal(typeof beacon.default, 'function');
+  for (const name of ['createHandler', 'checkNote', 'prune', 'keptFrom', 'stateOfZip3', 'newSummary', 'newFacts', 'addRow', 'mergeSummary', 'finalizeRead', 'numbers']) {
+    assert.equal(typeof beacon[name], 'function', `export ${name}`);
+  }
+  for (const name of ['NOTES', 'VALUES', 'NIGHT_IDS', 'CHAIN_IDS', 'DIET_IDS', 'PLAN_IDS', 'OFFERS', 'KINDS', 'MARKS', 'BUILDS', 'FIFTY_STATES', 'SUMMARY_VERSION']) {
+    assert.ok(name in beacon, `export ${name}`);
+  }
+  assert.ok(!('config' in beacon), 'no config export');
+  assert.ok(!('handler' in beacon), 'no handler export');
+});
+
+test('beacon.mjs: SITE-01\'s limits, the 2 years of BEACON.md §6, and the three stores', () => {
+  assert.equal(beacon.MAX_BODY, 64 * 1024);
+  assert.equal(beacon.MAX_NOTES, 200);
+  assert.equal(beacon.DAILY_CAP, 2000);
+  assert.equal(beacon.AT_BACK_MS, 90 * 24 * 3600 * 1000);
+  assert.equal(beacon.AT_AHEAD_MS, 24 * 3600 * 1000);
+  assert.equal(beacon.KEEP_YEARS, 2);
+  assert.equal(beacon.CAP_KEEP_DAYS, 2);
+  assert.ok(beacon.PRUNE_BUDGET_MS < 30000, 'a scheduled function gets 30 seconds');
+  assert.deepEqual([beacon.EVENTS_STORE, beacon.SUMMARIES_STORE, beacon.CAPS_STORE], ['app-events', 'app-summaries', 'app-caps']);
+});
+
+// parakeet-app's docs/BEACON.md §3 as of Nov 17 (e597b55): each note and its props. A change to the contract comes
+// there first, with Umyt's yes, then here.
+const BEACON_MD_3 = {
+  open: ['first'],
+  onboarding_page: ['page'],
+  onboarding_done: ['chain', 'zip3', 'people', 'nights', 'diet', 'budget'],
+  week_built: ['week', 'kind', 'nights', 'total', 'budget', 'chain', 'zip3', 'dinners'],
+  recipe_opened: ['dinner', 'week'],
+  swap: ['week', 'night', 'from', 'to'],
+  thumb: ['dinner', 'mark'],
+  hide: ['dinner', 'on'],
+  cooked: ['dinner', 'week', 'night', 'on'],
+  list_opened: ['week'],
+  list_tick: ['week'],
+  price_typed: ['item', 'chain'],
+  paywall_seen: ['from'],
+  plans_seen: ['from'],
+  trial_started: ['plan', 'offer'],
+  subscribed: ['plan'],
+  restored: ['found'],
+  notifications: ['allowed']
+};
+
+test('beacon.mjs: the notes and props are exactly BEACON.md §3\'s, with its values, and never a price', () => {
+  assert.deepEqual(Object.keys(beacon.NOTES).sort(), Object.keys(BEACON_MD_3).sort());
+  for (const [name, props] of Object.entries(BEACON_MD_3)) assert.deepEqual(Object.keys(beacon.NOTES[name]).sort(), [...props].sort(), name);
+  assert.deepEqual([...beacon.NIGHT_IDS], ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
+  assert.deepEqual([...beacon.CHAIN_IDS], ['walmart', 'kroger', 'target', 'aldi']);
+  assert.deepEqual([...beacon.DIET_IDS], ['anything', 'pescatarian', 'vegetarian', 'vegan']);
+  assert.deepEqual([...beacon.PLAN_IDS], ['yearly', 'monthly']);
+  assert.deepEqual([...beacon.OFFERS], ['free_week', 'code']);
+  assert.deepEqual([...beacon.KINDS], ['first', 'this', 'next', 'rebuild']);
+  assert.deepEqual([...beacon.MARKS], ['up', 'down', 'none']);
+  assert.deepEqual([...beacon.BUILDS], ['release', 'dev']);
+  const neverSent = ['price', 'text', 'note', 'search', 'item_name', 'name', 'email', 'zip', 'ip', 'lat', 'lon', 'location', 'idfv', 'idfa', 'device'];
+  for (const [name, props] of Object.entries(beacon.NOTES)) {
+    assert.deepEqual(Object.keys(props).filter((p) => neverSent.includes(p)), [], `${name} carries nothing that never leaves the phone (BEACON.md §2)`);
+    for (const kind of Object.values(props)) assert.ok(kind.replace(/\?$/, '') in beacon.VALUES, `${name}: ${kind} is a kind the check knows`);
+  }
+  assert.deepEqual(Object.entries(beacon.NOTES).flatMap(([n, p]) => Object.entries(p).filter(([, k]) => k.endsWith('?')).map(([k]) => `${n}.${k}`)), ['open.first'], 'open\'s first is the one prop that may be left out');
+  assert.ok(Object.isFrozen(beacon.NOTES) && Object.values(beacon.NOTES).every((p) => Object.isFrozen(p)), 'the allowlist cannot be changed at run time');
+});
+
+test('beacon.mjs reads no request header but the key and the length, and nothing about the phone or the network', () => {
+  const headers = [...beaconSrc.matchAll(/headers\.get\('([^']+)'\)/g)].map((m) => m[1]).sort();
+  assert.deepEqual(headers, ['content-length', 'x-beacon-key']);
+  assert.doesNotMatch(beaconSrc, /user-agent|x-forwarded-for|client-ip|x-nf-|x-real-ip|context\.(ip|geo)|\.ip\b/i);
+  assert.doesNotMatch(beaconSrc, /headers\.(entries|forEach|keys|values)\b|\.\.\.req\.headers|Object\.fromEntries\(req\.headers/);
+  assert.match(beaconSrc, /async function handler\(req\) \{/, 'the handler takes the request only, never Netlify\'s context');
+});
+
+test('beacon-prune.mjs: prune() from beacon.mjs on Netlify\'s daily schedule', () => {
+  assert.match(pruneSrc, /^import \{ prune \} from '\.\/beacon\.mjs';$/m);
+  assert.match(pruneSrc, /^export default async function run\(\) \{$/m);
+  assert.match(pruneSrc, /^export const config = \{ schedule: '@daily' \};$/m);
+  assert.deepEqual(beaconPrune.config, { schedule: '@daily' });
 });
 
 test('the differential baseline is present and frozen', () => {

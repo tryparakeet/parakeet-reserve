@@ -1,7 +1,8 @@
 // public/: what ships. No vh units (svh only), no external URL but Support's one link to Apple, nothing
 // inline, no Netlify Forms; the page's ids, the four data-tap values equal to BUTTONS, the one script and
 // the one stylesheet, the viewport flags, the video element, the exact copy; every page's footer; the legal
-// pages' promises; Support's words; robots.txt; app.js's endpoint, cookie name and transport.
+// pages' promises; Privacy's part about the app; Support's words; robots.txt; app.js's endpoint, cookie name
+// and transport.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -265,6 +266,23 @@ test('privacy.html: the cookie, the retention, the one email, never shared or so
   assert.match(privacy, /<link rel="stylesheet" href="\/styles\.css">/);
   legalHeader(privacy, 'privacy');
   pageFooter(privacy, 'privacy');
+});
+
+// The privacy page's part about the app (SITE-01 §4, Umyt's words, Nov 17), in the page's style: a bold lead-in, the
+// page's ’ for each apostrophe, after the page's own parts and before Deletion.
+const IN_THE_APP = 'In the app. The app counts what people do in it, so we can see what works and fix what doesn’t: setup’s pages, a week built, the list opened, a price typed, a dinner marked cooked, a thumb, a swap, the paywall and the free week. Each count carries a random id the app makes when it’s installed. Some also carry the store chain, the first three digits of the ZIP code, the household’s size, the diet, the budget, the week’s estimated total and which dinners were picked. It never sends a name, an email, your exact location or full ZIP code, the phone’s identifiers, your notes, your own list items or the prices you type. Your notes, your lists and the prices you type stay on your phone. The counts are stored on Netlify, in the United States, and kept 2 years, then deleted.';
+
+test('privacy.html: the part about the app, word for word, after Where. and before Deletion.', () => {
+  const main = /<main class="legal-main">([\s\S]*?)<\/main>/.exec(privacy);
+  assert.ok(main, 'the main');
+  const paras = [...main[1].matchAll(/<p>([\s\S]*?)<\/p>/g)].map((m) => m[1]);
+  const leads = paras.map((p) => (/^<b>([^<]+)<\/b>/.exec(p) || [])[1] || null);
+  assert.deepEqual(leads, ['What this page collects.', 'Why.', 'What is not collected.', 'How long.', 'Where.', 'In the app.', 'Deletion.', null]);
+  const app = paras[5];
+  assert.equal(textOf(app), IN_THE_APP);
+  assert.doesNotMatch(app.replace(/^<b>In the app\.<\/b>/, ''), /</, 'no other tag inside');
+  assert.doesNotMatch(app, /'/, 'no straight apostrophe: the page uses ’');
+  assert.equal(count(/In the app\./g, privacy), 1);
 });
 
 test('terms.html: in development, launch prices, nothing charged, the address', () => {

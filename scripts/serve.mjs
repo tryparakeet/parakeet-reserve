@@ -1,9 +1,9 @@
 // Manual checks against the harness: the page, the function and the rewrites on http://localhost:PORT
 // with an in-memory store (nothing is written anywhere; rows are printed on Ctrl-C).
 //
-//   npm run serve                      -> port 8788, ADMIN_KEY from the environment or "dev"
+//   npm run serve                      -> port 8788, ADMIN_KEY and BEACON_KEY from the environment or "dev"
 //   PORT=9000 ADMIN_KEY=abc npm run serve
-//   node scripts/serve.mjs --port 9000 --key abc
+//   node scripts/serve.mjs --port 9000 --key abc --beacon-key xyz
 //
 // The clock is the real one (the function's prestart / closed-hour logic uses the current time), so a
 // visit today lands in excluded.prestart until GATE_START, exactly as it would on the live site.
@@ -17,19 +17,25 @@ const flag = (name, fallback) => {
 };
 const port = Number(flag('--port', process.env.PORT || 8788));
 const adminKey = flag('--key', process.env.ADMIN_KEY || 'dev');
+const beaconKey = flag('--beacon-key', process.env.BEACON_KEY || 'dev');
 
-const harness = await startHarness({ port, adminKey, now: Date.now, quiet: false });
+const harness = await startHarness({ port, adminKey, beaconKey, now: Date.now, quiet: false });
 console.log(`Parakeet reserve page (harness)  ${harness.url}`);
 console.log(`admin summary                    ${harness.url}/admin?key=${adminKey}`);
 console.log(`typed link                       ${harness.url}/go`);
 console.log(`paid link                        ${harness.url}/?utm_source=tiktok&utm_medium=paid&utm_campaign=gate0&utm_content=fri23`);
 console.log(`smoke link                       ${harness.url}/?utm_source=own&utm_campaign=smoke`);
+console.log(`the app's beacon (POST)          ${harness.url}/beacon  with the header x-beacon-key: ${beaconKey}`);
+console.log(`the app's read                   ${harness.url}/admin/app?key=${adminKey}`);
 console.log('Ctrl-C prints the rows received and stops.');
 
 const stop = async () => {
   const rows = harness.blobs.rows('events');
   console.log(`\n${rows.length} row(s) received`);
   for (const r of rows) console.log(JSON.stringify(r));
+  const notes = harness.blobs.rows('app-events');
+  console.log(`${notes.length} app note(s) received`);
+  for (const r of notes) console.log(JSON.stringify(r));
   await harness.close();
   process.exit(0);
 };

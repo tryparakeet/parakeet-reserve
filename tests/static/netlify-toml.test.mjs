@@ -1,6 +1,7 @@
-// netlify.toml, by regex over the file: the publish and functions dirs, Node 22, esbuild, the two forced
-// function rewrites, /privacy, /terms and /support, the /go rule exactly, a CSP whose every directive is
-// 'self' or 'none' with connect-src 'self', a Referrer-Policy that is not no-referrer, nosniff, DENY and HSTS.
+// netlify.toml, by regex over the file: the publish and functions dirs, Node 22, esbuild, the four forced
+// function rewrites (the beacon's /beacon and /admin/app before Gate 0's /api/* and /admin), /privacy, /terms and
+// /support, the /go rule exactly, a CSP whose every directive is 'self' or 'none' with connect-src 'self', a
+// Referrer-Policy that is not no-referrer, nosniff, DENY and HSTS.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -42,20 +43,26 @@ test('build: publish public, functions netlify/functions, Node 22, esbuild, devD
   assert.match(toml, /^\s*NPM_FLAGS\s*=\s*"--omit=dev"\s*$/m);
 });
 
-test('the two function rewrites are forced and come first', () => {
-  const api = redirects.find((r) => r.from === '/api/*');
-  const admin = redirects.find((r) => r.from === '/admin');
-  assert.ok(api, '/api/* rule');
-  assert.ok(admin, '/admin rule');
-  for (const r of [api, admin]) {
-    assert.equal(r.to, '/.netlify/functions/event');
-    assert.equal(r.status, '200');
-    assert.equal(r.force, 'true');
-  }
-  assert.equal(redirects.indexOf(api), 0, '/api/* is the first rule');
-  assert.equal(redirects.indexOf(admin), 1, '/admin is the second rule');
-  assert.equal(redirects.filter((r) => r.to === '/.netlify/functions/event').length, 2, 'only the two');
-  assert.equal(redirects.filter((r) => /functions\//.test(r.to || '') && !/\/event$/.test(r.to)).length, 0, 'no other function');
+test('the four function rewrites are forced and come first: the beacon\'s two and Gate 0\'s two', () => {
+  assert.deepEqual(redirects.slice(0, 4).map((r) => [r.from, r.to, r.status, r.force]), [
+    ['/beacon', '/.netlify/functions/beacon', '200', 'true'],
+    ['/api/*', '/.netlify/functions/event', '200', 'true'],
+    ['/admin/app', '/.netlify/functions/beacon', '200', 'true'],
+    ['/admin', '/.netlify/functions/event', '200', 'true']
+  ]);
+  assert.equal(redirects.filter((r) => r.to === '/.netlify/functions/event').length, 2, 'event.mjs keeps its two');
+  assert.equal(redirects.filter((r) => r.to === '/.netlify/functions/beacon').length, 2, 'beacon.mjs has two');
+  assert.equal(redirects.filter((r) => /functions\//.test(r.to || '') && !/\/(event|beacon)$/.test(r.to)).length, 0, 'no other function, and beacon-prune has no route');
+});
+
+test('the beacon\'s two rewrites and their order: /beacon before /api/*, /admin/app before /admin (SITE-01 §1–§2)', () => {
+  const at = (from) => redirects.findIndex((r) => r.from === from);
+  assert.ok(at('/beacon') !== -1 && at('/beacon') < at('/api/*'), '/beacon comes before /api/*');
+  assert.ok(at('/admin/app') !== -1 && at('/admin/app') < at('/admin'), '/admin/app comes before /admin');
+  // and literally, as four lines each
+  assert.match(toml, /\[\[redirects\]\]\s*\n\s*from = "\/beacon"\s*\n\s*to = "\/\.netlify\/functions\/beacon"\s*\n\s*status = 200\s*\n\s*force = true\s*\n/);
+  assert.match(toml, /\[\[redirects\]\]\s*\n\s*from = "\/admin\/app"\s*\n\s*to = "\/\.netlify\/functions\/beacon"\s*\n\s*status = 200\s*\n\s*force = true\s*\n/);
+  assert.doesNotMatch(toml, /schedule/, 'the schedule lives in beacon-prune.mjs, not here');
 });
 
 test('/privacy, /terms and /support rewrite to the html files with status 200', () => {

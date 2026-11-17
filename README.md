@@ -11,16 +11,19 @@ The instrument (the function, the client script, the sheet mechanics, the visito
 ## Layout
 
 ```
-netlify/functions/event.mjs   the one function: POST /api/event, GET /admin
-public/                       index.html, styles.css, app.js, privacy.html, terms.html, support.html, robots.txt, icons, media/
-netlify.toml                  rewrites (/api/*, /admin → the function; /go → 302; /privacy, /terms, /support), headers (CSP)
-scripts/                      serve.mjs (local harness), make-placeholder-media.sh, make-test-clip.sh, make-icons.mjs
-tests/unit                    the function and the summary (node --test, no browser)
-tests/static                  netlify.toml, public/, repo checks (node --test)
-tests/e2e                     Playwright against the harness (tests/helpers/harness.mjs)
-DESIGN.md, CREDITS.md         the design rulebook and the image source log
-ACCEPTANCE.md                 the device checklist, the tag table, the read
-HOURS.md                      time spent
+netlify/functions/event.mjs         Gate 0's function: POST /api/event, GET /admin
+netlify/functions/beacon.mjs        the app's beacon: POST /beacon, GET /admin/app (SITE-01; see "The app's beacon" below)
+netlify/functions/beacon-prune.mjs  deletes the beacon's rows and summaries once 2 years old, daily (scheduled, no route)
+netlify/functions/zip3-states.json  the ZIP3-to-state table the beacon's read uses, from USPS's prefix ranges
+public/                             index.html, styles.css, app.js, privacy.html, terms.html, support.html, robots.txt, icons, media/
+netlify.toml                        rewrites (/beacon, /admin/app → beacon; /api/*, /admin → event; /go → 302; /privacy, /terms, /support), headers (CSP)
+scripts/                            serve.mjs (local harness), make-placeholder-media.sh, make-test-clip.sh, make-icons.mjs
+tests/unit                          the functions and their summaries (node --test, no browser)
+tests/static                        netlify.toml, public/, repo checks (node --test)
+tests/e2e                           Playwright against the harness (tests/helpers/harness.mjs)
+DESIGN.md, CREDITS.md               the design rulebook and the image source log
+ACCEPTANCE.md                       the device checklist, the tag table, the read
+HOURS.md                            time spent
 ```
 
 ## Scripts
@@ -30,7 +33,7 @@ npm ci                  # installs @netlify/blobs and playwright 1.56.1 (no brow
 npm test                # unit + static tests
 npm run test:e2e        # Playwright e2e in Chromium (iPhone viewport) against the local harness
 npm run check           # both
-npm run serve           # the harness on http://localhost:8788 with an in-memory store (PORT, ADMIN_KEY env; Ctrl-C prints the rows)
+npm run serve           # the harness on http://localhost:8788 with an in-memory store (PORT, ADMIN_KEY, BEACON_KEY env; Ctrl-C prints the rows)
 ```
 
 The e2e needs a Playwright Chromium matching 1.56.1 at `PLAYWRIGHT_BROWSERS_PATH` (or the default cache). The Playwright runner, config `playwright.config.mjs`, writes the acceptance screenshots (at 375×667 and 393×852: the first screen, the page scrolled to the footer, the plan sheet, the email step and both done states) to `test-results/screenshots/` (ignored by git; Playwright empties `test-results/` when a run starts).
@@ -53,6 +56,29 @@ https://tryparakeet.netlify.app/admin?key=KEY&table=raw&day=2026-10-25&format=cs
 ```
 
 `day=`, `from=`, `to=` limit the days reported (UTC); the read uses none of them. Check `partial: false` and `pending: []` first; if not, read again a minute later.
+
+## The app's beacon
+
+Built from parakeet-app's `docs/SITE-01-BEACON.md` against its contract, `docs/BEACON.md` (a change to the notes goes there first). The app sends `POST /beacon` with its notes; `GET /admin/app?key=ADMIN_KEY` is Umyt's read. The Gate 0 function and its rows are untouched.
+
+Settings in Netlify (Site configuration → Environment variables), never in the repo:
+
+- `BEACON_KEY`: the same 32 letters and digits as the app's `EXPO_PUBLIC_BEACON_KEY`. Without it `/beacon` answers 503 and the app keeps its notes for later; with a wrong `x-beacon-key` header, 401.
+- `LAUNCH_AT`: empty until launch day, then that day's start in ISO 8601, e.g. `2027-01-12T00:00:00-06:00`. An install first seen before it is a test install, and it stays under `before_launch` for good, its later rows included. While it is empty every install is there. A value that isn't a date makes the read answer 503.
+- `ADMIN_KEY`: the same as Gate 0's.
+
+What `/beacon` keeps: each note that passes BEACON.md §3 becomes one row in the Blobs store `app-events` (the install, build, version, name, `at`, props and the time it arrived; never an IP address or a user agent). A note with an unknown name or prop, a missing prop or a value §3 doesn't allow is dropped, as is one whose `at` is more than 90 days back or 1 day ahead; the batch still answers 204, and the function's log says why, by reason, note and prop, never a value. A body over 64 KB or 200 notes, an install that isn't a lowercase UUID or a build that isn't `release` or `dev` is a 400. At most 2,000 notes per install per UTC day are kept (counters in `app-caps`, deleted after 2 days).
+
+The read: `https://tryparakeet.netlify.app/admin/app?key=KEY` gives JSON with `launch`, `before_launch` and `dev` (dev rows are only counted: rows, installs, rows by name). `launch` and `before_launch` have the same parts:
+
+- `installs`, `rows` and `by_name` (rows by note name; a batch the app sent twice counts twice here, and once everywhere else).
+- `social_proof`: `weeks_planned` (each install's week once), `dinners_cooked` (each install, week and night whose last mark is cooked), `shelf_prices_checked`, `groceries_planned_dollars` (each week's last total, added up), `people_who_built_a_week`, `states` (`count` of the 50 states, `by_state` with DC, territories and military mail listed apart, `unmatched`), `likes` (installs whose last thumb on a dinner is up).
+- `funnel`: by the Monday (UTC) of each install's first open: `opened`, `setup_done`, `week_built`, `list_opened`, `dinner_cooked`, `second_week_built`, and `onboarding_pages` (installs that reached each page).
+- `goals`: `price_typed_within_14_days` and `dinner_cooked_within_7_days` as `reached` `of` the installs whose 14 or 7 days are over, with the `rate`; `paywall` (`seen`, `free_week_started`, `subscribed`); `weeks_built_by_week` for weeks 1 to 8 after the first open (`of` the installs that lived through that week, `built` how many built a week in it, `weeks` how many weeks); `installs_by_chain` (each install's latest); `dinners` (`swapped_away`, `hidden`, `thumbs_down`, per dinner; thumbs down are never shown in public).
+
+Check `partial: false` and `pending: []` first; if not, read again a minute later. Each closed hour is summed once into `app-summaries`, and a closed day's hours are folded into one day summary, so a read reads raw rows only for the hours still open. A summary keeps facts per install id, so `beacon-prune.mjs` deletes the summaries with the rows once they are 2 years old, every day at midnight UTC, and the read leaves out any older day. The privacy page says so.
+
+Known limits: an hour holding more notes than one read can fetch (about 8,000) never sums whole, so the read stays partial; each read loads every day summary kept, which is fine for the first months and would want a monthly rollup at tens of thousands of installs a day.
 
 ## Images
 
