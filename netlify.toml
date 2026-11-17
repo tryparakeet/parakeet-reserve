@@ -10,8 +10,20 @@
   node_bundler = "esbuild"
 
 [[redirects]]
+  from = "/beacon"
+  to = "/.netlify/functions/beacon"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/event"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/app"
+  to = "/.netlify/functions/beacon"
   status = 200
   force = true
 
