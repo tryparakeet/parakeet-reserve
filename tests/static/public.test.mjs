@@ -202,7 +202,7 @@ test('index.html copy, verbatim', () => {
     'Terms',
     'Support',
     '© 2026 Parakeet.',
-    'We plan to launch in January. Which plan do you want?',
+    'Parakeet is coming soon. Which plan do you want?',
     '2 free weeks 14 days free, then just $29.99/year.',
     'No free weeks $9.99/month, starts at launch.',
     'Nothing will be charged today. Billing is through Apple, and you can cancel anytime in Settings.',
@@ -220,7 +220,7 @@ test('index.html copy, verbatim', () => {
   }
   assert.match(index, /<h1>What’s for dinner this week\?<\/h1>/);
   assert.match(index, /<p class="wordmark"><svg class="bird" aria-hidden="true" focusable="false"><use href="#pk-mark"\/><\/svg>Parakeet<\/p>/);
-  assert.match(index, /<h2 class="sheet-title" id="sheet-title-1">We plan to launch in January\.<br> Which plan do you want\?<\/h2>/);
+  assert.match(index, /<h2 class="sheet-title" id="sheet-title-1">Parakeet is coming soon\.<br> Which plan do you want\?<\/h2>/);
   assert.match(index, /<span class="tag">2 free weeks<\/span>/);
   assert.match(index, /<span class="tag tag-none">No free weeks<\/span>/);
   assert.match(index, /<span class="tick" aria-hidden="true">/);
