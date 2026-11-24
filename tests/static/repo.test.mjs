@@ -186,7 +186,8 @@ test('beacon.mjs: the notes and props are exactly BEACON.md §3\'s, with its val
   assert.deepEqual(Object.keys(beacon.NOTES).sort(), Object.keys(BEACON_MD_3).sort());
   for (const [name, props] of Object.entries(BEACON_MD_3)) assert.deepEqual(Object.keys(beacon.NOTES[name]).sort(), [...props].sort(), name);
   assert.deepEqual([...beacon.NIGHT_IDS], ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
-  assert.deepEqual([...beacon.CHAIN_IDS], ['walmart', 'kroger', 'target', 'aldi']);
+  // the app's twelve chains, in its order (parakeet-app's ENGINE-14 §1; SITE-02)
+  assert.deepEqual([...beacon.CHAIN_IDS], ['walmart', 'kroger', 'target', 'aldi', 'heb', 'sprouts', 'wholefoods', 'traderjoes', 'meijer', 'wegmans', 'hyvee', 'publix']);
   assert.deepEqual([...beacon.DIET_IDS], ['anything', 'pescatarian', 'vegetarian', 'vegan']);
   assert.deepEqual([...beacon.PLAN_IDS], ['yearly', 'monthly']);
   assert.deepEqual([...beacon.OFFERS], ['free_week', 'code']);
