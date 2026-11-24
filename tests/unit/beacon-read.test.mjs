@@ -226,6 +226,24 @@ test('every number of BEACON.md §5 on the scripted launch', async () => {
   assert.equal(g.rows, Object.values(g.by_name).reduce((a, b) => a + b, 0));
 });
 
+test('installs by chain names the twelve in the app\'s order, each 0 until an install has it; an install at a new chain counts under it', async () => {
+  const t = createBeaconTest({ env: { LAUNCH_AT } });
+  const H = installId('at-heb'), J = installId('walmart-then-trader-joes');
+  await sendAt(t, '2026-11-03T15:00:00.000Z', H, [openFirst, setup({ chain: 'heb' })]);
+  await sendAt(t, '2026-11-04T15:00:00.000Z', J, [openFirst, setup(), week('2026-11-04', 'first', 58.12)]);
+  t.clock.set(NOW);
+  const first = (await readJson(t.handler)).launch.goals.installs_by_chain;
+  assert.deepEqual(Object.keys(first), CHAINS);
+  assert.deepEqual(first, byChain({ walmart: 1, heb: 1 }));
+  // J's next week is at Trader Joe's, read with the days the first read kept: its latest chain counts, under the new one
+  assert.ok(Object.keys(t.blobs.dump('app-summaries')).includes('2026-11-04/day'));
+  await sendAt(t, '2026-11-21T09:00:00.000Z', J, [week('2026-11-16', 'next', 71.4, { chain: 'traderjoes' })]);
+  t.clock.set('2026-11-21T12:30:00.000Z');
+  const second = (await readJson(t.handler)).launch.goals.installs_by_chain;
+  assert.deepEqual(Object.keys(second), CHAINS);
+  assert.deepEqual(second, byChain({ heb: 1, traderjoes: 1 }));
+});
+
 test('closed hours are summed once and kept, then folded into their closed day; the open hour is read each time', async () => {
   const t = createBeaconTest({ env: { LAUNCH_AT } });
   await launchScenario(t);

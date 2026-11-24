@@ -228,6 +228,26 @@ test('a note with an unknown name or prop, a missing prop or a value §3 does no
   }
 });
 
+test('a note at each of the eight new chains is kept, in all three notes that carry a chain; a chain not among the twelve is still dropped', async () => {
+  // the eight the app adds to its four (parakeet-app's ENGINE-14 §1; SITE-02)
+  const added = ['heb', 'sprouts', 'wholefoods', 'traderjoes', 'meijer', 'wegmans', 'hyvee', 'publix'];
+  // not among the twelve: Safeway, Costco (left out, parakeet-app's docs/PRICES.md), and two near misses of the ids
+  const others = ['safeway', 'costco', 'HEB', 'whole_foods'];
+  const withChain = (chain) => [
+    note('onboarding_done', { ...GOOD.onboarding_done, chain }, AT),
+    note('week_built', { ...GOOD.week_built, chain }, AT),
+    note('price_typed', { ...GOOD.price_typed, chain }, AT)
+  ];
+  const t = createBeaconTest();
+  await sendOk(t.handler, batch(I, [...added.flatMap(withChain), ...others.flatMap(withChain)]));
+  const rows = t.blobs.rows('app-events');
+  assert.equal(rows.length, added.length * 3);
+  for (const name of ['onboarding_done', 'week_built', 'price_typed']) {
+    assert.deepEqual(rows.filter((r) => r.name === name).map((r) => r.props.chain).sort(), [...added].sort(), name);
+  }
+  assert.deepEqual(t.logs, [['log', 'beacon: kept 24 of 36 (release); dropped {"value:onboarding_done:chain":4,"value:price_typed:chain":4,"value:week_built:chain":4}']]);
+});
+
 test('open may leave first out; budget and zip3 may be null; nothing else is optional', async () => {
   const { rows } = await stored(batch(I, [
     note('open', {}, AT),
