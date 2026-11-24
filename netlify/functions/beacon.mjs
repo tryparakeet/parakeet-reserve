@@ -56,9 +56,9 @@ const READ_BUDGET_MS = 8000;
 export const PRUNE_BUDGET_MS = 20000; // a scheduled function gets 30 seconds
 
 // BEACON.md §3's values: parakeet-app's NIGHT_IDS, CHAIN_IDS and DIET_IDS (src/state/setupModel.ts) and PlanId
-// (src/state/access.ts).
+// (src/state/access.ts). CHAIN_IDS is the twelve chains of the app's ENGINE-14, in the app's order (SITE-02).
 export const NIGHT_IDS = Object.freeze(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
-export const CHAIN_IDS = Object.freeze(['walmart', 'kroger', 'target', 'aldi']);
+export const CHAIN_IDS = Object.freeze(['walmart', 'kroger', 'target', 'aldi', 'heb', 'sprouts', 'wholefoods', 'traderjoes', 'meijer', 'wegmans', 'hyvee', 'publix']);
 export const DIET_IDS = Object.freeze(['anything', 'pescatarian', 'vegetarian', 'vegan']);
 export const PLAN_IDS = Object.freeze(['yearly', 'monthly']);
 export const OFFERS = Object.freeze(['free_week', 'code']);

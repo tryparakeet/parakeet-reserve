@@ -11,6 +11,11 @@ import { MINUTE, HOUR, DAY } from '../helpers/http.mjs';
 const LAUNCH_AT = '2026-11-02T00:00:00-06:00'; // Mon Nov 2, 06:00 UTC
 const NOW = '2026-11-20T12:30:00.000Z';
 
+// The app's twelve chains, in its order (parakeet-app's ENGINE-14 §1; SITE-02): installs_by_chain names each, 0 until
+// an install has it. byChain() gives the twelve with the counts given.
+const CHAINS = ['walmart', 'kroger', 'target', 'aldi', 'heb', 'sprouts', 'wholefoods', 'traderjoes', 'meijer', 'wegmans', 'hyvee', 'publix'];
+const byChain = (counts = {}) => ({ ...Object.fromEntries(CHAINS.map((c) => [c, 0])), ...counts });
+
 const EMPTY_GROUP = {
   installs: 0,
   rows: 0,
@@ -25,7 +30,7 @@ const EMPTY_GROUP = {
     dinner_cooked_within_7_days: { reached: 0, of: 0, rate: 0 },
     paywall: { seen: 0, free_week_started: 0, subscribed: 0 },
     weeks_built_by_week: [1, 2, 3, 4, 5, 6, 7, 8].map((week) => ({ week, of: 0, built: 0, weeks: 0 })),
-    installs_by_chain: { walmart: 0, kroger: 0, target: 0, aldi: 0 },
+    installs_by_chain: byChain(),
     dinners: {}
   }
 };
@@ -134,7 +139,7 @@ test('rows of an install first seen before LAUNCH_AT stay under before_launch fo
   assert.deepEqual(Object.keys(out.before_launch.funnel), ['2026-10-26']);
   assert.equal(out.launch.installs, 1, 'the install whose first row arrived at LAUNCH_AT, 5 minutes after it');
   assert.equal(out.launch.social_proof.weeks_planned, 0);
-  assert.deepEqual(out.launch.goals.installs_by_chain, { walmart: 0, kroger: 0, target: 0, aldi: 1 });
+  assert.deepEqual(out.launch.goals.installs_by_chain, byChain({ aldi: 1 }));
   assert.deepEqual(out.dev, { rows: 3, installs: 1, by_name: { list_opened: 1, open: 1, week_built: 1 } });
   for (const group of [out.launch, out.before_launch]) assert.ok(!('dev' in group));
   assert.equal(out.launch.social_proof.groceries_planned_dollars + out.before_launch.social_proof.groceries_planned_dollars, 105, 'the dev week is in neither');
@@ -212,7 +217,7 @@ test('every number of BEACON.md §5 on the scripted launch', async () => {
     { week: 3, of: 0, built: 0, weeks: 0 }
   ]);
   assert.deepEqual(g.goals.weeks_built_by_week.slice(3).map((w) => [w.week, w.of]), [[4, 0], [5, 0], [6, 0], [7, 0], [8, 0]]);
-  assert.deepEqual(g.goals.installs_by_chain, { walmart: 1, kroger: 1, target: 1, aldi: 1 }, 'each install\'s latest chain; B has none');
+  assert.deepEqual(g.goals.installs_by_chain, byChain({ walmart: 1, kroger: 1, target: 1, aldi: 1 }), 'each install\'s latest chain; B has none');
   assert.deepEqual(g.goals.dinners, {
     bean_chili: { swapped_away: 1, hidden: 0, thumbs_down: 1 },
     salmon_rice: { swapped_away: 1, hidden: 1, thumbs_down: 0 } // C showed it again
