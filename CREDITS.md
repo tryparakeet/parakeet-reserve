@@ -17,3 +17,6 @@ Pixabay Content License (pixabay.com/service/terms/ §5): commercial and non-com
 - Own photos (Umyt, Oct 22, 2026, his kitchen): potato, tortilla, rice, cheese
 
 Sizes: *-480.webp for the reserve page (about 10–26 KB each), *-720.webp for the app mock.
+
+## The site's own pictures (SITE-04, Nov 26, 2026; none from Pixabay)
+- icon-v1-*.webp — the logo: the app's own icon, parakeet-app's assets/icon.png (1024 × 1024, the bird's head on sky), made small by scripts/make-site-images.sh at 28, 30 and 34 px, each at 1x, 2x and 3x (28, 56, 84, 30, 60, 90, 34, 68 and 102 px); square in the file, its corners rounded by the page's CSS at 22.37%
