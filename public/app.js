@@ -44,7 +44,9 @@
      first screen (html.bar-in-page, styles.css). styles.css puts it there by the window's height alone,
      with heights measured in a stand-in font, and with the script off that is all there is; here the
      page itself is measured, so a window where the words take more lines than those heights allow (the
-     H1's third line under about 280 wide) is caught too. Each part is measured as it is either way (the
+     H1's third line under about 280 wide) is caught too, and once it is measured (html.bar-measured) those
+     heights give way to it, so a window where the words take fewer lines keeps the bar pinned (under 360
+     wide, where they count a two-line answer line). Each part is measured as it is either way (the
      bar without the bottom edge it gets in the page), so the answer never flips back by itself. The
      window's height is the layout's (the small viewport on a phone, as svh is), so toolbars that slide
      away as the page scrolls never move the bar. */
@@ -66,6 +68,7 @@
         short = needs > (root.clientHeight || win.innerHeight) + 0.5;
       }
       root.classList.toggle('bar-in-page', short);
+      root.classList.toggle('bar-measured', !!bar);   // then the measure decides, both ways, not styles.css's heights
     } catch (e) {}
   }
 

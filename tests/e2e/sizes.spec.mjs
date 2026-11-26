@@ -146,6 +146,10 @@ const SHORT_PHONES = [
   { width: 393, height: 582, ua: PHONES.Android, name: 'an Android phone at 393x582, its own short-window height' },
   { width: 375, height: 500, ua: PHONES.iPhone, name: 'a phone window too short' },
   { width: 320, height: 568, ua: PHONES.iPhone, name: 'a 320 phone with Safari\'s bars' },
+  // under 360 wide styles.css's heights count a two-line answer line; where the words take fewer lines, the
+  // measure keeps the bar pinned
+  { width: 359, height: 560, ua: PHONES.iPhone, name: 'an iPhone at 359x560, under the height styles.css gives 359 wide' },
+  { width: 356, height: 550, ua: PHONES.Android, name: 'an Android phone at 356x550, under the height styles.css gives 356 wide' },
   { width: 720, height: 450, ua: COMPUTER_UAS.safari_mac, mobile: false, name: 'a 1440x900 computer at 200% zoom' },
   // under about 280 wide the H1 takes a third line, which no height in styles.css counts: app.js measures it
   { width: 250, height: 600, ua: PHONES.iPhone, name: 'an iPhone at 250x600, its H1 in three lines' },

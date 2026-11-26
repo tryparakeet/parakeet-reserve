@@ -556,6 +556,14 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, one gradi
   assert.match(cssNoComments, /\nhtml\.bar-in-page \.cta \{ position: relative;/, 'or where app.js has measured the page and found the window too short');
   assert.equal(count(/\.cta \{ position: relative;/g, cssNoComments), 3, 'nowhere else: the iPhone\'s heights, Android\'s and the measured one');
   assert.match(app, /root\.classList\.toggle\('bar-in-page', short\)/, 'app.js sets it, and takes it off, as the window changes');
+  assert.match(app, /root\.classList\.toggle\('bar-measured', !!bar\)/, 'app.js marks the page measured wherever it measured the bar');
+  const byHeight = [...cssNoComments.matchAll(/@media ([^{]*)\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)].filter((m) => /height/.test(m[1]));
+  assert.equal(byHeight.length, 2, 'two sets of heights: the iPhone\'s page and Android\'s');
+  for (const m of byHeight) {
+    for (const sel of [...m[2].matchAll(/([^{}]+)\{/g)].map((x) => x[1].trim())) {
+      assert.match(sel, /^html[^ ]*:not\(\.bar-measured\) /, `${sel}: the heights give way once app.js has measured the page, so its measure decides both ways`);
+    }
+  }
   assert.match(app, /200 \+ parseFloat\(tile\.paddingTop\) \+ parseFloat\(tile\.paddingBottom\)/, 'counting a 200 px phone with its tile\'s padding');
   assert.match(css, /--sheet-pad-bottom:[^;]*env\(safe-area-inset-bottom/, 'with the bottom safe-area inset');
   assert.match(css, /\[data-reveal\]\.in\s*\{\s*animation:\s*rise 500ms var\(--curve\) both;/, 'the rise: 500 ms on the standard curve, only once .in is added');
