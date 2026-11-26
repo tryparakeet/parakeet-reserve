@@ -258,12 +258,15 @@ a { color: inherit; }
 html:not(.android) .for-android,
 html.android .for-reserve { display: none; }
 
-/* The phone's sky tile: corners 28, the phone centred at its top with the tile's padding above and below */
+/* The phone's sky tile: corners 28, the phone centred at its top with the tile's padding above and below.
+   The phone stops at 700 tall, or where it would leave less than 12 px of sky at each side (a narrow, tall
+   window: an iPad's Slide Over), as the story's phone does; the tile stops with it, and the extra height
+   is cream. */
 .first-tile {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
   justify-items: center;
-  max-height: calc(700px + 2 * var(--tile-pad));
+  max-height: calc(min(700px, (min(100vw, var(--col)) - 48px) * 457 / 224) + 2 * var(--tile-pad));
   margin: 0 12px;
   padding: var(--tile-pad) 0;
   border-radius: 28px;
@@ -279,7 +282,7 @@ html.android .for-reserve { display: none; }
 
 .first-tile .phone {
   height: 100%;
-  max-height: min(700px, (min(100vw, var(--col)) - 24px) * 457 / 224);
+  max-height: min(700px, (min(100vw, var(--col)) - 48px) * 457 / 224);
 }
 
 .phone-screen {

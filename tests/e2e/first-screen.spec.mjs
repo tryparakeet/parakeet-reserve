@@ -401,14 +401,27 @@ for (const vp of [{ width: 393, height: 560, note: 'a short window' }, { width: 
 
 /* ---------- an upright iPad: the phone stops at 343 x 700, and the extra height is cream ---------- */
 
-for (const vp of [{ width: 820, height: 1180 }, { width: 834, height: 1194 }]) {
-  test(`at ${vp.width}x${vp.height} (an upright iPad) the phone stops at 343 x 700 and the extra height is cream`, async ({ page }) => {
+// In a narrow, tall window (an iPad's Slide Over, 320 wide) the phone stops sooner, where it would leave
+// less than 12 px of sky at each side, as the story's phone does; its tile stops with it, and the extra
+// height is cream there too.
+const TALL = [
+  { width: 820, height: 1180, note: 'an upright iPad', phone: 700, pad: 20 },
+  { width: 834, height: 1194, note: 'an upright iPad', phone: 700, pad: 20 },
+  { width: 320, height: 1100, note: 'an iPad\'s Slide Over', phone: (320 - 48) * 457 / 224, pad: 16 },
+  { width: 375, height: 1100, note: 'a narrow Split View', phone: (375 - 48) * 457 / 224, pad: 16 }
+];
+
+for (const vp of TALL) {
+  test(`at ${vp.width}x${vp.height} (${vp.note}) the phone stops at ${Math.round(vp.phone * 224 / 457)} x ${Math.round(vp.phone)} with sky at its sides, and the extra height is cream`, async ({ page }) => {
     await load(page, vp);
     const m = await measure(page);
     expect(m.ctaPosition).toBe('fixed');
-    expect(m.phone.height).toBeCloseTo(700, 1);
-    expect(m.phone.width).toBeCloseTo(700 * 224 / 457, 1);
-    expect(m.tile.height, 'the tile is the phone and its padding, no more').toBeCloseTo(740, 1);
+    expect(m.phone.height).toBeCloseTo(vp.phone, 1);
+    expect(m.phone.width).toBeCloseTo(vp.phone * 224 / 457, 1);
+    expect(m.phone.left - m.tile.left, 'sky at the phone\'s left').toBeGreaterThanOrEqual(12 - 0.5);
+    expect(m.tile.right - m.phone.right, 'and at its right').toBeGreaterThanOrEqual(12 - 0.5);
+    expect(m.phone.left - m.tile.left, 'the phone centred').toBeCloseTo(m.tile.right - m.phone.right, 1);
+    expect(m.tile.height, 'the tile is the phone and its padding, no more').toBeCloseTo(vp.phone + 2 * vp.pad, 1);
     const gap = m.cta.top - m.tile.bottom;
     expect(gap, 'more than the 12 px a phone leaves').toBeGreaterThan(12.5);
     const under = await page.evaluate(({ x, y }) => {
