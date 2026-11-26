@@ -625,7 +625,7 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
    Each height is the first screen's at those widths with the gap under the phone closed: the 393 board's
    sizes from 390 wide (583), the 375 board's from 360 (549, Android's: its line under the answer adds more
    than its shorter bar saves; 375 x 550 keeps the bar) and, under 360, a two-line answer line and a
-   three-line note under the button (587). Measured with a stand-in for SF Pro (Inter). */
+   three-line note under the button (587), measured with a stand-in for SF Pro. */
 @media (min-width: 390px) and (max-width: 899.98px) and (max-height: 583.98px),
        (min-width: 360px) and (max-width: 389.98px) and (max-height: 548.98px),
        (max-width: 359.98px) and (max-height: 586.98px) {
