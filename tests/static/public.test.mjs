@@ -342,6 +342,35 @@ test('privacy.html: each part under its heading; the part about the app, word fo
   assert.equal(count(/In the app\./g, privacy), 1);
 });
 
+// Privacy, word for word: today's words with SITE-03 §2's three edits for Android (the buttons and the email in
+// What this page collects., Why. in its corrected wording, the Android addresses in How long.), and the boards' ’
+// for each apostrophe. Deletion keeps the support address as a link.
+test('privacy.html: word for word, with SITE-03 §2\'s three Android edits', () => {
+  const main = /<main class="legal-main">([\s\S]*?)<\/main>/.exec(privacy);
+  const plain = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  assert.deepEqual([...main[1].matchAll(/<(h1|h2|p)(?: class="[^"]+")?>([\s\S]*?)<\/\1>/g)].map((m) => [m[1], plain(m[2])]), [
+    ['h1', 'Privacy'],
+    ['h2', 'What this page collects.'],
+    ['p', 'A random id in a cookie named pk_v, kept 90 days, so one visitor is not counted twice. Event rows: the page viewed, which buttons were tapped (Reserve, Yearly, Monthly, and on an Android phone, Android’s), whether the plan price came into view, seconds on the page, the utm tags in the link, the website the link was opened from, the device type, the browser’s identification string, and whether the page opened inside the TikTok, Instagram or Facebook app. An email address and the plan picked, or Android, only if an email is typed in.'],
+    ['h2', 'Why.'],
+    ['p', 'To count how many visitors from our videos pick a plan, to check the page works inside the apps, to send one email when Parakeet launches, and to write to people who asked for Android.'],
+    ['h2', 'What is not collected.'],
+    ['p', 'No name, no location, no advertising identifiers, no third-party analytics, no pixels. Nothing here is sold or shared with anyone: never shared, never sold.'],
+    ['h2', 'How long.'],
+    ['p', 'Event rows are kept 90 days, then deleted. Email addresses are kept until launch plus 90 days, then deleted. They are used for one email, on launch day, and nothing else. An address left for Android is kept until 90 days after Parakeet is on Android, then deleted. It is used to tell you when it’s out, and maybe once before, to ask if you’d like to try it early, and nothing else. If we stop planning Android, we delete these addresses.'],
+    ['h2', 'Where.'],
+    ['p', 'The page and its counter run on Netlify; the data is stored there, in the United States.'],
+    ['h2', 'In the app.'],
+    ['p', IN_THE_APP],
+    ['h2', 'Deletion.'],
+    ['p', 'Any address or id is deleted on request, at any time: support.parakeet@gmail.com.'],
+    ['p', 'Parakeet is an app in development. Nothing is charged on this page.']
+  ]);
+  assert.match(main[1], /<p>Any address or id is deleted on request, at any time: <a href="mailto:support\.parakeet@gmail\.com">support\.parakeet@gmail\.com<\/a>\.<\/p>/, 'Deletion: the address, a link');
+  assert.doesNotMatch(main[1], /'/, 'no straight apostrophe: the boards\' ’');
+  assert.doesNotMatch(main[1], /, and to send one email/, 'Why. in SITE-03\'s corrected wording, one "and" fewer');
+});
+
 test('terms.html: in development, launch prices, nothing charged, the address', () => {
   const text = textOf(terms);
   for (const s of ['in development', 'launch', 'Nothing is charged', '$29.99', '$9.99', 'support.parakeet@gmail.com', 'Apple']) {
