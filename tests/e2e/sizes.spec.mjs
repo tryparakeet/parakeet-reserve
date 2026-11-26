@@ -138,6 +138,9 @@ async function holdStory(page) {
 const SHORT_PHONES = [
   { width: 375, height: 550, ua: PHONES.iPhone, name: 'an iPhone SE\'s Safari with its bars (§6.4)' },
   { width: 375, height: 550, ua: PHONES.Android, name: 'an Android phone at 375x550' },
+  { width: 375, height: 547, ua: PHONES.iPhone, name: 'an iPhone SE\'s Safari 3 px shorter' },
+  { width: 320, height: 580, ua: PHONES.Android, name: 'an Android phone at 320x580, its own short-window height' },
+  { width: 393, height: 582, ua: PHONES.Android, name: 'an Android phone at 393x582, its own short-window height' },
   { width: 375, height: 500, ua: PHONES.iPhone, name: 'a phone window too short' },
   { width: 320, height: 568, ua: PHONES.iPhone, name: 'a 320 phone with Safari\'s bars' },
   { width: 720, height: 450, ua: COMPUTER_UAS.safari_mac, mobile: false, name: 'a 1440x900 computer at 200% zoom' }

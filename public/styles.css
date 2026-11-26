@@ -695,18 +695,29 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
 /* ---------- A window too short for the words, a 200 px phone and the bar together ----------
    (a phone on its side, a 320 phone with Safari's bars, 200% zoom): the bar sits in the page under the
    first screen, whose phone stays at 200 px, and the story's tile scrolls with its lines (DESIGN.md §4).
-   Each height is the first screen's at those widths with the gap under the phone closed: the 393 board's
-   sizes from 390 wide (583), the 375 board's from 360 (549, Android's: its line under the answer adds more
-   than its shorter bar saves; 375 x 550 keeps the bar) and, under 360, a two-line answer line and a
-   three-line note under the button (587), measured with a stand-in for SF Pro. */
-@media (min-width: 390px) and (max-width: 899.98px) and (max-height: 583.98px),
-       (min-width: 360px) and (max-width: 389.98px) and (max-height: 548.98px),
-       (max-width: 359.98px) and (max-height: 586.98px) {
-  .first { height: auto; }
-  .cta { position: relative; z-index: auto; border-bottom: 1px solid var(--ink-10); border-radius: 24px; }
-  .story-pin { position: relative; }
-  .story-tile { height: clamp(244px, 100svh - 24px, 404px); }
-  .footer { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
+   Each height is the first screen's at those widths with the gap under the phone closed, measured with a
+   stand-in for SF Pro, and each device has its own: Android's line under the answer adds 52 px and its bar
+   saves 50 under 390 wide and 54 from 390. The iPhone's page (with the script off, every visitor's): the
+   393 board's sizes from 390 wide (583), the 375 board's from 360 (546; 375 x 550 keeps the bar) and, under
+   360, a two-line answer line and a three-line line under the button (586). Android's: 581, 548 and 570. */
+@media (min-width: 390px) and (max-width: 899.98px) and (max-height: 582.98px),
+       (min-width: 360px) and (max-width: 389.98px) and (max-height: 545.98px),
+       (max-width: 359.98px) and (max-height: 585.98px) {
+  html:not(.android) .first { height: auto; }
+  html:not(.android) .cta { position: relative; z-index: auto; border-bottom: 1px solid var(--ink-10); border-radius: 24px; }
+  html:not(.android) .story-pin { position: relative; }
+  html:not(.android) .story-tile { height: clamp(244px, 100svh - 24px, 404px); }
+  html:not(.android) .footer { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
+}
+
+@media (min-width: 390px) and (max-width: 899.98px) and (max-height: 580.98px),
+       (min-width: 360px) and (max-width: 389.98px) and (max-height: 547.98px),
+       (max-width: 359.98px) and (max-height: 569.98px) {
+  html.android .first { height: auto; }
+  html.android .cta { position: relative; z-index: auto; border-bottom: 1px solid var(--ink-10); border-radius: 24px; }
+  html.android .story-pin { position: relative; }
+  html.android .story-tile { height: clamp(244px, 100svh - 24px, 404px); }
+  html.android .footer { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ---------- The sheet: plan, email, done (R1, R2, R3) ----------
