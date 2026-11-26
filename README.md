@@ -1,6 +1,6 @@
 # Parakeet reserve page
 
-A one-screen "reserve" page for Gate 0, a seven-day paid-traffic test: day 1 is the day video 1 goes up with the paid link (target Mon Oct 26, 2026, or Sat Oct 24 / Sun Oct 25 if everything is ready sooner), the window is day 1 → day 7, and the read is the morning after day 7 (Mon Nov 2 on a Monday start, Sat Oct 31 on a Saturday, Sun Nov 1 on a Sunday), its file named for its day. `GATE_START` in `netlify/functions/event.mjs` is Sat Oct 24, 00:00 CDT (`2026-10-24T05:00:00.000Z`), the earliest possible day 1: every visit received before it resolves to `excluded.prestart` at read, and the per-hour summary cache rebuilds by itself when it changes. Raw days are UTC: CDT evening rows after 7 pm land on the next UTC day (after 6 pm once Dallas leaves CDT on Sun Nov 1 at 2 am). From Sat Oct 24, 00:00 CDT, every test visit opens the smoke link first in that same browser (see ACCEPTANCE.md).
+A "reserve" page for Gate 0, a seven-day paid-traffic test: day 1 is the day video 1 goes up with the paid link (target Mon Oct 26, 2026, or Sat Oct 24 / Sun Oct 25 if everything is ready sooner), the window is day 1 → day 7, and the read is the morning after day 7 (Mon Nov 2 on a Monday start, Sat Oct 31 on a Saturday, Sun Nov 1 on a Sunday), its file named for its day. `GATE_START` in `netlify/functions/event.mjs` is Sat Oct 24, 00:00 CDT (`2026-10-24T05:00:00.000Z`), the earliest possible day 1: every visit received before it resolves to `excluded.prestart` at read, and the per-hour summary cache rebuilds by itself when it changes. Raw days are UTC: CDT evening rows after 7 pm land on the next UTC day (after 6 pm once Dallas leaves CDT on Sun Nov 1 at 2 am). From Sat Oct 24, 00:00 CDT, every test visit opens the smoke link first in that same browser (see ACCEPTANCE.md).
 
 The page is built against `DESIGN.md` (the design rulebook; image sources in `CREDITS.md`): the website's new look (parakeet-app's `docs/SITE-04-THE-NEW-SITE.md`), a first screen of tiles with Apple's iPhone bezel, and the tiles below it. The page is its own instrument: it gives each visitor an id, records pageviews, taps, the plan chosen, emails and the time on page into Netlify Blobs, and serves an admin summary whose one measured number is `plan_rate = plan_taps ÷ uniques` for the paid links. No third-party script, pixel or analytics; the CSP forbids them.
 
@@ -36,7 +36,7 @@ npm run check           # both
 npm run serve           # the harness on http://localhost:8788 with an in-memory store (PORT, ADMIN_KEY, BEACON_KEY env; Ctrl-C prints the rows)
 ```
 
-The e2e needs a Playwright Chromium matching 1.56.1 at `PLAYWRIGHT_BROWSERS_PATH` (or the default cache). The Playwright runner's config is `playwright.config.mjs`. SITE-04 §6.6's shots come from `tests/e2e/shots.spec.mjs`, which a later commit adds; it writes them to `test-results/screenshots/` (ignored by git; Playwright empties `test-results/` when a run starts).
+The e2e needs a Playwright Chromium matching 1.56.1 at `PLAYWRIGHT_BROWSERS_PATH` (or the default cache). The Playwright runner's config is `playwright.config.mjs`. SITE-04 §6.6's shots come from `tests/e2e/shots.spec.mjs`, which writes them to `test-results/screenshots/` on every e2e run (ignored by git; Playwright empties `test-results/` when a run starts).
 
 ## Deploy
 
