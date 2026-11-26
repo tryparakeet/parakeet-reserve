@@ -156,13 +156,15 @@
           <span class="vh">Email address</span>
           <input id="email" type="email" name="email" placeholder="Your email address" autocomplete="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" required>
         </label>
-        <button class="btn" type="submit">Send my invite</button>
+        <button class="btn" type="submit"><span class="if-reserve">Send my invite</span><span class="if-android">Send</span></button>
         <div class="step" id="step-3" role="status" hidden>
           <p class="done if-yearly">Your 2 free weeks are reserved for <b class="done-email"></b>. We’ll email you once, when Parakeet is live.</p>
           <p class="done if-monthly">Your spot is saved for <b class="done-email"></b>. We’ll email you once, when Parakeet is live.</p>
+          <p class="done if-android">We’ll email <b class="done-email"></b> when Parakeet is on Android.</p>
         </div>
         <p class="sheet-small if-yearly">One email when we launch. Your 2 free weeks are tied to this email.</p>
         <p class="sheet-small if-monthly">One email when we launch, nothing else.</p>
+        <p class="sheet-small if-android">We’ll email you when it’s on Android, and maybe once before, to ask if you’d like to try it early. Nothing else.</p>
       </form>
     </div>
   </div>

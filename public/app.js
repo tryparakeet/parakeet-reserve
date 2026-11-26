@@ -9,6 +9,14 @@
   var COOKIE = 'pk_v';
   var NINETY_DAYS = 90 * 24 * 60 * 60;
 
+  /* ---------- the device, first: an Android phone gets its own words and its own bar (html.android) ---------- */
+
+  var ua = navigator.userAgent || '';
+  var device = (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) ? 'ios'
+    : /Android/.test(ua) ? 'android' : 'other';
+  var android = device === 'android';
+  if (android) root.classList.add('android');
+
   /* ---------- --screen-h: innerHeight in px, only where svh units are unknown ---------- */
 
   var hasSvh = false;
@@ -87,9 +95,6 @@
     return m ? m[0] : '';
   }
 
-  var ua = navigator.userAgent || '';
-  var device = (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) ? 'ios'
-    : /Android/.test(ua) ? 'android' : 'other';
   var inapp = /BytedanceWebview|musical_ly|TikTok/i.test(ua) ? 'tiktok'
     : /Instagram/i.test(ua) ? 'instagram'
     : /FBAN|FBAV|FB_IAB|FBIOS|FB4A/.test(ua) ? 'facebook' : 'none';
@@ -166,7 +171,8 @@
     if (plan) { extra.via = 'card'; planTapped = true; }
     try { send('tap', extra); } catch (e) {}
     try {
-      if (button === 'reserve') openSheet();
+      if (button === 'reserve') openSheet(false);
+      else if (button === 'android') openSheet(true);
       else if (plan) selectPlan(plan);
     } catch (e) {}
   }
@@ -397,7 +403,10 @@
   }
   for (var c = 0; c < planCards.length; c++) planCards[c].addEventListener('keydown', onPlanKey);
 
-  function openSheet() {
+  /* Reserve opens the sheet on its plans. Android's button opens it straight on its email step, with
+     Android's words and its plan, android (SITE-03 §1), and focuses the field inside the tap, so the
+     keyboard opens; the panel then doesn't take the focus back. */
+  function openSheet(emailFirst) {
     if (sheetOpen) return;
     sheetOpen = true;
     openedAt = Date.now();
@@ -411,7 +420,13 @@
     lastFocus = doc.activeElement;
     scrollY = win.pageYOffset || root.scrollTop || 0;
     doc.body.style.top = -scrollY + 'px';
-    showStep(1);   // always step 1; the plan choice is kept across a reopen
+    if (emailFirst) {
+      selectedPlan = 'android';
+      sheetRoot.setAttribute('data-picked', 'android');
+      showStep(2);
+    } else {
+      showStep(1);   // always step 1 for Reserve; the plan choice is kept across a reopen
+    }
     emailInput.value = '';
     emailInput.removeAttribute('aria-invalid');
     emailInput.classList.remove('shake');
@@ -419,10 +434,12 @@
     sheetRoot.hidden = false;
     root.classList.add('sheet-open');
     fitSheet();
+    if (emailFirst) { try { emailInput.focus({ preventScroll: true }); } catch (e) { emailInput.focus(); } }
     win.requestAnimationFrame(function () {
       win.requestAnimationFrame(function () {
         if (!sheetOpen) return;   // closed in the meantime: nothing to show or focus
         sheetRoot.classList.add('open');
+        if (emailFirst) return;   // the field has the focus
         try { panel.focus({ preventScroll: true }); } catch (e) { panel.focus(); }
       });
     });

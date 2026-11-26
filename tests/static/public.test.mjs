@@ -243,7 +243,9 @@ test('index.html copy, verbatim', () => {
     'Your 2 free weeks are reserved for . We’ll email you once, when Parakeet is live.',
     'Your spot is saved for . We’ll email you once, when Parakeet is live.',
     'One email when we launch. Your 2 free weeks are tied to this email.',
-    'One email when we launch, nothing else.'
+    'One email when we launch, nothing else.',
+    'We’ll email when Parakeet is on Android.',
+    'We’ll email you when it’s on Android, and maybe once before, to ask if you’d like to try it early. Nothing else.'
   ];
   for (const s of strings) assert.ok(text.includes(s), `index.html says: ${s}`);
   for (const gone of ['5 dinners that fit your budget.', 'Yearly', 'Monthly', 'FREE WEEKS', 'Totals are estimates', 'cooked by a real person first', 'Some will come from food creators, and some will be tested recipes from the USDA.', "You're on the list.", 'Done', 'More soon', 'Real people will cook every recipe', 'Cheese quesadillas', 'Chicken wraps', '$58.12']) {
@@ -264,12 +266,14 @@ test('index.html copy, verbatim', () => {
   assert.match(index, /<span class="tick" aria-hidden="true">/);
   assert.match(index, /<button[^>]*data-tap="reserve"[^>]*>Reserve 2 free weeks<\/button>/);
   assert.match(index, /<button[^>]*id="hold"[^>]*>Hold my spot<\/button>/);
-  assert.match(index, /<button[^>]*type="submit"[^>]*>Send my invite<\/button>/);
+  assert.match(index, /<button class="btn" type="submit"><span class="if-reserve">Send my invite<\/span><span class="if-android">Send<\/span><\/button>/, 'one submit button: Send my invite, or Android\'s Send');
   assert.match(index, /<input id="email"[^>]*\splaceholder="Your email address"/);
   assert.match(index, /<p class="done if-yearly">Your 2 free weeks are reserved for <b class="done-email"><\/b>\. We’ll email you once, when Parakeet is live\.<\/p>/);
   assert.match(index, /<p class="done if-monthly">Your spot is saved for <b class="done-email"><\/b>\. We’ll email you once, when Parakeet is live\.<\/p>/);
   assert.match(index, /<p class="sheet-small if-yearly">One email when we launch\. Your 2 free weeks are tied to this email\.<\/p>/);
   assert.match(index, /<p class="sheet-small if-monthly">One email when we launch, nothing else\.<\/p>/);
+  assert.match(index, /<p class="done if-android">We’ll email <b class="done-email"><\/b> when Parakeet is on Android\.<\/p>/, 'Android\'s done line');
+  assert.match(index, /<p class="sheet-small if-android">We’ll email you when it’s on Android, and maybe once before, to ask if you’d like to try it early\. Nothing else\.<\/p>/, 'Android\'s small line');
   assert.match(index, /<a href="mailto:support\.parakeet@gmail\.com">support\.parakeet@gmail\.com<\/a>/);
   assert.match(index, /<a href="\/privacy">Privacy<\/a>/);
   assert.match(index, /<a href="\/terms">Terms<\/a>/);
@@ -384,6 +388,10 @@ test('app.js: the endpoint, the cookie name, the transport, no http literal, no 
   assert.match(app, /\.style\.setProperty\('--vvh'/, 'the sheet height follows the visual viewport');
   assert.match(app, /classList\.add\('in'\)/, 'the scroll fade adds .in');
   assert.match(app, /setAttribute\('data-picked', plan\)/, 'the plan-dependent lines follow the plan');
+  assert.match(app, /var android = device === 'android';\s*if \(android\) root\.classList\.add\('android'\);/, 'an Android phone gets its words (html.android), set first');
+  assert.match(app, /else if \(button === 'android'\) openSheet\(true\);/, 'Android\'s button opens the sheet on its email step');
+  assert.match(app, /selectedPlan = 'android';\s*sheetRoot\.setAttribute\('data-picked', 'android'\);\s*showStep\(2\);/, 'with the plan android and Android\'s lines');
+  assert.match(css, /#sheet:not\(\[data-picked="android"\]\) \.if-android,\s*#sheet\[data-picked="android"\] \.if-reserve \{ display: none; \}/, 'each .if- line shows only for its own');
 });
 
 test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradient or glow, svh, the system font stack', () => {

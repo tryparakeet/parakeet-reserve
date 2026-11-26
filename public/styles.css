@@ -1015,9 +1015,12 @@ html.android { --sheet-pad-bottom: max(24px, env(safe-area-inset-bottom, 0px)); 
 
 .done b { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
 
-/* The lines that depend on the plan picked (app.js keeps data-picked on the sheet) */
+/* The words that depend on the plan picked, or on Android's list: app.js keeps data-picked on the sheet,
+   yearly, monthly or android, and each .if- line shows only for its own; .if-reserve is either plan's */
+#sheet:not([data-picked="yearly"]) .if-yearly,
 #sheet:not([data-picked="monthly"]) .if-monthly,
-#sheet[data-picked="monthly"] .if-yearly { display: none; }
+#sheet:not([data-picked="android"]) .if-android,
+#sheet[data-picked="android"] .if-reserve { display: none; }
 
 html.sheet-open body {
   position: fixed;
