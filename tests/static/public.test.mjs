@@ -558,12 +558,28 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, one gradi
   assert.match(app, /root\.classList\.toggle\('bar-in-page', short\)/, 'app.js sets it, and takes it off, as the window changes');
   assert.match(app, /root\.classList\.toggle\('bar-measured', !!bar\)/, 'app.js marks the page measured wherever it measured the bar');
   const byHeight = [...cssNoComments.matchAll(/@media ([^{]*)\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)].filter((m) => /height/.test(m[1]));
-  assert.equal(byHeight.length, 2, 'two sets of heights: the iPhone\'s page and Android\'s');
-  for (const m of byHeight) {
+  const barHeights = byHeight.filter((m) => /\.cta \{/.test(m[2]));
+  assert.equal(barHeights.length, 2, 'two sets of heights for the bar: the iPhone\'s page and Android\'s');
+  for (const m of barHeights) {
     for (const sel of [...m[2].matchAll(/([^{}]+)\{/g)].map((x) => x[1].trim())) {
       assert.match(sel, /^html[^ ]*:not\(\.bar-measured\) /, `${sel}: the heights give way once app.js has measured the page, so its measure decides both ways`);
     }
   }
+  // and one for the computer's story tile: held at --story-top (88 + 8k, k from 0 at 1024 wide to 1 at 1440)
+  // with its floor of 280, it needs a window of 368 + (width - 1024) / 52, drawn in 1 px steps
+  const holdHeights = byHeight.filter((m) => !/\.cta \{/.test(m[2]));
+  assert.equal(holdHeights.length, 1, 'one more set: a computer window too short to hold the story\'s tile');
+  assert.match(cssNoComments, /--k: calc\(\(100vw - 1024px\) \/ 416\);/);
+  assert.match(cssNoComments, /--story-top: clamp\(88px, 88px \+ 8 \* var\(--k\), 96px\);/, 'the held tile\'s top: 88 to 96');
+  assert.match(cssNoComments, /--story-tile: max\(280px, /, 'the tile\'s floor: 280, its phone at 200');
+  const steps = [[900, 367.98], ...Array.from({ length: 8 }, (_, j) => [1024.02 + 52 * j, 368.98 + j])];
+  assert.deepEqual(holdHeights[0][1].split(',').map((q) => q.trim()),
+    steps.map(([w, h]) => `(min-width: ${+w.toFixed(2)}px) and (max-height: ${+h.toFixed(2)}px)`),
+    'from 900 wide, in a window under 280 + 88 + (width - 1024) / 52 px');
+  assert.deepEqual([...holdHeights[0][2].matchAll(/([^{}]+)\{([^}]*)\}/g)].map((x) => [x[1].trim(), x[2].replace(/\s+/g, ' ').trim()]), [
+    ['.story-pin', 'position: relative; top: auto;'],
+    ['.story-step:last-child', 'min-height: var(--step-h);']
+  ], 'there the story\'s tile isn\'t held and scrolls with its lines, its fourth step as tall as the others');
   assert.match(app, /200 \+ parseFloat\(tile\.paddingTop\) \+ parseFloat\(tile\.paddingBottom\)/, 'counting a 200 px phone with its tile\'s padding');
   assert.match(css, /--sheet-pad-bottom:[^;]*env\(safe-area-inset-bottom/, 'with the bottom safe-area inset');
   assert.match(css, /\[data-reveal\]\.in\s*\{\s*animation:\s*rise 500ms var\(--curve\) both;/, 'the rise: 500 ms on the standard curve, only once .in is added');

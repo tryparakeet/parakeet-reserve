@@ -6,7 +6,8 @@
 //   words, a 200 px phone and the bar fit, and otherwise sits in the page under the first screen with the
 //   story's tile scrolling with its lines; while the bar is pinned a whole story line shows between the
 //   held tile and the bar; on a computer at 1440 x 780 and 1024 x 660 (no bar) the held tile fits under the
-//   header;
+//   header, and in a computer window too short to hold it whole (an Android phone on its side) it scrolls
+//   with its lines, the focus line still working;
 // - an upright iPad stops the phone at 343 x 700;
 // - in a browser without svh units, the story's tile keeps its height and its phone;
 // - above 1440 wide the page is a centred 1440 column;
@@ -253,6 +254,73 @@ for (const vp of [{ width: 1440, height: 780 }, { width: 1024, height: 660 }]) {
       await frames(page);
       expect((await bbox(page.locator('.story-tile'))).top, 'held in place as the lines scroll').toBeCloseTo(tile.top, 0);
       for (const p of await phoneHeights(page)) expect(p.height, `${p.where}: at least 200 px`).toBeGreaterThanOrEqual(199.99);
+    });
+  });
+}
+
+/* ---------- a computer window too short to hold the story's tile: it scrolls with its lines ---------- */
+
+// Held, the story's tile sits at --story-top under the 72 px header (88 up to 1024 wide, 96 from 1440) and
+// floors at 280 so its phone stays 200, so it needs a window of 368 + (width - 1024) / 52 px. In a shorter
+// one (an Android phone on its side with Chrome's bars) it isn't held and scrolls with its lines, as on a
+// phone (SITE-04 §6.8 #8), its fourth step as tall as the others with nothing to hold; in one just that
+// tall it is held whole under the header, as before. Either way the focus line, the window's middle, still
+// moves the lines and the screens.
+const SHORT_COMPUTERS = [
+  { width: 915, height: 332, use: { userAgent: PHONES.Android }, held: false, name: 'an Android phone on its side with Chrome\'s bars' },
+  { width: 915, height: 356, use: { userAgent: PHONES.Android }, held: false, name: 'an Android phone on its side with Chrome\'s bars' },
+  { width: 1024, height: 360, use: MAC, held: false, name: 'a computer window 8 px too short' },
+  { width: 1024, height: 368, use: MAC, held: true, name: 'a computer window just tall enough' },
+  { width: 1440, height: 375, use: MAC, held: false, name: 'a computer window 1 px too short' },
+  { width: 1440, height: 376, use: MAC, held: true, name: 'a computer window just tall enough' }
+];
+
+// Line n's text a few px past the window's middle, the focus line on a computer: n is in focus, its screen on.
+async function focusMiddle(page, n) {
+  await page.evaluate((k) => {
+    const line = document.querySelectorAll('.story-line')[k];
+    window.scrollBy(0, line.getBoundingClientRect().top - (window.innerHeight * 0.5 - 8));
+  }, n);
+  await page.waitForFunction((k) => {
+    const on = (sel) => [...document.querySelectorAll(sel)].map((el, i) => (el.classList.contains('on') ? i : -1)).filter((i) => i >= 0);
+    const lines = on('.story-line');
+    const shots = on('.story .shot');
+    return lines.length === 1 && lines[0] === k && shots.length === 1 && shots[0] === k;
+  }, n);
+}
+
+for (const w of SHORT_COMPUTERS) {
+  test.describe(`${w.name}, ${w.width}x${w.height}`, () => {
+    test.use({ viewport: { width: w.width, height: w.height }, ...w.use });
+
+    test(w.held
+      ? 'the story\'s tile is held whole under the header, its phone at 200; the focus line moves the lines and the screens'
+      : 'the story\'s tile isn\'t held and scrolls with its lines, its phone at 200; the focus line still moves the lines and the screens', async ({ page }) => {
+      await load(page);
+      expect(await page.locator('.cta').evaluate((el) => getComputedStyle(el).display), 'the computer\'s layout: no bar').toBe('none');
+      await holdStory(page);
+      const header = await bbox(page.locator('.top'));
+      const tile = await bbox(page.locator('.story-tile'));
+      expect(tile.height, 'the tile at its floor').toBeCloseTo(280, 1);
+      for (const p of await phoneHeights(page)) expect(p.height, `${p.where}: at least 200 px`).toBeGreaterThanOrEqual(199.99);
+      expect((await bbox(page.locator('.story-tile .phone'))).height, 'the story\'s phone at 200').toBeCloseTo(200, 1);
+      await page.evaluate(() => window.scrollBy(0, 80));
+      await frames(page);
+      const after = await bbox(page.locator('.story-tile'));
+      const pin = await page.locator('.story-pin').evaluate((el) => getComputedStyle(el).position);
+      if (w.held) {
+        expect(pin, 'the story\'s tile is held').toBe('sticky');
+        expect(header.top, 'the header holds the top').toBe(0);
+        expect(tile.top, 'the tile under the header').toBeGreaterThanOrEqual(header.bottom);
+        expect(tile.bottom, 'the whole tile in the window').toBeLessThanOrEqual(w.height + 0.01);
+        expect(after.top, 'held in place as the lines scroll').toBeCloseTo(tile.top, 0);
+      } else {
+        expect(pin, 'the story\'s tile isn\'t held').toBe('relative');
+        expect(after.top, 'the story\'s tile scrolls with its lines').toBeCloseTo(tile.top - 80, 0);
+        const steps = await page.evaluate(() => [...document.querySelectorAll('.story-step')].map((s) => s.getBoundingClientRect().height));
+        expect(steps[3], 'the fourth step as tall as the others: nothing to hold').toBeCloseTo(steps[0], 0);
+      }
+      for (const n of [1, 2, 3, 0]) await focusMiddle(page, n);
     });
   });
 }

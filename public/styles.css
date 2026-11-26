@@ -1642,6 +1642,32 @@ body.legal .footer {
   }
 }
 
+/* ---------- A computer window too short to hold the story's tile whole under the header ----------
+   (an Android phone on its side with Chrome's bars, 915 x 332 to 356): as on a phone (DESIGN.md §4), the
+   story's tile isn't held and scrolls with its lines, and the focus line, the window's middle, still works.
+   Held, the tile's top is --story-top, 88 up to 1024 wide and 1 px lower for every 52 px of width to 96 at
+   1440, and the tile floors at 280 so its phone stays 200: it needs a window of 368 + (width - 1024) / 52
+   px, 368 up to 1024 wide and 376 from 1440. A media query can't draw that line, so it is drawn here in
+   1 px steps, one for every 52 px of width, exact in whole pixels; a window that tall or taller holds the
+   tile as before. The fourth step is taller only to hold the tile until line 4 reaches the header, so it
+   takes the other steps' height here. */
+@media (min-width: 900px) and (max-height: 367.98px),
+       (min-width: 1024.02px) and (max-height: 368.98px),
+       (min-width: 1076.02px) and (max-height: 369.98px),
+       (min-width: 1128.02px) and (max-height: 370.98px),
+       (min-width: 1180.02px) and (max-height: 371.98px),
+       (min-width: 1232.02px) and (max-height: 372.98px),
+       (min-width: 1284.02px) and (max-height: 373.98px),
+       (min-width: 1336.02px) and (max-height: 374.98px),
+       (min-width: 1388.02px) and (max-height: 375.98px) {
+  .story-pin {
+    position: relative;
+    top: auto;
+  }
+
+  .story-step:last-child { min-height: var(--step-h); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .answer-1, .answer-2, .answer-3 { animation: none; }
   .answer-1, .answer-2 { visibility: hidden; }
