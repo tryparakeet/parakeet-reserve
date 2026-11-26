@@ -538,7 +538,7 @@ test('the six parts below the first screen: the headline, the story\'s tile, the
 test('on a phone the parts below the bar wait, then rise 14 px once, 500 ms on the curve, the first time they show above it; the tiles with a phone don\'t fade', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await load(page, { width: 393, height: 852 });
-  const below = ['story-tile', 'tile-yours', 'stores', 'facts', 'footer'];
+  const below = ['lede', 'story-tile', 'tile-yours', 'stores', 'facts', 'footer'];
   const before = await revealState(page);
   for (const p of before.filter((x) => below.includes(x.part))) {
     expect(p.wait, `${p.part} waits`).toBe(true);
@@ -572,11 +572,9 @@ test('on a phone the parts below the bar wait, then rise 14 px once, 500 ms on t
 });
 
 // The headline sits behind the pinned bar at load on a phone (its top is inside the window, under the bar),
-// so app.js never gives it the waiting state and it never rises, though §6.8 #6 asks it to rise as it comes
-// into view and the reveal counts what shows above the bar. Marked as failing until the page waits for it;
-// it then passes, and the mark comes off.
+// so it waits there unseen and rises once 12% of it shows above the bar, as §6.8 #6 asks: as it comes into
+// view, fading in.
 test('on a phone the headline under the first screen waits behind the bar and rises once (SITE-04 §6.8 #6)', async ({ page }) => {
-  test.fail(true, 'app.js gives .wait only to a part whose top is below the window, not below the pinned bar');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await load(page, { width: 393, height: 852 });
   const lede = await bbox(page.locator('.lede'));
@@ -584,6 +582,15 @@ test('on a phone the headline under the first screen waits behind the bar and ri
   expect(lede.top, 'the headline starts under the bar\'s top').toBeGreaterThan(cta.top);
   const [p] = (await revealState(page)).filter((x) => x.part === 'lede');
   expect(p.wait, 'the headline waits').toBe(true);
+  const seen = await page.evaluate(() => {
+    const r = document.querySelector('.lede').getBoundingClientRect();
+    let shown = 0;
+    for (let y = Math.ceil(r.top); y < Math.min(r.bottom, innerHeight); y += 3) {
+      for (let x = Math.ceil(r.left); x < r.right; x += 3) if (!document.elementFromPoint(x, y).closest('.cta')) shown++;
+    }
+    return shown;
+  });
+  expect(seen, 'it waits unseen, behind the bar').toBe(0);
   await scrollThrough(page);
   await expect(page.locator('.lede')).toHaveClass(/\bin\b/);
 });

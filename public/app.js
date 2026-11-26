@@ -272,10 +272,11 @@
   } } catch (e) {}
 
   /* ---------- the rise below the first screen: each part, once, the first time it scrolls into view ----------
-     Only a part whose top is below the window at load waits (.wait, styles.css); one already in the window
-     never moves, and with the script off nothing waits. It rises once 12% of it shows, as the boards do it,
-     counted above the bar where the bar is pinned over the window's bottom, and above the window's bottom
-     where the bar sits in the page or isn't shown. The bar can change with the window (a turn, a window
+     Only a part whose top is out of sight at load waits (.wait, styles.css): below the window, or under the
+     bar where the bar is pinned over the window's bottom (the headline under a phone's first screen, which
+     waits unseen behind it); one already in sight never moves, and with the script off nothing waits. It
+     rises once 12% of it shows, as the boards do it, counted above the bar where the bar is pinned, and
+     above the window's bottom where the bar sits in the page or isn't shown. The bar can change with the window (a turn, a window
      crossing 900 wide or a short window's height), so after a resize the observer is built again with the
      bar as it is then, for the parts still waiting. */
 
@@ -304,8 +305,9 @@
       }, { threshold: 0.12, rootMargin: '0px 0px ' + (-barH) + 'px 0px' });
       for (var w = 0; w < reveals.length; w++) if (reveals[w].classList.contains('wait')) revealObs.observe(reveals[w]);
     };
+    var shownH = windowH - pinnedBarH();
     for (var rv = 0; rv < reveals.length; rv++) {
-      if (reveals[rv].getBoundingClientRect().top > windowH) reveals[rv].classList.add('wait');
+      if (reveals[rv].getBoundingClientRect().top > shownH) reveals[rv].classList.add('wait');
     }
     watchReveal();
     var revealRaf = 0;

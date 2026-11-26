@@ -563,7 +563,7 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, one gradi
   assert.match(cssNoComments, /\[data-reveal\]\.wait\s*\{\s*opacity:\s*0;\s*transform:\s*translateY\(14px\);\s*\}/, 'the waiting state is the script\'s .wait');
   assert.doesNotMatch(index, /class="[^"]*\bwait\b/, 'the markup never waits: only app.js adds .wait');
   assert.match(app, /classList\.add\('wait'\)/, 'app.js adds the waiting state');
-  assert.match(app, /getBoundingClientRect\(\)\.top > windowH/, 'only to a part whose top is below the window at load');
+  assert.match(app, /var shownH = windowH - pinnedBarH\(\);\s*for \([^)]*\) \{\s*if \(reveals\[rv\]\.getBoundingClientRect\(\)\.top > shownH\)/, 'only to a part whose top is out of sight at load: below the window, or under the pinned bar');
   assert.match(app, /threshold: 0\.12/, 'it rises once 12% of it shows, as the boards do it');
   assert.match(app, /rootMargin: '100000px 0px ' \+ \(wide && wide\.matches \? '-50%' : '-34%'\) \+ ' 0px'/, 'the story\'s focus line: 66% of the window on a phone, its middle on a computer');
   assert.equal(count(/new IntersectionObserver\(/g, app), 3, 'one observer each: seen, the rise, the story');
