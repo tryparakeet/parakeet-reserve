@@ -377,12 +377,15 @@ for (const vp of [{ width: 1600, height: 900 }, { width: 1920, height: 1080 }]) 
 const GIANT = [
   { width: 320, height: 568, ua: PHONES.iPhone, name: 'an iPhone at 320x568' },
   { width: 320, height: 568, ua: PHONES.Android, name: 'an Android phone at 320x568' },
-  { width: 196, height: 426, ua: PHONES.iPhone, name: 'a 393 phone at 200% zoom (196x426)' }
+  { width: 196, height: 426, ua: PHONES.iPhone, name: 'a 393 phone at 200% zoom (196x426)' },
+  { width: 900, height: 768, computer: true, name: 'a computer at 900x768' },
+  { width: 1024, height: 768, computer: true, name: 'a computer at 1024x768' },
+  { width: 1232, height: 900, computer: true, name: 'a computer at 1232x900' }
 ];
 
 for (const w of GIANT) {
   test.describe(w.name, () => {
-    test.use({ viewport: { width: w.width, height: w.height }, userAgent: w.ua });
+    test.use(w.computer ? { viewport: { width: w.width, height: w.height }, ...MAC } : { viewport: { width: w.width, height: w.height }, userAgent: w.ua });
 
     test('the footer\'s giant row, the bird beside the wordmark, stays inside its row', async ({ page }) => {
       await load(page);
@@ -398,7 +401,8 @@ for (const w of GIANT) {
           row: [footer.left + parseFloat(cs.paddingLeft), footer.right - parseFloat(cs.paddingRight)],
           giant: [r('.giant').left, r('.giant').right, giant.scrollWidth, giant.clientWidth],
           bird: [r('.giant-bird').left, r('.giant-bird').right, r('.giant-bird').height],
-          word: [r('.giant-word').left, r('.giant-word').right, r('.giant-word').height]
+          word: [r('.giant-word').left, r('.giant-word').right, r('.giant-word').height],
+          gap: parseFloat(getComputedStyle(giant).columnGap)
         };
       });
       expect(got.giant[2], 'nothing in the row past its width').toBeLessThanOrEqual(got.giant[3]);
@@ -410,6 +414,11 @@ for (const w of GIANT) {
       expect(got.bird[2]).toBeGreaterThan(0);
       expect(got.word[2]).toBeGreaterThan(0);
       expect((await sideways(page)).out, 'nothing crosses the window\'s sides').toEqual([]);
+      if (w.computer) {
+        // as large as the band allows: the board's min(296px, 20.5vw), held under (the row - its own gap) / 4.3
+        const fit = Math.min(296, 0.205 * w.width, (got.row[1] - got.row[0] - got.gap) / 4.3);
+        expect(got.bird[2], `the bird as large as the row allows with its ${got.gap} px gap`).toBeCloseTo(fit, 1);
+      }
     });
   });
 }

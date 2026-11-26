@@ -1507,8 +1507,8 @@ body.legal .footer {
 
   /* The footer (C-page-1440): the first line, the address and the © on the left, the links on the right,
      14/20; under them the giant row, the bird at min(296px, 20.5vw) beside the wordmark as tall as the
-     board's min(260px, 18vw) word (0.6464 of the bird). The row is 4.2993 birds wide plus its gap (36 at
-     most), so the bird also stays under (the band's width - 36px) / 4.3, and the row never overflows the
+     board's min(260px, 18vw) word (0.6464 of the bird). The row is 4.2993 birds wide plus its gap (28 to
+     36), so the bird also stays under (the band's width - the gap) / 4.3, and the row never overflows the
      band. Its bottom keeps the board's word's descent (0.145 of the word's size, 0.1273 of the bird). Each
      size is written out whole after a fallback without container units, as on the phone. */
   .footer,
@@ -1540,17 +1540,17 @@ body.legal .footer {
     gap: var(--giant-gap);
     margin-top: var(--giant-mt);
     padding-bottom: min(37.68px, 2.61vw);
-    padding-bottom: min(37.68px, 2.61vw, (100cqw - 36px) / 4.3 * 0.1273);
+    padding-bottom: min(37.68px, 2.61vw, (100cqw - var(--giant-gap)) / 4.3 * 0.1273);
   }
 
   .giant-bird {
     height: min(296px, 20.5vw);
-    height: min(296px, 20.5vw, (100cqw - 36px) / 4.3);
+    height: min(296px, 20.5vw, (100cqw - var(--giant-gap)) / 4.3);
   }
 
   .giant-word {
     height: min(191.33px, 13.251vw);
-    height: min(191.33px, 13.251vw, (100cqw - 36px) / 4.3 * 0.6464);
+    height: min(191.33px, 13.251vw, (100cqw - var(--giant-gap)) / 4.3 * 0.6464);
   }
 
   /* No bottom bar on a computer: the header and the white tile hold the Reserve buttons. The stores sit
