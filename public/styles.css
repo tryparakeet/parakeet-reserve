@@ -1075,6 +1075,7 @@ html.sheet-open body {
   max-width: var(--col);
   margin: 0 auto;
   padding: 24px var(--gutter) 0;
+  overflow-wrap: break-word;   /* an address too long for a 200% zoomed phone's line breaks */
 }
 
 .legal-main h1 {
