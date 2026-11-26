@@ -30,8 +30,8 @@ test('every button has a vid set and a counter; the core sets exist', () => {
 });
 
 // The vid sets and counters that belong to no button.
-const CORE_SETS = ['pv', 'tap', 'email', 'seen', 'video_playing', 'video_blocked'];
-const CORE_COUNTERS = ['n_pv', 'n_tap', 'n_email', 'n_video_playing', 'n_video_blocked'];
+const CORE_SETS = ['pv', 'tap', 'email', 'email_android', 'seen', 'video_playing', 'video_blocked'];
+const CORE_COUNTERS = ['n_pv', 'n_tap', 'n_email', 'n_email_android', 'n_video_playing', 'n_video_blocked'];
 
 test('BUTTONS, VID_SETS and COUNTERS agree for every button, android included, and on nothing else', () => {
   const sorted = [...BUTTONS].sort();
@@ -88,20 +88,66 @@ test('an android tap is counted apart: android_taps and tap_events_android, neve
   assert.ok(!('android_rate' in total.blended), 'no android_rate');
 });
 
+test('an email with plan android is counted apart: android_emails and email_events_android, never emails or email_events', () => {
+  const a = vid('ande-a'), b = vid('ande-b'), c = vid('ande-c'), d = vid('ande-d');
+  const AND = { ...C, device: 'android', inapp: 'tiktok' };
+  const rows = [
+    // a: an Android phone taps its button and leaves its address twice
+    pageview(a, T(0), AND), tap(a, 'android', T(1), AND),
+    email(a, T(2), { ...AND, plan: 'android' }), email(a, T(3), { ...AND, plan: 'android' }),
+    // b: an iPhone reserves the yearly plan; c: an older client's email with no plan is a reservation
+    pageview(b, T(10), C), tap(b, 'reserve', T(11), C), tap(b, 'plan_yearly', T(12), C), email(b, T(13), { ...C, plan: 'yearly' }),
+    email(c, T(20), { ...C, plan: '' }),
+    // d: an Android address with no other row still makes a visitor
+    email(d, T(30), { ...AND, plan: 'android' })
+  ];
+  const { total } = run(mod, rows);
+  for (const f of [total.sources.tiktok, total.sources.tiktok.content.sun25, total.blended]) {
+    assert.equal(f.emails, 2, 'b and c: the reservations only');
+    assert.equal(f.email_events, 2);
+    assert.equal(f.android_emails, 2, 'a and d, visitors');
+    assert.equal(f.email_events_android, 3, 'rows');
+    assert.equal(f.uniques, 4, 'every visitor with a pageview, a tap or an email');
+    assert.equal(f.reserve_taps, 1);
+    assert.equal(f.plan_taps, 1);
+    assert.equal(f.android_taps, 1);
+    assert.equal(f.tap_events_android, 1);
+  }
+  const row = mod.summaryRows({ days: [], total }).find((r) => r.scope === 'gate' && r.source === 'blended');
+  assert.equal(row.emails, 2);
+  assert.equal(row.android_emails, 2);
+  assert.equal(row.email_events, 2);
+  assert.equal(row.email_events_android, 3);
+  const cols = mod.SUMMARY_COLUMNS;
+  assert.equal(cols.indexOf('android_emails'), cols.indexOf('emails') + 1);
+  assert.equal(cols.indexOf('email_events_android'), cols.indexOf('email_events') + 1);
+});
+
 test('an android tap moves with its visitor at read: an untagged return joins the paid creative', () => {
   const a = vid('and-return');
   const rows = [
     pageview(a, '2026-10-25T10:00:00.000Z', { ...C, device: 'android' }),
     pageview(a, '2026-10-26T10:00:00.000Z', { tags: NO_UTM, device: 'android' }),
-    tap(a, 'android', '2026-10-26T10:00:05.000Z', { tags: NO_UTM, device: 'android' })
+    tap(a, 'android', '2026-10-26T10:00:05.000Z', { tags: NO_UTM, device: 'android' }),
+    email(a, '2026-10-26T10:00:20.000Z', { tags: NO_UTM, device: 'android', plan: 'android' })
   ];
   const { total } = run(mod, rows);
-  assert.equal(total.sources.tiktok.android_taps, 1, 'the visitor moved to its paid source');
-  assert.equal(total.sources.tiktok.content.sun25.android_taps, 1, 'and to its creative');
-  assert.equal(total.sources.tiktok.tap_events_android, 0, 'the row stays where it was stored');
+  const tt = total.sources.tiktok;
+  assert.equal(tt.android_taps, 1, 'the visitor moved to its paid source');
+  assert.equal(tt.android_emails, 1);
+  assert.equal(tt.content.sun25.android_taps, 1, 'and to its creative');
+  assert.equal(tt.content.sun25.android_emails, 1);
+  assert.equal(tt.tap_events_android, 0, 'the rows stay where they were stored');
+  assert.equal(tt.email_events_android, 0);
   assert.equal(total.excluded.no_utm.android_taps, 0);
+  assert.equal(total.excluded.no_utm.android_emails, 0);
   assert.equal(total.excluded.no_utm.tap_events_android, 1);
-  assert.equal(total.sources.tiktok.reserve_taps, 0);
+  assert.equal(total.excluded.no_utm.email_events_android, 1);
+  for (const f of [tt, total.excluded.no_utm]) {
+    assert.equal(f.reserve_taps, 0);
+    assert.equal(f.emails, 0);
+    assert.equal(f.email_events, 0);
+  }
 });
 
 test('an empty bucket finalizes to the exact zero shape, in this key order', () => {

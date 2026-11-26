@@ -499,6 +499,100 @@ test('the emails table: EMAIL_COLUMNS with plan, as JSON and CSV', async () => {
   assert.equal(answers.version, 8, 'an unknown table is the summary');
 });
 
+test('an Android phone: its tap and its email are counted apart from the reserves; the email table lists it with plan android', async () => {
+  const { handler, clock } = await scriptedWeek();
+  const G = vid('week-G'), H = vid('week-H');
+  const android = { device: 'android', inapp: 'tiktok' };
+  const send = async (body) => assert.equal((await post(handler, body)).status, 204);
+  clock.set('2026-10-27T09:00:00.000Z');
+  // G: TikTok's browser on an Android phone; the button, then the address (sent twice)
+  await send({ event: 'pageview', vid: G, ...TT('tue27'), ...android, ua: REAL_UAS.tiktok_android, scr: '412x915' });
+  await send({ event: 'tap', vid: G, ...TT('tue27'), ...android, button: 'android' });
+  await send({ event: 'email', vid: G, ...TT('tue27'), ...android, email: 'g@example.com', plan: 'android' });
+  await send({ event: 'email', vid: G, ...TT('tue27'), ...android, email: 'g@example.com', plan: 'android' });
+  // H: Chrome on an Android phone from the typed link; the button only
+  await send({ event: 'pageview', vid: H, ...TYPED, device: 'android', inapp: 'none', ua: REAL_UAS.chrome_android, scr: '360x800' });
+  await send({ event: 'tap', vid: H, ...TYPED, device: 'android', inapp: 'none', button: 'android' });
+  clock.set(READ_AT);
+
+  const out = await read(handler);
+  assert.equal(out.version, 8);
+  assert.equal(out.total.rows, 43);
+  const tt = out.total.sources.tiktok;
+  assert.equal(tt.uniques, 6, 'A B C D F, and G');
+  assert.equal(tt.reserve_taps, 4, 'as before');
+  assert.equal(tt.reserve_rate, 0.6667, 'G is a visitor');
+  assert.equal(tt.plan_taps, 3, 'as before');
+  assert.equal(tt.emails, 1, 'the reservations only, as before');
+  assert.equal(tt.email_events, 1);
+  assert.equal(tt.android_taps, 1);
+  assert.equal(tt.tap_events_android, 1);
+  assert.equal(tt.android_emails, 1);
+  assert.equal(tt.email_events_android, 2);
+  assert.equal(tt.taps, 5, 'the android tap is a tap');
+  assert.equal(tt.tap_events, 12);
+  assert.deepEqual(tt.device, { ios: 5, android: 2, other: 1 });
+  assert.equal(tt.content.tue27.android_taps, 1);
+  assert.equal(tt.content.tue27.android_emails, 1);
+  assert.equal(tt.content.tue27.emails, 0);
+  assert.equal(tt.content.tue27.reserve_taps, 0);
+  const typed = out.total.sources.typed;
+  assert.equal(typed.android_taps, 1);
+  assert.equal(typed.android_emails, 0);
+  assert.equal(typed.emails, 1, 'as before');
+  const blended = out.total.blended;
+  assert.equal(blended.uniques, 8);
+  assert.equal(blended.reserve_taps, 5, 'as before');
+  assert.equal(blended.plan_taps, 4, 'as before');
+  assert.equal(blended.emails, 2, 'as before');
+  assert.equal(blended.email_events, 2);
+  assert.equal(blended.android_taps, 2);
+  assert.equal(blended.tap_events_android, 2);
+  assert.equal(blended.android_emails, 1);
+  assert.equal(blended.email_events_android, 2);
+  for (const x of Object.values(out.total.excluded)) {
+    assert.equal(x.android_taps, 0);
+    assert.equal(x.android_emails, 0);
+  }
+  // the summary's emails[] lists every address with its plan
+  assert.deepEqual(out.emails.map((e) => e.plan), ['yearly', 'monthly', 'android', 'android']);
+
+  // the summary CSV: the four Android columns beside the reserve taps and the reservation emails
+  const csvText = await (await adminGet(handler, { format: 'csv' })).text();
+  const lines = csvText.slice(0, -2).split('\r\n');
+  assert.equal(lines[0], SUMMARY_COLUMNS.join(','));
+  const cells = lines.find((l) => l.startsWith('all,gate,blended,,')).split(',');
+  const col = (name) => cells[SUMMARY_COLUMNS.indexOf(name)];
+  assert.equal(col('reserve_taps'), '5');
+  assert.equal(col('android_taps'), '2');
+  assert.equal(col('tap_events_reserve'), '7');
+  assert.equal(col('tap_events_android'), '2');
+  assert.equal(col('emails'), '2');
+  assert.equal(col('android_emails'), '1');
+  assert.equal(col('email_events'), '2');
+  assert.equal(col('email_events_android'), '2');
+  assert.equal(col('android'), '3', 'the device count: the pageviews of B, G and H');
+
+  // the email table, JSON and CSV: the Android rows with plan android
+  const table = await read(handler, { table: 'emails' });
+  assert.equal(table.emails.length, 4);
+  const androidRows = table.emails.filter((e) => e.plan === 'android');
+  assert.equal(androidRows.length, 2);
+  for (const e of androidRows) {
+    assert.equal(e.email, 'g@example.com');
+    assert.equal(e.vid, G);
+    assert.equal(e.device, 'android');
+    assert.equal(e.utm_content, 'tue27');
+  }
+  const res = await adminGet(handler, { table: 'emails', format: 'csv' });
+  const rows = (await res.text()).slice(0, -2).split('\r\n');
+  assert.equal(rows[0], EMAIL_COLUMNS.join(','));
+  assert.equal(rows.length, 5);
+  assert.ok(rows[3].startsWith('2026-10-27T09:00:00.000Z,g@example.com,'));
+  assert.ok(rows[3].endsWith(',android'));
+  assert.ok(rows[4].endsWith(',android'));
+});
+
 test('the directory form with a trailing slash reads the same', async () => {
   const plain = await scriptedWeek({ blobs: createMemoryBlobs({ dirSlash: false }) });
   const slash = await scriptedWeek({ blobs: createMemoryBlobs({ dirSlash: true }) });

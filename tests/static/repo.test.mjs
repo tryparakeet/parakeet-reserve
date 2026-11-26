@@ -80,7 +80,7 @@ test('event.mjs: GATE_START literal, SITE_ORIGINS of .netlify.app origins only, 
 test('event.mjs: the exact allowlists and version', () => {
   assert.deepEqual([...mod.EVENTS].sort(), ['email', 'leave', 'pageview', 'seen', 'tap', 'video']);
   assert.deepEqual([...mod.BUTTONS].sort(), ['android', 'plan_monthly', 'plan_yearly', 'play', 'reserve']);
-  assert.deepEqual([...mod.PLANS].sort(), ['monthly', 'yearly']);
+  assert.deepEqual([...mod.PLANS].sort(), ['android', 'monthly', 'yearly']);
   assert.equal(mod.SUMMARY_VERSION, 8);
   assert.doesNotMatch(eventSrc, /'answer'/, 'the answer event is gone');
   for (const b of mod.BUTTONS) {

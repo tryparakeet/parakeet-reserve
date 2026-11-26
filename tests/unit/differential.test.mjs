@@ -29,8 +29,7 @@ function compareBucket(b6, b8, path, { videoEvents }) {
   assert.ok(b8.android_taps <= b8.taps, `${path}.android_taps`);
   assert.equal(b8.tap_events, b8.tap_events_reserve + b8.tap_events_android + b8.tap_events_play + b8.tap_events_plan_yearly + b8.tap_events_plan_monthly, `${path}: the button counters add up`);
   // no Android rows in this fixture: the Android fields are 0
-  assert.equal(b8.android_taps, 0, `${path}.android_taps`);
-  assert.equal(b8.tap_events_android, 0, `${path}.tap_events_android`);
+  for (const k of ['android_taps', 'tap_events_android', 'android_emails', 'email_events_android']) assert.equal(b8[k], 0, `${path}.${k}`);
 }
 
 function compareDay(d6, d8, path, opts) {
@@ -71,6 +70,7 @@ test('the baseline is what it says it is', () => {
   assert.ok(ALL_ROWS.some((r) => r.event === 'video'), 'the fixture carries standalone video rows');
   assert.ok(ALL_ROWS.every((r) => v8.EVENTS.has(r.event)), 'only live events');
   assert.ok(!ALL_ROWS.some((r) => r.button === 'android'), 'no Android tap: the function refused one until version 8');
+  assert.ok(!ALL_ROWS.some((r) => r.plan === 'android'), 'no Android email: the function refused one until version 8');
 });
 
 test('without leave-carried video states v8 equals v6 on everything v6 counted, by the explicit mapping', () => {

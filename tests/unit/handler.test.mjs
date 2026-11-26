@@ -93,6 +93,10 @@ test('400: bad email, bad plan, bad via, bad video state', async () => {
   await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 'weekly' }, 400, 'bad plan');
   await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 'Yearly' }, 400, 'bad plan');
   await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 1 }, 400, 'bad plan');
+  await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 'Android' }, 400, 'bad plan');
+  await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 'android ' }, 400, 'bad plan');
+  await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 'ios' }, 400, 'bad plan');
+  await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 'plan_yearly' }, 400, 'bad plan');
   await rejected({ event: 'tap', vid: V, button: 'plan_yearly', via: 'keyboard' }, 400, 'bad via');
   await rejected({ event: 'tap', vid: V, button: 'plan_monthly', via: 'Card' }, 400, 'bad via');
   await rejected({ event: 'video', vid: V, video: 'paused' }, 400, 'bad video state');
@@ -120,6 +124,14 @@ test('via is stored on plan taps (card / hold), empty when absent, ignored on re
   const play = await one({ event: 'tap', ...tagged, button: 'play', via: 'bogus' });
   assert.equal(play.button, 'play');
   assert.equal(play.via, undefined, 'a bad via on a non-plan button is ignored, not rejected');
+});
+
+test('an email from an Android phone is taken with plan android', async () => {
+  const row = await one({ event: 'email', ...tagged, device: 'android', inapp: 'tiktok', email: 'someone@example.com', plan: 'android' });
+  assert.equal(row.plan, 'android');
+  assert.equal(row.email, 'someone@example.com');
+  assert.equal(row.device, 'android');
+  assert.equal(row.flag, 'gate');
 });
 
 test('the email row carries the plan: yearly / monthly, empty when absent', async () => {
