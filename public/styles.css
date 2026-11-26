@@ -1091,13 +1091,15 @@ html.sheet-open .cta { right: var(--sb, 0px); }
 
 /* ---------- Privacy, Terms and Support (P-393, P-1440) ----------
    The home's header and footer, in the same .page column. The header holds no Reserve and never sticks;
-   its icon and wordmark are one link home, whose target is the header's whole height. No script and no
-   motion on these pages. */
+   its icon and wordmark are one link home, whose target is the header's height less 4 px above and below
+   (44 to 64 tall), so its focus ring (2 px out, 2 wide) shows whole at the top of the page. No script and
+   no motion on these pages. */
 .logo-link {
   display: flex;
   align-self: stretch;
   align-items: center;
   gap: var(--logo-gap);
+  margin-block: 4px;
   text-decoration: none;
 }
 
