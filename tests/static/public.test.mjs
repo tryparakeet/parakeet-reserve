@@ -284,13 +284,24 @@ test('index.html copy, verbatim', () => {
   assert.equal(count(/\bRestline\b/g, index) + count(/\brestline\b/g, index), 0);
 });
 
-// The landing page's header on Privacy, Terms and Support (DESIGN.md §4): the sky browser bar, the symbol the
-// bird needs, one bird in the band, the whole wordmark a link home, before the page's own heading.
+// The home's header and footer on Privacy, Terms and Support (SITE-04 §6.1, P-393, P-1440): the cream browser
+// bar, the home's two symbols, the home's icon beside the wordmark as one link home named Parakeet (no Reserve),
+// the page's own words, then the home's footer, the same markup with no rise-in, all in the home's column. No
+// script: nothing moves and nothing is counted on these pages.
 function legalHeader(html, name) {
   assert.match(html, /<meta name="theme-color" content="#FBF6EC">/i, `${name}: theme-color is cream, as on every page (SITE-04 §6.1)`);
-  assert.match(html, /<symbol id="pk-mark"/, `${name}: carries the bird symbol`);
-  assert.equal(count(/<use href="#pk-mark"\/>/g, html), 1, `${name}: the bird once, in the band`);
-  assert.match(html, /<header class="sky legal-sky">\s*<a class="wordmark" href="\/"><svg class="bird"[^>]*><use href="#pk-mark"\/><\/svg>Parakeet<\/a>\s*<\/header>\s*<main class="legal-main">/, `${name}: the sky band with the linked wordmark sits above the page`);
+  const defs = (s) => /<svg class="defs"[\s\S]*?<\/svg>/.exec(s)[0];
+  assert.equal(defs(html), defs(index), `${name}: the home's bird and wordmark symbols`);
+  assert.equal(count(/<use href="#pk-mark"\/>/g, html), 1, `${name}: the bird once, in the footer`);
+  assert.equal(count(/<use href="#pk-word"\/>/g, html), 2, `${name}: the wordmark twice, the header and the footer`);
+  const icon = /<img class="logo-icon" [^>]*>/.exec(index)[0];
+  const header = '<header class="top">\n  <a class="logo-link" href="/">' + icon + '<svg class="logo-word" role="img" aria-label="Parakeet" focusable="false"><use href="#pk-word"/></svg></a>\n</header>\n<main class="legal-main">';
+  assert.ok(html.includes('<div class="page">\n' + header), `${name}: the home's icon and wordmark, one link home, at the top of the home's column`);
+  assert.doesNotMatch(html, /data-tap|<button\b/, `${name}: no Reserve`);
+  const footer = (s) => /<footer class="footer"[^>]*>[\s\S]*?<\/footer>/.exec(s)[0];
+  assert.equal(footer(html), footer(index).replace(' data-reveal', ''), `${name}: the home's footer, the same markup, with no rise-in`);
+  assert.match(html, /<\/footer>\n<\/div>\n<\/body>/, `${name}: the footer closes the column`);
+  assert.doesNotMatch(html, /<script\b/i, `${name}: no script`);
 }
 
 test('privacy.html: the cookie, the retention, the one email, never shared or sold, deletion, the address, the row contents', () => {

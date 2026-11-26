@@ -1055,39 +1055,16 @@ html.sheet-open body {
 }
 
 
-/* ---------- Legal pages ---------- */
-body.legal { display: block; }
-
-/* Their header is still the landing page's of Oct 23 (a sky band with the white bird and the wordmark in
-   type, a link home) until they take the home's new header */
-.sky {
-  padding-top: env(safe-area-inset-top, 0px);
-  background: var(--sky);
-  color: var(--white);
-}
-
-.sky > * {
-  max-width: var(--col);
-  margin-right: auto;
-  margin-left: auto;
-  padding: 0 var(--gutter);
-}
-
-.wordmark {
+/* ---------- Privacy, Terms and Support (P-393, P-1440) ----------
+   The home's header and footer, in the same .page column. The header holds no Reserve and never sticks;
+   its icon and wordmark are one link home, whose target is the header's whole height. No script and no
+   motion on these pages. */
+.logo-link {
   display: flex;
+  align-self: stretch;
   align-items: center;
-  gap: 8px;
-  height: 64px;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 24px;
-  letter-spacing: -0.02em;
-}
-
-.bird {
-  flex: none;
-  width: 22px;     /* the mark's crop is 572 x 856 */
-  height: 32px;
+  gap: var(--logo-gap);
+  text-decoration: none;
 }
 
 .legal-main {
@@ -1095,13 +1072,6 @@ body.legal { display: block; }
   max-width: var(--col);
   margin: 0 auto;
   padding: 24px var(--gutter) 24px;
-}
-
-/* The landing page's header on the legal pages: the sky band with the white bird and wordmark, the
-   whole wordmark a link home (DESIGN.md §4). Only the band is sky; the text below stays ink on cream. */
-.legal-sky .wordmark {
-  color: var(--white);
-  text-decoration: none;
 }
 
 .legal-main h1 {
@@ -1126,10 +1096,10 @@ body.legal { display: block; }
 .legal-main b { color: var(--ink); font-weight: 600; }
 .legal-main a { color: var(--ink); }
 
+/* The home's footer, 64 below the words (P-393) and with no bar to clear */
 body.legal .footer {
-  max-width: var(--col);
-  margin: 64px auto 0;
-  padding: 28px var(--gutter) calc(28px + env(safe-area-inset-bottom, 0px));
+  margin-top: 64px;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
 }
 
 /* ---------- The computer: 900 px wide and up (C-1440, C-page-1440; F-1024 and C-page-1024 narrowing) ----------
@@ -1251,6 +1221,9 @@ body.legal .footer {
      itself, and the page keeps its place under it. */
   html.sheet-open .top { position: fixed; right: 0; left: 0; max-width: 1440px; margin: 0 auto; }
   html.sheet-open .page { padding-top: calc(var(--top-h) + env(safe-area-inset-top, 0px)); }
+
+  /* Privacy, Terms and Support: the same header with no Reserve, so it scrolls away with the page (P-1440) */
+  body.legal .top { position: static; }
 
   /* The first screen: the white words tile over the stores' sky-soft tile, beside the phone's sky tile.
      The rows keep the boards' heights (a short window scrolls) and grow only if the words need it. */
