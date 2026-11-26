@@ -651,6 +651,43 @@ test('the phone\'s stores tile rises once as it comes into view, not again after
   expect(await still(page, '.stores')).toEqual({ running: 0, opacity: '1', transform: 'none' });
 });
 
+/* ---------- after a turn, the rise counts the bar as it is then ---------- */
+
+// A part rises once 12% of it shows above the bar where the bar is pinned, and above the window's bottom
+// where it sits in the page or isn't shown (a computer). A turn can change which: Prices and Recipes, still
+// waiting, is placed with 5% and then 30% of it over that edge.
+async function overEdge(page, fraction) {
+  await page.evaluate((f) => {
+    const el = document.querySelector('.facts');
+    const cta = document.querySelector('.cta');
+    const pinned = cta.getClientRects().length > 0 && getComputedStyle(cta).position === 'fixed';
+    const edge = pinned ? cta.getBoundingClientRect().top : window.innerHeight;
+    const r = el.getBoundingClientRect();
+    window.scrollBy(0, r.top - (edge - f * r.height));
+  }, fraction);
+  await frames(page, 3);
+  return page.locator('.facts').evaluate((el) => el.classList.contains('in'));
+}
+
+const TURNS = [
+  { from: { width: 393, height: 852 }, to: { width: 852, height: 393 }, note: 'a phone turned on its side: the bar now in the page' },
+  { from: { width: 852, height: 393 }, to: { width: 393, height: 852 }, note: 'a phone turned upright: the bar now pinned' },
+  { from: { width: 820, height: 1180 }, to: { width: 1180, height: 820 }, note: 'an iPad turned on its side: no bar' },
+  { from: { width: 1180, height: 820 }, to: { width: 820, height: 1180 }, note: 'an iPad turned upright: the bar now pinned' }
+];
+
+for (const turn of TURNS) {
+  test(`after a turn from ${turn.from.width}x${turn.from.height} to ${turn.to.width}x${turn.to.height} (${turn.note}), a part rises once 12% of it shows over the bar or the window's bottom`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await load(page, turn.from);
+    await expect(page.locator('.facts')).toHaveClass(/\bwait\b/);
+    await page.setViewportSize(turn.to);
+    await frames(page, 3);
+    expect(await overEdge(page, 0.05), 'with 5% of it shown, it still waits').toBe(false);
+    expect(await overEdge(page, 0.3), 'with 30% shown, it has risen').toBe(true);
+  });
+}
+
 test('Reduce Motion: nothing moves; the last answer and the total show, the passing ones are hidden; nothing waits below; the story changes at once', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(TAGGED_QS);

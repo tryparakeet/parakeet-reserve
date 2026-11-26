@@ -240,27 +240,45 @@
   /* ---------- the rise below the first screen: each part, once, the first time it scrolls into view ----------
      Only a part whose top is below the window at load waits (.wait, styles.css); one already in the window
      never moves, and with the script off nothing waits. It rises once 12% of it shows, as the boards do it,
-     counted above the bar where the bar is pinned over the window's bottom. */
+     counted above the bar where the bar is pinned over the window's bottom, and above the window's bottom
+     where the bar sits in the page or isn't shown. The bar can change with the window (a turn, a window
+     crossing 900 wide or a short window's height), so after a resize the observer is built again with the
+     bar as it is then, for the parts still waiting. */
 
   try { if (!reduced && 'IntersectionObserver' in win) {
     var reveals = doc.querySelectorAll('[data-reveal]');
     var windowH = win.innerHeight || root.clientHeight;
-    var barH = 0;
-    try { if (cta && cta.offsetHeight && win.getComputedStyle(cta).position === 'fixed') barH = cta.offsetHeight; } catch (e) {}
-    var revealObs = new IntersectionObserver(function (entries) {
-      for (var i = 0; i < entries.length; i++) {
-        if (!entries[i].isIntersecting) continue;
-        var part = entries[i].target;
-        revealObs.unobserve(part);
-        part.classList.remove('wait');
-        part.classList.add('in');
-      }
-    }, { threshold: 0.12, rootMargin: '0px 0px ' + (-barH) + 'px 0px' });
+    var revealObs = null;
+    var revealBarH = -1;
+    var pinnedBarH = function () {
+      try { if (cta && cta.offsetHeight && win.getComputedStyle(cta).position === 'fixed') return cta.offsetHeight; } catch (e) {}
+      return 0;
+    };
+    var watchReveal = function () {
+      var barH = pinnedBarH();
+      if (barH === revealBarH) return;
+      revealBarH = barH;
+      if (revealObs) revealObs.disconnect();
+      revealObs = new IntersectionObserver(function (entries, obs) {
+        for (var i = 0; i < entries.length; i++) {
+          if (!entries[i].isIntersecting) continue;
+          var part = entries[i].target;
+          obs.unobserve(part);
+          part.classList.remove('wait');
+          part.classList.add('in');
+        }
+      }, { threshold: 0.12, rootMargin: '0px 0px ' + (-barH) + 'px 0px' });
+      for (var w = 0; w < reveals.length; w++) if (reveals[w].classList.contains('wait')) revealObs.observe(reveals[w]);
+    };
     for (var rv = 0; rv < reveals.length; rv++) {
-      if (!(reveals[rv].getBoundingClientRect().top > windowH)) continue;
-      reveals[rv].classList.add('wait');
-      revealObs.observe(reveals[rv]);
+      if (reveals[rv].getBoundingClientRect().top > windowH) reveals[rv].classList.add('wait');
     }
+    watchReveal();
+    var revealRaf = 0;
+    win.addEventListener('resize', function () {
+      if (revealRaf) return;
+      revealRaf = win.requestAnimationFrame(function () { revealRaf = 0; watchReveal(); });
+    });
   } } catch (e) {}
 
   /* ---------- a rise plays once ----------
