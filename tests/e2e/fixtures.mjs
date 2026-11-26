@@ -137,9 +137,10 @@ export function bbox(locator) {
 // pin (its box's, less the translate its rise may give it), plus its height. Where the pin isn't sticky the
 // tile isn't held, and the window's top (0) stands for its bottom; where the bar isn't pinned (it sits in
 // the page) the window's bottom stands for its top. So with neither, a phone's focus line is the middle too.
-export function focusLineAt(page) {
+// focusPartsAt gives the line (at) with the two edges it lies between on a phone; focusLineAt, the line.
+export function focusPartsAt(page) {
   return page.evaluate(() => {
-    if (matchMedia('(min-width: 900px)').matches) return innerHeight / 2;
+    if (matchMedia('(min-width: 900px)').matches) return { computer: true, at: innerHeight / 2 };
     const pin = document.querySelector('.story-pin');
     const tile = document.querySelector('.story-tile');
     const bar = document.querySelector('.cta');
@@ -153,8 +154,12 @@ export function focusLineAt(page) {
     }
     const barStyle = getComputedStyle(bar);
     const barTop = barStyle.display !== 'none' && barStyle.position === 'fixed' ? bar.getBoundingClientRect().top : innerHeight;
-    return (tileBottom + barTop) / 2;
+    return { computer: false, tileBottom, barTop, at: (tileBottom + barTop) / 2 };
   });
+}
+
+export async function focusLineAt(page) {
+  return (await focusPartsAt(page)).at;
 }
 
 export async function viewportSize(page) {

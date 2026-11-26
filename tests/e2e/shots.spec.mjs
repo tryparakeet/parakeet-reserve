@@ -6,9 +6,9 @@
 // - At 393 x 852, 375 x 667 (an iPhone: DPR 2, touch, Safari's user agent, as the config has it), 1440 x 900
 //   and 1024 x 768 (a computer: no touch, DPR 1, a Mac's Safari): the first screen; the headline under it;
 //   the story with each of its four lines in focus (the line scrolled just past the focus line: halfway
-//   between the held tile and the bar on a phone, the middle on a computer); the price; the stores; Prices
-//   and Recipes; the footer; and the sheet's three steps (the plans, the email with an address typed, done
-//   for the yearly plan), the dialog in the middle on a computer.
+//   between the held tile and the bar on a phone, the middle on a computer; each line shows whole); the
+//   price; the stores; Prices and Recipes; the footer; and the sheet's three steps (the plans, the email with
+//   an address typed, done for the yearly plan), the dialog in the middle on a computer.
 // - An Android phone in Chrome at 412 x 915 and 360 x 800: the page at rest (the band has crossed), the
 //   email step with an address typed, and the done line.
 // - Privacy's top at 393 x 852 and 1440 x 900.
@@ -23,7 +23,7 @@
 
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, expect, TAGGED_QS, RESULTS_DIR, sheetSettled, frames, focusLineAt } from './fixtures.mjs';
+import { test, expect, TAGGED_QS, RESULTS_DIR, sheetSettled, frames, focusLineAt, focusPartsAt } from './fixtures.mjs';
 import { REAL_UAS, COMPUTER_UAS } from '../fixtures/user-agents.mjs';
 
 const DIR = join(RESULTS_DIR, 'screenshots');
@@ -92,14 +92,19 @@ function partScroll(page, selector) {
   }, selector);
 }
 
-// The story with line n in focus: the line's top 12 px past the focus line (focusLineAt: halfway between the
+// The story with line n in focus: the line's top 12 px past the focus line (focusPartsAt: halfway between the
 // held tile and the bar on a phone, the middle on a computer); the line is ink and the phone shows its screen.
+// On a phone the line also shows whole (SITE-04 §6.4): where a line of two rows would run under the bar, its
+// top goes higher, to end 12 px above the bar, though never nearer the held tile than 4 px. Once there, the
+// line's box and its words lie between the held tile and the bar (on a computer, under the header and in the
+// window), and its top is past the focus line, or the shot fails.
 async function storyLine(page, n) {
-  const focus = await focusLineAt(page);
-  const y = await page.evaluate(([i, at]) => {
-    const line = document.querySelectorAll('.story-line')[i];
-    return line.getBoundingClientRect().top + window.scrollY - at + 12;
-  }, [n, focus]);
+  const parts = await focusPartsAt(page);
+  const y = await page.evaluate(([i, p]) => {
+    const r = document.querySelectorAll('.story-line')[i].getBoundingClientRect();
+    const top = p.computer ? p.at - 12 : Math.max(Math.min(p.at - 12, p.barTop - r.height - 12), p.tileBottom + 4);
+    return r.top + window.scrollY - top;
+  }, [n, parts]);
   await scrollTo(page, y);
   await page.waitForFunction((i) => {
     const on = (list) => [...list].findIndex((el) => el.classList.contains('on'));
@@ -107,6 +112,30 @@ async function storyLine(page, n) {
   }, n);
   await imagesReady(page);
   await settleMotion(page);
+  const box = await page.evaluate((i) => {
+    const line = document.querySelectorAll('.story-line')[i];
+    const words = document.createRange();
+    words.selectNodeContents(line);
+    const rects = [line.getBoundingClientRect(), ...words.getClientRects()];
+    const header = document.querySelector('.top');
+    const bar = document.querySelector('.cta');
+    const barStyle = getComputedStyle(bar);
+    const computer = matchMedia('(min-width: 900px)').matches;
+    return {
+      top: Math.min(...rects.map((r) => r.top)),
+      bottom: Math.max(...rects.map((r) => r.bottom)),
+      lineTop: rects[0].top,
+      above: computer ? 'the header' : 'the held tile',
+      roomTop: computer
+        ? (getComputedStyle(header).position === 'sticky' ? header.getBoundingClientRect().bottom : 0)
+        : document.querySelector('.story-tile').getBoundingClientRect().bottom,
+      below: !computer && barStyle.position === 'fixed' ? 'the bar' : 'the window\'s bottom',
+      roomBottom: !computer && barStyle.display !== 'none' && barStyle.position === 'fixed' ? bar.getBoundingClientRect().top : innerHeight
+    };
+  }, n);
+  expect(box.top, `story line ${n + 1} starts below ${box.above}`).toBeGreaterThanOrEqual(box.roomTop);
+  expect(box.bottom, `story line ${n + 1} ends above ${box.below}`).toBeLessThanOrEqual(box.roomBottom);
+  expect(box.lineTop, `story line ${n + 1} is past the focus line`).toBeLessThan(await focusLineAt(page));
 }
 
 async function part(page, selector) {
