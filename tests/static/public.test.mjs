@@ -434,6 +434,10 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradie
   assert.match(cssNoComments, /\.sheet-backdrop \{[^}]*opacity: 0;\s*transition: opacity 200ms linear;/, 'the dim fades out in 200 ms');
   assert.match(cssNoComments, /\.sheet-root\.open \.sheet-backdrop \{\s*opacity: 1;/, 'and fades in as the sheet opens');
   assert.match(cssNoComments, /transform: translateY\(12px\);\s*opacity: 0;\s*transition: transform 240ms var\(--curve\), opacity 240ms var\(--curve\);/, 'the computer\'s dialog rises 12 px as it fades in, and drops as it fades out, in 240 ms');
+  assert.match(cssNoComments, /@keyframes step-in \{\s*from \{ opacity: 0; transform: translateY\(4px\); \}/, 'the next step and the done line rise 4 px as they fade in');
+  assert.match(cssNoComments, /\.step\.step-in \{ animation: step-in 200ms var\(--curve\) both; \}/, 'in 200 ms');
+  assert.match(app, /showStep\(2, true\)/, 'Hold my spot moves on to the email step');
+  assert.match(app, /showStep\(3, true\)/, 'a good address moves on to the done line');
   assert.match(css, /@keyframes rise\s*\{\s*from\s*\{\s*opacity:\s*0;\s*transform:\s*translateY\(14px\)/);
   for (const n of [1, 2, 3]) {
     assert.match(css, new RegExp(`\\.answer-${n}\\s*\\{\\s*animation:\\s*answer-${n} 5\\.8s ease-in-out 0\\.3s both;`), `answer ${n}: the one 5.8 s pass from 0.3 s, as the boards run it`);

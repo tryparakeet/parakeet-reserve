@@ -760,6 +760,30 @@ html.android { --sheet-pad-bottom: max(24px, env(safe-area-inset-bottom, 0px)); 
 .step { padding-top: 0; }
 .step[hidden] { display: none; }
 
+/* Moving on (DESIGN.md §6): the next step crossfades in over 200 ms with a 4 px rise on the standard curve,
+   and the done line rises in the same way under the emptied field. The step it replaces fades out where it
+   was, out of the flow (app.js places it), so the sheet takes the new step's height at once; the sheet
+   clips it meanwhile, so no scroll bar comes and goes. */
+@keyframes step-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes step-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.step.step-in { animation: step-in 200ms var(--curve) both; }
+
+.step.step-out {
+  position: absolute;
+  pointer-events: none;
+  animation: step-out 200ms linear both;
+}
+
+.sheet.stepping { overflow: hidden; }
+
 /* The sheet's title and small print are centred (Umyt's "center them all", DESIGN.md §4) */
 .sheet-title {
   font-size: 28px;
@@ -1478,5 +1502,6 @@ body.legal .footer {
   .story-line, .story .shot { transition: none; }
   [data-reveal].in { animation: none; }
   .sheet, .sheet-backdrop { transition: none; }
+  .step.step-in, .step.step-out { animation: none; }
   .field input.shake { animation: none; }
 }

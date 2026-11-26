@@ -301,9 +301,48 @@
   var openedAt = 0;
   var settleTimer = 0;
 
-  /* Step 3 (done) sits inside the email step, as on the boards: it shows under the emptied field */
-  function showStep(n) {
-    for (var i = 0; i < steps.length; i++) steps[i].hidden = !((i + 1) === n || (n === 3 && i === 1));
+  /* Step 3 (done) sits inside the email step, as on the boards: it shows under the emptied field.
+     Moving on (animate), the next step crossfades in 200 ms with a 4 px rise while the step it replaces
+     fades out where it was, out of the flow, so the sheet takes its new height at once; the done line rises
+     in the same way (styles.css). Opening shows its step at once: the sheet itself moves. */
+  var leaving = null;
+  var leaveTimer = 0;
+
+  function endLeave() {
+    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = 0; }
+    if (!leaving) return;
+    leaving.classList.remove('step-out');
+    leaving.removeAttribute('inert');
+    leaving.style.top = '';
+    leaving.style.left = '';
+    leaving.style.width = '';
+    leaving.hidden = true;
+    leaving = null;
+    panel.classList.remove('stepping');
+  }
+
+  function showStep(n, animate) {
+    endLeave();
+    var move = !!animate && !reduced;
+    var show = [];
+    for (var i = 0; i < steps.length; i++) show[i] = (i + 1) === n || (n === 3 && i === 1);
+    for (var j = 0; j < steps.length; j++) {
+      var step = steps[j];
+      step.classList.remove('step-in');
+      if (move && !show[j] && !step.hidden) {
+        step.style.top = step.offsetTop + 'px';
+        step.style.left = step.offsetLeft + 'px';
+        step.style.width = step.offsetWidth + 'px';
+        step.setAttribute('inert', '');
+        step.classList.add('step-out');
+        panel.classList.add('stepping');
+        leaving = step;
+        continue;
+      }
+      if (move && show[j] && step.hidden) step.classList.add('step-in');
+      step.hidden = !show[j];
+    }
+    if (leaving) leaveTimer = setTimeout(endLeave, 200);
     panel.setAttribute('aria-labelledby', 'sheet-title-' + (n === 3 ? 2 : n));
     panel.scrollTop = 0;
   }
@@ -454,7 +493,7 @@
       planTapped = true;
       try { send('tap', { button: 'plan_' + selectedPlan, via: 'hold' }); } catch (e) {}
     }
-    showStep(2);
+    showStep(2, true);
     try { emailInput.focus(); } catch (e) {}   // inside the click: opens the iOS keyboard; fitSheet follows the viewport
   });
 
@@ -481,7 +520,7 @@
     for (var d = 0; d < doneEmails.length; d++) doneEmails[d].textContent = v;
     emailInput.value = '';
     setEmailState(true);
-    showStep(3);
+    showStep(3, true);
     win.requestAnimationFrame(function () {
       try { panel.focus({ preventScroll: true }); } catch (e) {}
       fitSheet();
