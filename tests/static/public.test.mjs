@@ -287,7 +287,7 @@ test('index.html copy, verbatim', () => {
 // The landing page's header on Privacy, Terms and Support (DESIGN.md §4): the sky browser bar, the symbol the
 // bird needs, one bird in the band, the whole wordmark a link home, before the page's own heading.
 function legalHeader(html, name) {
-  assert.match(html, /<meta name="theme-color" content="#4FA8E8">/i, `${name}: theme-color is sky`);
+  assert.match(html, /<meta name="theme-color" content="#FBF6EC">/i, `${name}: theme-color is cream, as on every page (SITE-04 §6.1)`);
   assert.match(html, /<symbol id="pk-mark"/, `${name}: carries the bird symbol`);
   assert.equal(count(/<use href="#pk-mark"\/>/g, html), 1, `${name}: the bird once, in the band`);
   assert.match(html, /<header class="sky legal-sky">\s*<a class="wordmark" href="\/"><svg class="bird"[^>]*><use href="#pk-mark"\/><\/svg>Parakeet<\/a>\s*<\/header>\s*<main class="legal-main">/, `${name}: the sky band with the linked wordmark sits above the page`);
