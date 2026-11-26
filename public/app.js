@@ -212,21 +212,33 @@
     seenObs.observe(price);
   } } catch (e) {}
 
-  var reduced = false;   // closeSheet and the scroll fade read it
+  var reduced = false;   // closeSheet, the sheet's steps and the rise below the first screen read it
   try { reduced = !!(win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
 
-  /* ---------- the scroll fade: each row and the footer, once, the first time they enter the viewport ---------- */
+  /* ---------- the rise below the first screen: each part, once, the first time it scrolls into view ----------
+     Only a part whose top is below the window at load waits (.wait, styles.css); one already in the window
+     never moves, and with the script off nothing waits. It rises once 12% of it shows, as the boards do it,
+     counted above the bar where the bar is pinned over the window's bottom. */
 
   try { if (!reduced && 'IntersectionObserver' in win) {
     var reveals = doc.querySelectorAll('[data-reveal]');
+    var windowH = win.innerHeight || root.clientHeight;
+    var barH = 0;
+    try { if (cta && cta.offsetHeight && win.getComputedStyle(cta).position === 'fixed') barH = cta.offsetHeight; } catch (e) {}
     var revealObs = new IntersectionObserver(function (entries) {
       for (var i = 0; i < entries.length; i++) {
         if (!entries[i].isIntersecting) continue;
-        entries[i].target.classList.add('in');
-        revealObs.unobserve(entries[i].target);
+        var part = entries[i].target;
+        revealObs.unobserve(part);
+        part.classList.remove('wait');
+        part.classList.add('in');
       }
-    });
-    for (var rv = 0; rv < reveals.length; rv++) revealObs.observe(reveals[rv]);
+    }, { threshold: 0.12, rootMargin: '0px 0px ' + (-barH) + 'px 0px' });
+    for (var rv = 0; rv < reveals.length; rv++) {
+      if (!(reveals[rv].getBoundingClientRect().top > windowH)) continue;
+      reveals[rv].classList.add('wait');
+      revealObs.observe(reveals[rv]);
+    }
   } } catch (e) {}
 
   /* ---------- sheet ---------- */

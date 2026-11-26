@@ -629,9 +629,11 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
   aspect-ratio: 4140 / 737;
 }
 
-/* The one-time scroll fade (DESIGN.md §6): app.js adds .in the first time a part enters the viewport. At
-   rest everything is fully visible, so nothing hides if the script never runs. A tile with a phone only
-   rises, so the bezel never fades. */
+/* The rise below the first screen (DESIGN.md §6): the headline, each tile and the footer rise 14 px once,
+   500 ms on the standard curve, the first time they scroll into view; a tile with a phone only rises, so
+   the bezel never fades. app.js gives the waiting state (.wait) only to the parts whose top is below the
+   window at load, then trades it for .in. At rest everything is fully visible, so nothing hides if the
+   script never runs, and a part already in view never moves. */
 @keyframes rise {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: none; }
@@ -642,7 +644,9 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
   to { transform: none; }
 }
 
-[data-reveal].in { animation: rise 500ms ease-out both; }
+[data-reveal].wait { opacity: 0; transform: translateY(14px); }
+[data-reveal="rise"].wait { opacity: 1; }
+[data-reveal].in { animation: rise 500ms var(--curve) both; }
 [data-reveal="rise"].in { animation-name: rise-only; }
 
 /* ---------- A window too short for the words, a 200 px phone and the bar together ----------

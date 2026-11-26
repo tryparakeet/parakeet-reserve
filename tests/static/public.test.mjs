@@ -419,8 +419,13 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradie
   assert.ok(unpinned, 'the bar sits in the page only under a media query');
   for (const q of unpinned[1].split(',')) assert.match(q, /max-height: \d+(\.\d+)?px/, `${q.trim()}: only in a window too short for the words, a 200 px phone and the bar`);
   assert.match(css, /--sheet-pad-bottom:[^;]*env\(safe-area-inset-bottom/, 'with the bottom safe-area inset');
-  assert.match(css, /\[data-reveal\]\.in\s*\{\s*animation:\s*rise 500ms/, 'the scroll fade: 500 ms, only once .in is added');
-  assert.doesNotMatch(cssNoComments, /\[data-reveal\](?!\.in)[^{,]*\{[^}]*opacity:\s*0/, 'the rows are visible at rest');
+  assert.match(css, /\[data-reveal\]\.in\s*\{\s*animation:\s*rise 500ms var\(--curve\) both;/, 'the rise: 500 ms on the standard curve, only once .in is added');
+  assert.doesNotMatch(cssNoComments, /\[data-reveal\](?!\.in|\.wait)[^{,]*\{[^}]*opacity:\s*0/, 'the parts are visible at rest');
+  assert.match(cssNoComments, /\[data-reveal\]\.wait\s*\{\s*opacity:\s*0;\s*transform:\s*translateY\(14px\);\s*\}/, 'the waiting state is the script\'s .wait');
+  assert.doesNotMatch(index, /class="[^"]*\bwait\b/, 'the markup never waits: only app.js adds .wait');
+  assert.match(app, /classList\.add\('wait'\)/, 'app.js adds the waiting state');
+  assert.match(app, /getBoundingClientRect\(\)\.top > windowH/, 'only to a part whose top is below the window at load');
+  assert.match(app, /threshold: 0\.12/, 'it rises once 12% of it shows, as the boards do it');
   assert.match(css, /@keyframes rise\s*\{\s*from\s*\{\s*opacity:\s*0;\s*transform:\s*translateY\(14px\)/);
   for (const n of [1, 2, 3]) {
     assert.match(css, new RegExp(`\\.answer-${n}\\s*\\{\\s*animation:\\s*answer-${n} 5\\.8s ease-in-out 0\\.3s both;`), `answer ${n}: the one 5.8 s pass from 0.3 s, as the boards run it`);
