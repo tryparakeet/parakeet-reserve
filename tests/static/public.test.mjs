@@ -136,15 +136,44 @@ test('index.html ids: each required id exactly once', () => {
   }
 });
 
-test('index.html data-tap: every BUTTON of event.mjs but play is on the page, and nothing else; play stays allowlisted and nothing emits it', () => {
-  const taps = [...index.matchAll(/\sdata-tap="([^"]*)"/g)].map((m) => m[1]);
-  assert.deepEqual([...new Set(taps)].sort(), ['android', 'plan_monthly', 'plan_yearly', 'reserve'], 'the page carries every BUTTON but play');
-  for (const t of taps) assert.ok([...BUTTONS].includes(t), `${t} is one of BUTTONS`);
-  assert.equal(taps.filter((t) => t.startsWith('plan_')).length, 2, 'each plan once, in the sheet');
+// Where the page's buttons sit: the header (the computer's Reserve), the white tile (the computer's first
+// screen), the bar (the phone's) and the sheet. reserve and android each sit in the first three; the device
+// shows one of the two (for-reserve, for-android).
+function placeOf(html, start, end) {
+  const from = html.indexOf(start);
+  assert.ok(from >= 0, `${start} is on the page`);
+  const to = html.indexOf(end, from + start.length);
+  assert.ok(to > from, `${end} follows ${start}`);
+  return { from, to };
+}
+
+test('index.html data-tap: each is a button of event.mjs\'s BUTTONS, every BUTTON but play is on the page, reserve and android in the header, the white tile and the bar, the two plans in the sheet', () => {
+  const places = {
+    header: placeOf(index, '<header class="top">', '</header>'),
+    'white tile': placeOf(index, '<div class="first-words">', '<div class="first-tile">'),
+    bar: placeOf(index, '<div class="cta">', '</div>'),
+    sheet: placeOf(index, '<div class="sheet-root" id="sheet"', '</body>')
+  };
+  const taps = [...index.matchAll(/<([a-z]+)\b[^>]*\sdata-tap="([^"]*)"[^>]*>/g)].map((m) => ({ tag: m[1], tap: m[2], html: m[0], at: m.index }));
+  assert.equal(taps.length, count(/\sdata-tap=/g, index), 'every data-tap is read');
+  const byPlace = {};
+  for (const t of taps) {
+    assert.equal(t.tag, 'button', `${t.html}: a button`);
+    assert.ok(BUTTONS.has(t.tap), `${t.tap} is one of BUTTONS`);
+    const where = Object.keys(places).filter((p) => t.at > places[p].from && t.at < places[p].to);
+    assert.equal(where.length, 1, `${t.html}: in the header, the white tile, the bar or the sheet`);
+    (byPlace[where[0]] ||= []).push(t.tap);
+    if (t.tap === 'reserve' || t.tap === 'android') assert.match(t.html, new RegExp(`\\sclass="[^"]*\\bfor-${t.tap}\\b`), `${t.html}: shown for its device`);
+  }
+  assert.deepEqual(byPlace, {
+    header: ['reserve', 'android'],
+    'white tile': ['reserve', 'android'],
+    bar: ['reserve', 'android'],
+    sheet: ['plan_yearly', 'plan_monthly']
+  });
+  assert.deepEqual([...new Set(taps.map((t) => t.tap))].sort(), [...BUTTONS].filter((b) => b !== 'play').sort(), 'every BUTTON but play is on the page');
   assert.deepEqual([...BUTTONS].sort(), ['android', 'plan_monthly', 'plan_yearly', 'play', 'reserve'], 'play is still allowlisted');
   assert.doesNotMatch(app, /'play'/, 'app.js never sends play');
-  assert.match(index, /<button[^>]*\sdata-tap="reserve"[^>]*>/);
-  assert.match(index, /<button[^>]*\sdata-tap="android"[^>]*>/);
   assert.match(index, /<button[^>]*\srole="radio"[^>]*\sdata-tap="plan_yearly"[^>]*\sdata-plan="yearly"[^>]*\saria-checked="true"/);
   assert.match(index, /<button[^>]*\srole="radio"[^>]*\sdata-tap="plan_monthly"[^>]*\sdata-plan="monthly"[^>]*\saria-checked="false"/);
   assert.match(index, /<button[^>]*\sid="hold"[^>]*>/);
