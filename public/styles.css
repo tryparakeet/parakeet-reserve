@@ -431,7 +431,7 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
   background: var(--sky);
 }
 
-.story-tile .phone { height: calc(100% - 44px); }
+.story-tile .phone { height: min(100% - 44px, (min(100vw, var(--col)) - 48px) * 457 / 224); }
 
 .story-step {
   min-height: 300px;
@@ -465,7 +465,7 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
 }
 
 .tile-yours .phone {
-  width: 196px;
+  width: min(196px, 100%);
   margin-top: 24px;
 }
 
@@ -547,6 +547,7 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
 .foot-contact a {
   position: relative;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .foot-contact a::after {
@@ -560,7 +561,8 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
 
 .foot-links {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  column-gap: 24px;
   margin-top: 8px;
   font-size: 15px;
   font-weight: 600;
