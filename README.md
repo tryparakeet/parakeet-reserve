@@ -57,6 +57,8 @@ https://tryparakeet.netlify.app/admin?key=KEY&table=raw&day=2026-10-25&format=cs
 
 `day=`, `from=`, `to=` limit the days reported (UTC); the read uses none of them. Check `partial: false` and `pending: []` first; if not, read again a minute later.
 
+An Android phone gets one button, "Email me when it's on Android" (parakeet-app's `docs/SITE-03-ANDROID-LIST.md`), and the summary (version 8) counts it apart from the reserves. Its tap is `android_taps` (visitors) and `tap_events_android` (rows), beside the reserve taps and never in them or in the plan taps; like every button it is in `taps` and `tap_events`. Its email carries plan `android`: `emails` and `email_events` count the reservation emails only, and the Android ones sit beside them as `android_emails` and `email_events_android`. The summary CSV has the same columns; its bare `android` column is still the device (pageviews from Android phones). The email table (`table=emails`) and the summary's `emails[]` list every address with its plan, so the Android ones are the rows with plan `android`.
+
 ## The app's beacon
 
 Built from parakeet-app's `docs/SITE-01-BEACON.md` against its contract, `docs/BEACON.md` (a change to the notes goes there first). The app sends `POST /beacon` with its notes; `GET /admin/app?key=ADMIN_KEY` is Umyt's read. The Gate 0 function and its rows are untouched.
