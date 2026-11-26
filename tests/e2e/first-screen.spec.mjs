@@ -386,7 +386,8 @@ for (const vp of [{ width: 393, height: 560, note: 'a short window' }, { width: 
     // the story's tile isn't held in place: it scrolls with its lines
     expect(await page.evaluate(() => getComputedStyle(document.querySelector('.story-pin')).position)).toBe('relative');
     await focusLine(page, 0);
-    await atRest(page);   // the tile's rise as it came into view
+    await expect(page.locator('.story-tile'), 'the tile has come into view').toHaveClass(/\bin\b/);
+    await atRest(page);   // its rise
     const tile = await bbox(page.locator('.story-tile'));
     await page.evaluate(() => window.scrollBy(0, 60));
     await frames(page);
