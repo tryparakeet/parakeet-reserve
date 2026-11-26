@@ -93,10 +93,10 @@ test('400: bad email, bad plan, bad via, bad video state', async () => {
   await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 'weekly' }, 400, 'bad plan');
   await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 'Yearly' }, 400, 'bad plan');
   await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 1 }, 400, 'bad plan');
-  await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 'Android' }, 400, 'bad plan');
-  await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 'android ' }, 400, 'bad plan');
-  await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 'ios' }, 400, 'bad plan');
-  await rejected({ event: 'email', vid: V, email: 'a@b.co', plan: 'plan_yearly' }, 400, 'bad plan');
+  await rejected({ event: 'email', vid: V, email: 'a@example.com', plan: 'Android' }, 400, 'bad plan');
+  await rejected({ event: 'email', vid: V, email: 'a@example.com', plan: 'android ' }, 400, 'bad plan');
+  await rejected({ event: 'email', vid: V, email: 'a@example.com', plan: 'ios' }, 400, 'bad plan');
+  await rejected({ event: 'email', vid: V, email: 'a@example.com', plan: 'plan_yearly' }, 400, 'bad plan');
   await rejected({ event: 'tap', vid: V, button: 'plan_yearly', via: 'keyboard' }, 400, 'bad via');
   await rejected({ event: 'tap', vid: V, button: 'plan_monthly', via: 'Card' }, 400, 'bad via');
   await rejected({ event: 'video', vid: V, video: 'paused' }, 400, 'bad video state');
