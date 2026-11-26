@@ -31,7 +31,7 @@ test('tagged visit: reserve, seen, plan rows, Hold my spot, email, the done stat
   const vid = pv.vid;
 
   // reserve -> tap row, sheet open, seen once
-  const reserve = page.locator('[data-tap="reserve"]');
+  const reserve = page.locator('.cta [data-tap="reserve"]');
   await reserve.click();
   const [tapReserve] = await waitForRows(blobs, { event: 'tap', button: 'reserve' });
   expect(tapReserve.vid).toBe(vid);
@@ -137,7 +137,7 @@ test('tagged visit: reserve, seen, plan rows, Hold my spot, email, the done stat
 
   // the summary the admin reads for this visit
   const out = await harness.admin();
-  expect(out.version).toBe(7);
+  expect(out.version).toBe(8);
   expect(out.partial).toBe(false);
   expect(out.pending).toEqual([]);
   const tt = out.total.sources.tiktok;
@@ -168,7 +168,7 @@ test('Hold my spot without a card press records the preselected plan with via: h
   const { blobs } = harness;
   await page.goto(TAGGED_QS);
   await waitForRows(blobs, { event: 'pageview' });
-  await page.locator('[data-tap="reserve"]').click();
+  await page.locator('.cta [data-tap="reserve"]').click();
   await waitForRows(blobs, { event: 'tap', button: 'reserve' });
   await sheetSettled(page);
   await expect(page.locator('[data-tap="plan_yearly"]')).toHaveAttribute('aria-checked', 'true');
@@ -184,7 +184,7 @@ test('Hold my spot without a card press records the preselected plan with via: h
   // pressing Hold my spot again (back at step 1 after a reopen) sends no second plan row
   await page.keyboard.press('Escape');
   await expect(page.locator('#sheet')).toBeHidden();
-  await page.locator('[data-tap="reserve"]').click();
+  await page.locator('.cta [data-tap="reserve"]').click();
   await expect(page.locator('#step-1')).toBeVisible();
   await sheetSettled(page);
   await page.locator('#hold').click();
@@ -334,7 +334,7 @@ for (const [plan, lines] of Object.entries(PLAN_LINES)) {
     const { blobs } = harness;
     await page.goto(TAGGED_QS);
     await waitForRows(blobs, { event: 'pageview' });
-    await page.locator('[data-tap="reserve"]').click();
+    await page.locator('.cta [data-tap="reserve"]').click();
     await sheetSettled(page);
     // each row's accessible name is its visible text; no plan names on the rows
     await expect(page.getByRole('radio', { name: '2 free weeks 14 days free, then just $29.99/year.' })).toHaveAttribute('data-plan', 'yearly');

@@ -1,6 +1,6 @@
 // public/: what ships. No vh units (svh only), no external URL but Support's one link to Apple, nothing
-// inline, no Netlify Forms; the page's ids, the four data-tap values equal to BUTTONS, the one script and
-// the one stylesheet, the viewport flags, the video element, the exact copy; every page's footer; the legal
+// inline, no Netlify Forms; the page's ids, every data-tap value of BUTTONS but play, the one script and
+// the one stylesheet, the viewport flags, the pictures, the exact copy; every page's footer; the legal
 // pages' promises; Privacy's part about the app; Support's words; robots.txt; app.js's endpoint, cookie name
 // and transport.
 
@@ -112,7 +112,7 @@ test('nothing inline and no Netlify Forms in any html', () => {
 test('index.html head: title, description, theme-color, viewport flags, one deferred /app.js, one /styles.css', () => {
   assert.match(index, /<title>Parakeet<\/title>/);
   assert.match(index, /<meta name="description" content="What’s for dinner this week\?">/);
-  assert.match(index, /<meta name="theme-color" content="#4FA8E8">/i);
+  assert.match(index, /<meta name="theme-color" content="#FBF6EC">/i, 'the browser bar is cream (DESIGN.md §4)');
   assert.match(index, /<meta name="color-scheme" content="light">/);
   const viewport = /<meta name="viewport" content="([^"]+)">/.exec(index);
   assert.ok(viewport, 'viewport meta');
@@ -136,26 +136,63 @@ test('index.html ids: each required id exactly once', () => {
   }
 });
 
-test('index.html data-tap: the BUTTONS of event.mjs but play, each once; play stays allowlisted and nothing emits it', () => {
-  const taps = [...index.matchAll(/\sdata-tap="([^"]*)"/g)].map((m) => m[1]);
-  assert.equal(taps.length, 3, 'three data-tap attributes');
-  assert.deepEqual([...taps].sort(), ['plan_monthly', 'plan_yearly', 'reserve']);
-  assert.deepEqual([...BUTTONS].sort(), ['plan_monthly', 'plan_yearly', 'play', 'reserve'], 'play is still allowlisted');
+// Where the page's buttons sit: the header (the computer's Reserve), the white tile (the computer's first
+// screen), the bar (the phone's) and the sheet. reserve and android each sit in the first three; the device
+// shows one of the two (for-reserve, for-android).
+function placeOf(html, start, end) {
+  const from = html.indexOf(start);
+  assert.ok(from >= 0, `${start} is on the page`);
+  const to = html.indexOf(end, from + start.length);
+  assert.ok(to > from, `${end} follows ${start}`);
+  return { from, to };
+}
+
+test('index.html data-tap: each is a button of event.mjs\'s BUTTONS, every BUTTON but play is on the page, reserve and android in the header, the white tile and the bar, the two plans in the sheet', () => {
+  const places = {
+    header: placeOf(index, '<header class="top">', '</header>'),
+    'white tile': placeOf(index, '<div class="first-words">', '<div class="first-tile">'),
+    bar: placeOf(index, '<div class="cta">', '</div>'),
+    sheet: placeOf(index, '<div class="sheet-root" id="sheet"', '</body>')
+  };
+  const taps = [...index.matchAll(/<([a-z]+)\b[^>]*\sdata-tap="([^"]*)"[^>]*>/g)].map((m) => ({ tag: m[1], tap: m[2], html: m[0], at: m.index }));
+  assert.equal(taps.length, count(/\sdata-tap=/g, index), 'every data-tap is read');
+  const byPlace = {};
+  for (const t of taps) {
+    assert.equal(t.tag, 'button', `${t.html}: a button`);
+    assert.ok(BUTTONS.has(t.tap), `${t.tap} is one of BUTTONS`);
+    const where = Object.keys(places).filter((p) => t.at > places[p].from && t.at < places[p].to);
+    assert.equal(where.length, 1, `${t.html}: in the header, the white tile, the bar or the sheet`);
+    (byPlace[where[0]] ||= []).push(t.tap);
+    if (t.tap === 'reserve' || t.tap === 'android') assert.match(t.html, new RegExp(`\\sclass="[^"]*\\bfor-${t.tap}\\b`), `${t.html}: shown for its device`);
+  }
+  assert.deepEqual(byPlace, {
+    header: ['reserve', 'android'],
+    'white tile': ['reserve', 'android'],
+    bar: ['reserve', 'android'],
+    sheet: ['plan_yearly', 'plan_monthly']
+  });
+  assert.deepEqual([...new Set(taps.map((t) => t.tap))].sort(), [...BUTTONS].filter((b) => b !== 'play').sort(), 'every BUTTON but play is on the page');
+  assert.deepEqual([...BUTTONS].sort(), ['android', 'plan_monthly', 'plan_yearly', 'play', 'reserve'], 'play is still allowlisted');
   assert.doesNotMatch(app, /'play'/, 'app.js never sends play');
-  assert.match(index, /<button[^>]*\sdata-tap="reserve"[^>]*>/);
   assert.match(index, /<button[^>]*\srole="radio"[^>]*\sdata-tap="plan_yearly"[^>]*\sdata-plan="yearly"[^>]*\saria-checked="true"/);
   assert.match(index, /<button[^>]*\srole="radio"[^>]*\sdata-tap="plan_monthly"[^>]*\sdata-plan="monthly"[^>]*\saria-checked="false"/);
   assert.match(index, /<button[^>]*\sid="hold"[^>]*>/);
   assert.doesNotMatch(index, /data-tap="[^"]*"[^>]*data-tap=/, 'no element carries two data-tap attributes');
 });
 
-test('index.html hero B: no clip; the bird inline (currentColor); every img sized and decoded async under /media; the price is the seen target', () => {
-  assert.doesNotMatch(index, /<video\b/i, 'no video on hero B');
+test('index.html pictures: no clip; the bird and the wordmark inline (currentColor); every img sized and decoded async under /media; the phones\' screens; the price is the seen target', () => {
+  assert.doesNotMatch(index, /<video\b/i, 'no video');
   assert.doesNotMatch(index, /walkthrough/, 'the walkthrough clip is gone from the page');
+  assert.doesNotMatch(index, /dish-|class="(app|week|dinners?)"/, 'the drawn week and its dish photos are gone');
   assert.match(index, /<symbol id="pk-mark" viewBox="228 90 572 856"><g fill="currentColor">/);
-  assert.equal(count(/<use href="#pk-mark"\/>/g, index), 2, 'the bird twice: the wordmark and the week header');
+  assert.match(index, /<symbol id="pk-word" viewBox="68 -726 4140 737"><path fill="currentColor" d="M188 -257V-379H340Q/, 'the outlined wordmark (Outfit Bold), its fill currentColor');
+  assert.equal(count(/\sid="pk-word"/g, index), 1);
+  assert.equal(count(/<use href="#pk-mark"\/>/g, index), 1, 'the bird once: the footer\'s whole white bird');
+  assert.equal(count(/<use href="#pk-word"\/>/g, index), 2, 'the wordmark twice: the header and the footer');
+  assert.match(index, /<header class="top">\s*<img class="logo-icon" [^>]*>\s*<svg class="logo-word" role="img" aria-label="Parakeet" focusable="false"><use href="#pk-word"\/><\/svg>\s*<a class="top-link" href="#faq">FAQ<\/a>\s*<button class="top-btn for-reserve" type="button" data-tap="reserve">Reserve 2 free weeks<\/button>\s*<button class="top-btn for-android" type="button" data-tap="android">Email me when it’s on Android<\/button>\s*<\/header>/, 'the header: the icon beside the wordmark, named Parakeet, then the computer\'s FAQ and its small Reserve (Android\'s button on Android)');
+  assert.match(index, /<div class="giant" aria-hidden="true">\s*<svg class="giant-bird" focusable="false"><use href="#pk-mark"\/><\/svg>\s*<svg class="giant-word" focusable="false"><use href="#pk-word"\/><\/svg>\s*<\/div>/, 'the footer: the bird beside the giant wordmark, aria-hidden');
   const imgs = index.match(/<img\b[^>]*>/gi) || [];
-  assert.equal(imgs.length, 3, 'two dish photos and the bezel');
+  assert.equal(imgs.length, 12, 'the icon, three bezels, and the phones\' eight screens');
   for (const img of imgs) {
     assert.match(img, /\ssrc="\/media\/[a-z0-9-]+\.webp"/, `${img}: a WebP under /media`);
     assert.match(img, /\swidth="\d+"/, `${img}: width`);
@@ -163,7 +200,23 @@ test('index.html hero B: no clip; the bird inline (currentColor); every img size
     assert.match(img, /\sdecoding="async"/, `${img}: decoding async`);
     assert.match(img, /\salt=""/, `${img}: decorative (the phone carries the label)`);
   }
-  assert.match(index, /<div class="phone" role="img" aria-label="[^"]*\$58\.12[^"]*\$100 budget[^"]*">/);
+  assert.match(imgs[0], /^<img class="logo-icon" src="\/media\/icon-v1-30\.webp" srcset="[^"]*\/media\/icon-v1-90\.webp 90w[^"]*" sizes="[^"]+" width="30" height="30"/, 'the icon: one srcset for its three sizes at 1x to 3x');
+  const screens = imgs.filter((i) => /class="shot/.test(i));
+  const name = (i) => /\/media\/screen-([a-z]+)-/.exec(i)[1];
+  assert.deepEqual(screens.map(name), ['week', 'list', 'total', 'nights', 'budget', 'week', 'list', 'yours'], 'the first screen\'s three, the story\'s four, the price\'s one');
+  for (const i of screens) {
+    const set = /\ssrcset="([^"]+)"/.exec(i);
+    assert.ok(set && /-420\.webp 420w, \/media\/[a-z0-9-]+-640\.webp 640w$/.test(set[1]), `${i}: srcset at 420 and 640 wide`);
+    assert.match(i, /\ssizes="[^"]+"/, `${i}: sizes`);
+    assert.match(i, /\swidth="420" height="911"/, `${i}: its size`);
+  }
+  screens.slice(0, 3).forEach((i, n) => {
+    assert.match(i, new RegExp(`class="shot answer-${n + 1}"`), `${i}: changes with the answer line`);
+    assert.doesNotMatch(i, /loading=/, `${i}: the first screen's screens load at once`);
+  });
+  for (const i of screens.slice(3)) assert.match(i, /\sloading="lazy"/, `${i}: the story's and the price's screens load lazily`);
+  assert.equal(count(/<div class="phone" role="img" aria-label="Parakeet on an iPhone\.">/g, index), 2, 'the first screen\'s phone and the story\'s');
+  assert.equal(count(/<div class="phone" role="img" aria-label="Parakeet on an iPhone: a price you typed\.">/g, index), 1);
   assert.match(index, /<span class="plan-price" id="price">14 days free, then just \$29\.99\/year\.<\/span>/);
 });
 
@@ -192,11 +245,17 @@ test('index.html copy, verbatim', () => {
     'Know what dinner costs before you shop.',
     'Reserve 2 free weeks',
     'We don’t charge anything today. Reserve the yearly plan now and you will have 2 free weeks at launch.',
-    'Stores', 'Walmart', 'Kroger', 'Target', 'Aldi', 'More soon',
+    'Parakeet is iPhone only for now. We plan to bring it to Android.',
+    'Email me when it’s on Android',
+    'Planning dinners for the whole week?',
+    'You pick your store and your budget, and it plans your week’s dinners so they share ingredients, with one grocery list and the total added up before you shop.',
+    'Pick how many days.', 'Set your budget.', 'We plan the dinners.', 'You get the grocery list.',
+    'When you type what you really paid, it remembers that price for that store.',
+    'Stores Walmart Kroger Target Aldi H-E-B Sprouts Whole Foods Trader Joe’s Meijer Wegmans Hy-Vee Publix',
     'Prices',
     'We use the regular price for the whole pack you’d actually buy. Your total at the register may come out a little different.',
     'Recipes',
-    'Real people will cook every recipe before we add it. Each one will show who made it and link to the original. None will be made by AI.',
+    'The recipes come from food groups and home cooks who said yes to sharing them. Each one will show who made it and link to the original. None will be made by AI.',
     'Parakeet is an app in development. The plan prices are what you’d pay at launch.',
     'Contact: support.parakeet@gmail.com',
     'Privacy',
@@ -213,42 +272,65 @@ test('index.html copy, verbatim', () => {
     'Your 2 free weeks are reserved for . We’ll email you once, when Parakeet is live.',
     'Your spot is saved for . We’ll email you once, when Parakeet is live.',
     'One email when we launch. Your 2 free weeks are tied to this email.',
-    'One email when we launch, nothing else.'
+    'One email when we launch, nothing else.',
+    'We’ll email when Parakeet is on Android.',
+    'We’ll email you when it’s on Android, and maybe once before, to ask if you’d like to try it early. Nothing else.'
   ];
   for (const s of strings) assert.ok(text.includes(s), `index.html says: ${s}`);
-  for (const gone of ['5 dinners that fit your budget.', 'Yearly', 'Monthly', 'FREE WEEKS', 'Totals are estimates', 'cooked by a real person first', 'Some will come from food creators, and some will be tested recipes from the USDA.', "You're on the list.", 'Done']) {
+  for (const gone of ['5 dinners that fit your budget.', 'Yearly', 'Monthly', 'FREE WEEKS', 'Totals are estimates', 'cooked by a real person first', 'Some will come from food creators, and some will be tested recipes from the USDA.', "You're on the list.", 'Done', 'More soon', 'Real people will cook every recipe', 'Cheese quesadillas', 'Chicken wraps', '$58.12']) {
     assert.ok(!text.includes(gone), `index.html no longer says: ${gone}`);
   }
   assert.match(index, /<h1>What’s for dinner this week\?<\/h1>/);
-  assert.match(index, /<p class="wordmark"><svg class="bird" aria-hidden="true" focusable="false"><use href="#pk-mark"\/><\/svg>Parakeet<\/p>/);
+  assert.match(index, /<h2>Planning dinners for the whole week\?<\/h2>/);
+  assert.match(index, /<ul class="chips">(<li class="chip">[^<]+<\/li>){12}<\/ul>/, 'the twelve stores as chips, nothing else in the list');
+  assert.equal(count(/<h2 class="label">Stores<\/h2>\s*<ul class="chips">(<li class="chip">[^<]+<\/li>){12}<\/ul>/g, index), 2, 'the stores twice: on a computer\'s first screen and, on a phone, further down');
+  assert.match(index, /<div class="first-stores">\s*<h2 class="label">Stores<\/h2>/, 'the computer\'s stores tile');
+  assert.match(index, /<p class="android-line for-android">[^<]*<\/p>\s*<button class="btn first-btn for-reserve" type="button" data-tap="reserve">Reserve 2 free weeks<\/button>\s*<button class="btn first-btn for-android" type="button" data-tap="android">Email me when it’s on Android<\/button>\s*<p class="first-note for-reserve">We don’t charge anything today\. Reserve the yearly plan now and you will have 2 free weeks at launch\.<\/p>\s*<\/div>/, 'the computer\'s white tile: its Reserve (Android\'s button on Android) and the reserve line');
+  assert.equal(count(/<p class="story-line">/g, index), 4, 'the story\'s four lines');
+  assert.match(index, /<p class="android-line for-android">Parakeet is iPhone only for now\. We plan to bring it to Android\.<\/p>/, 'Android\'s line, under the answer line');
+  assert.match(index, /<button class="btn-final for-android" type="button" data-tap="android">Email me when it’s on Android<\/button>/, 'Android\'s button, in the bar');
   assert.match(index, /<h2 class="sheet-title" id="sheet-title-1">Parakeet is coming soon\.<br> Which plan do you want\?<\/h2>/);
   assert.match(index, /<span class="tag">2 free weeks<\/span>/);
   assert.match(index, /<span class="tag tag-none">No free weeks<\/span>/);
   assert.match(index, /<span class="tick" aria-hidden="true">/);
   assert.match(index, /<button[^>]*data-tap="reserve"[^>]*>Reserve 2 free weeks<\/button>/);
   assert.match(index, /<button[^>]*id="hold"[^>]*>Hold my spot<\/button>/);
-  assert.match(index, /<button[^>]*type="submit"[^>]*>Send my invite<\/button>/);
+  assert.match(index, /<button class="btn" type="submit"><span class="if-reserve">Send my invite<\/span><span class="if-android">Send<\/span><\/button>/, 'one submit button: Send my invite, or Android\'s Send');
   assert.match(index, /<input id="email"[^>]*\splaceholder="Your email address"/);
   assert.match(index, /<p class="done if-yearly">Your 2 free weeks are reserved for <b class="done-email"><\/b>\. We’ll email you once, when Parakeet is live\.<\/p>/);
   assert.match(index, /<p class="done if-monthly">Your spot is saved for <b class="done-email"><\/b>\. We’ll email you once, when Parakeet is live\.<\/p>/);
   assert.match(index, /<p class="sheet-small if-yearly">One email when we launch\. Your 2 free weeks are tied to this email\.<\/p>/);
   assert.match(index, /<p class="sheet-small if-monthly">One email when we launch, nothing else\.<\/p>/);
+  assert.match(index, /<p class="done if-android">We’ll email <b class="done-email"><\/b> when Parakeet is on Android\.<\/p>/, 'Android\'s done line');
+  assert.match(index, /<p class="sheet-small if-android">We’ll email you when it’s on Android, and maybe once before, to ask if you’d like to try it early\. Nothing else\.<\/p>/, 'Android\'s small line');
   assert.match(index, /<a href="mailto:support\.parakeet@gmail\.com">support\.parakeet@gmail\.com<\/a>/);
   assert.match(index, /<a href="\/privacy">Privacy<\/a>/);
   assert.match(index, /<a href="\/terms">Terms<\/a>/);
   assert.match(index, /<a href="\/support">Support<\/a>/);
   pageFooter(index, 'index');
-  assert.equal(count(/\sdata-reveal\b/g, index), 4, 'three rows and the footer fade in once');
+  assert.equal(count(/\sdata-reveal\b/g, index), 7, 'the headline, the story\'s tile, the price, the stores, Prices and Recipes, the questions and the footer rise in once');
+  assert.equal(count(/\sdata-reveal="rise"/g, index), 2, 'the two tiles with a phone only rise');
   assert.equal(count(/\bRestline\b/g, index) + count(/\brestline\b/g, index), 0);
 });
 
-// The landing page's header on Privacy, Terms and Support (DESIGN.md §4): the sky browser bar, the symbol the
-// bird needs, one bird in the band, the whole wordmark a link home, before the page's own heading.
+// The home's header and footer on Privacy, Terms and Support (SITE-04 §6.1, P-393, P-1440): the cream browser
+// bar, the home's two symbols, the home's icon beside the wordmark as one link home named Parakeet (no Reserve),
+// the page's own words, then the home's footer, the same markup with no rise-in, all in the home's column. No
+// script: nothing moves and nothing is counted on these pages.
 function legalHeader(html, name) {
-  assert.match(html, /<meta name="theme-color" content="#4FA8E8">/i, `${name}: theme-color is sky`);
-  assert.match(html, /<symbol id="pk-mark"/, `${name}: carries the bird symbol`);
-  assert.equal(count(/<use href="#pk-mark"\/>/g, html), 1, `${name}: the bird once, in the band`);
-  assert.match(html, /<header class="sky legal-sky">\s*<a class="wordmark" href="\/"><svg class="bird"[^>]*><use href="#pk-mark"\/><\/svg>Parakeet<\/a>\s*<\/header>\s*<main class="legal-main">/, `${name}: the sky band with the linked wordmark sits above the page`);
+  assert.match(html, /<meta name="theme-color" content="#FBF6EC">/i, `${name}: theme-color is cream, as on every page (SITE-04 §6.1)`);
+  const defs = (s) => /<svg class="defs"[\s\S]*?<\/svg>/.exec(s)[0];
+  assert.equal(defs(html), defs(index), `${name}: the home's bird and wordmark symbols`);
+  assert.equal(count(/<use href="#pk-mark"\/>/g, html), 1, `${name}: the bird once, in the footer`);
+  assert.equal(count(/<use href="#pk-word"\/>/g, html), 2, `${name}: the wordmark twice, the header and the footer`);
+  const icon = /<img class="logo-icon" [^>]*>/.exec(index)[0];
+  const header = '<header class="top">\n  <a class="logo-link" href="/">' + icon + '<svg class="logo-word" role="img" aria-label="Parakeet" focusable="false"><use href="#pk-word"/></svg></a>\n</header>\n<main class="legal-main';
+  assert.ok(html.includes('<div class="page">\n' + header), `${name}: the home's icon and wordmark, one link home, at the top of the home's column`);
+  assert.doesNotMatch(html, /data-tap|<button\b/, `${name}: no Reserve`);
+  const footer = (s) => /<footer class="footer"[^>]*>[\s\S]*?<\/footer>/.exec(s)[0];
+  assert.equal(footer(html), footer(index).replace(' data-reveal', ''), `${name}: the home's footer, the same markup, with no rise-in`);
+  assert.match(html, /<\/footer>\n<\/div>\n<\/body>/, `${name}: the footer closes the column`);
+  assert.doesNotMatch(html, /<script\b/i, `${name}: no script`);
 }
 
 test('privacy.html: the cookie, the retention, the one email, never shared or sold, deletion, the address, the row contents', () => {
@@ -268,21 +350,54 @@ test('privacy.html: the cookie, the retention, the one email, never shared or so
   pageFooter(privacy, 'privacy');
 });
 
-// The privacy page's part about the app (SITE-01 §4, Umyt's words, Nov 17), in the page's style: a bold lead-in, the
-// page's ’ for each apostrophe, after the page's own parts and before Deletion.
-const IN_THE_APP = 'In the app. The app counts what people do in it, so we can see what works and fix what doesn’t: setup’s pages, a week built, the list opened, a price typed, a dinner marked cooked, a thumb, a swap, the paywall and the free week. Each count carries a random id the app makes when it’s installed. Some also carry the store chain, the first three digits of the ZIP code, the household’s size, the diet, the budget, the week’s estimated total and which dinners were picked. It never sends a name, an email, your exact location or full ZIP code, the phone’s identifiers, your notes, your own list items or the prices you type. Your notes, your lists and the prices you type stay on your phone. The counts are stored on Netlify, in the United States, and kept 2 years, then deleted.';
+// The privacy page's part about the app (SITE-01 §4, Umyt's words, Nov 17), in the page's style: its heading
+// (P-393 makes each bold lead-in a heading over its part), the page's ’ for each apostrophe, after the page's own
+// parts and before Deletion.
+const IN_THE_APP = 'The app counts what people do in it, so we can see what works and fix what doesn’t: setup’s pages, a week built, the list opened, a price typed, a dinner marked cooked, a thumb, a swap, the paywall and the free week. Each count carries a random id the app makes when it’s installed. Some also carry the store chain, the first three digits of the ZIP code, the household’s size, the diet, the budget, the week’s estimated total and which dinners were picked. It never sends a name, an email, your exact location or full ZIP code, the phone’s identifiers, your notes, your own list items or the prices you type. Your notes, your lists and the prices you type stay on your phone. The counts are stored on Netlify, in the United States, and kept 2 years, then deleted.';
 
-test('privacy.html: the part about the app, word for word, after Where. and before Deletion.', () => {
+test('privacy.html: each part under its heading; the part about the app, word for word, after Where. and before Deletion.', () => {
   const main = /<main class="legal-main">([\s\S]*?)<\/main>/.exec(privacy);
   assert.ok(main, 'the main');
-  const paras = [...main[1].matchAll(/<p>([\s\S]*?)<\/p>/g)].map((m) => m[1]);
-  const leads = paras.map((p) => (/^<b>([^<]+)<\/b>/.exec(p) || [])[1] || null);
-  assert.deepEqual(leads, ['What this page collects.', 'Why.', 'What is not collected.', 'How long.', 'Where.', 'In the app.', 'Deletion.', null]);
-  const app = paras[5];
+  const blocks = [...main[1].matchAll(/<(h1|h2|p)( class="[^"]+")?>([\s\S]*?)<\/\1>/g)].map((m) => [m[1] + (m[2] || ''), m[3]]);
+  assert.deepEqual(blocks.map((b) => b[0]), ['h1', ...Array(7).fill(['h2', 'p']).flat(), 'p class="legal-sign-off"'], 'the title, seven headings each over its part, then the closing line');
+  assert.deepEqual(blocks.filter((b) => b[0] === 'h2').map((b) => b[1]), ['What this page collects.', 'Why.', 'What is not collected.', 'How long.', 'Where.', 'In the app.', 'Deletion.']);
+  assert.equal(main[1].replace(/<(h1|h2|p)( class="[^"]+")?>[\s\S]*?<\/\1>/g, '').trim(), '', 'nothing else in the main');
+  assert.doesNotMatch(main[1], /<b>/, 'no bold lead-in left');
+  const app = blocks[12][1];
+  assert.equal(blocks[11][1], 'In the app.');
   assert.equal(textOf(app), IN_THE_APP);
-  assert.doesNotMatch(app.replace(/^<b>In the app\.<\/b>/, ''), /</, 'no other tag inside');
+  assert.doesNotMatch(app, /</, 'no tag inside');
   assert.doesNotMatch(app, /'/, 'no straight apostrophe: the page uses ’');
   assert.equal(count(/In the app\./g, privacy), 1);
+});
+
+// Privacy, word for word: today's words with SITE-03 §2's three edits for Android (the buttons and the email in
+// What this page collects., Why. in its corrected wording, the Android addresses in How long.), and the boards' ’
+// for each apostrophe. Deletion keeps the support address as a link.
+test('privacy.html: word for word, with SITE-03 §2\'s three Android edits', () => {
+  const main = /<main class="legal-main">([\s\S]*?)<\/main>/.exec(privacy);
+  const plain = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  assert.deepEqual([...main[1].matchAll(/<(h1|h2|p)(?: class="[^"]+")?>([\s\S]*?)<\/\1>/g)].map((m) => [m[1], plain(m[2])]), [
+    ['h1', 'Privacy'],
+    ['h2', 'What this page collects.'],
+    ['p', 'A random id in a cookie named pk_v, kept 90 days, so one visitor is not counted twice. Event rows: the page viewed, which buttons were tapped (Reserve, Yearly, Monthly, and on an Android phone, Android’s), whether the plan price came into view, seconds on the page, the utm tags in the link, the website the link was opened from, the device type, the browser’s identification string, and whether the page opened inside the TikTok, Instagram or Facebook app. An email address and the plan picked, or Android, only if an email is typed in.'],
+    ['h2', 'Why.'],
+    ['p', 'To count how many visitors from our videos pick a plan, to check the page works inside the apps, to send one email when Parakeet launches, and to write to people who asked for Android.'],
+    ['h2', 'What is not collected.'],
+    ['p', 'No name, no location, no advertising identifiers, no third-party analytics, no pixels. Nothing here is sold or shared with anyone: never shared, never sold.'],
+    ['h2', 'How long.'],
+    ['p', 'Event rows are kept 90 days, then deleted. Email addresses are kept until launch plus 90 days, then deleted. They are used for one email, on launch day, and nothing else. An address left for Android is kept until 90 days after Parakeet is on Android, then deleted. It is used to tell you when it’s out, and maybe once before, to ask if you’d like to try it early, and nothing else. If we stop planning Android, we delete these addresses.'],
+    ['h2', 'Where.'],
+    ['p', 'The page and its counter run on Netlify; the data is stored there, in the United States.'],
+    ['h2', 'In the app.'],
+    ['p', IN_THE_APP],
+    ['h2', 'Deletion.'],
+    ['p', 'Any address or id is deleted on request, at any time: support.parakeet@gmail.com.'],
+    ['p', 'Parakeet is an app in development. Nothing is charged on this page.']
+  ]);
+  assert.match(main[1], /<p>Any address or id is deleted on request, at any time: <a href="mailto:support\.parakeet@gmail\.com">support\.parakeet@gmail\.com<\/a>\.<\/p>/, 'Deletion: the address, a link');
+  assert.doesNotMatch(main[1], /'/, 'no straight apostrophe: the boards\' ’');
+  assert.doesNotMatch(main[1], /, and to send one email/, 'Why. in SITE-03\'s corrected wording, one "and" fewer');
 });
 
 test('terms.html: in development, launch prices, nothing charged, the address', () => {
@@ -295,8 +410,34 @@ test('terms.html: in development, launch prices, nothing charged, the address', 
   pageFooter(terms, 'terms');
 });
 
+// Terms, word for word: today's words with SITE-03 §2's two sentences on the Android addresses, as Privacy has
+// them, right after the launch email's sentence (SITE-04 §6.8 #4), and the day they went in. No headings.
+test('terms.html: word for word, with SITE-03 §2\'s two Android sentences after the launch email\'s', () => {
+  const main = /<main class="legal-main">([\s\S]*?)<\/main>/.exec(terms);
+  assert.ok(main, 'the main');
+  const plain = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const blocks = /<(h1|h2|p)>([\s\S]*?)<\/\1>/g;
+  assert.deepEqual([...main[1].matchAll(blocks)].map((m) => [m[1], plain(m[2])]), [
+    ['h1', 'Terms'],
+    ['p', 'Last updated: November 26, 2026.'],
+    ['p', 'Parakeet is an app in development. This page describes it before launch. Nothing is sold on this page. Nothing is charged: no payment is taken and no card is asked for.'],
+    ['p', 'The prices shown are launch prices: $29.99 a year for Yearly, $9.99 a month for Monthly. Reserving on this page holds two free weeks (14 days) on the yearly plan at launch, delivered as an App Store offer code in the launch email. The standard launch trial is 7 days. Monthly has no free weeks and starts at launch. Billing is through Apple; cancel anytime in Settings. Nothing is charged on this page. Reserving a plan here creates no subscription and no obligation; it only tells us which plan you would start with.'],
+    ['p', 'Payment is charged to your Apple Account when you confirm the purchase. With the free trial, the first charge comes when the trial ends, unless you cancel at least 24 hours before it ends.'],
+    ['p', 'Your subscription renews automatically at the end of each year or month, unless you cancel at least 24 hours before the period ends. The renewal is charged to your Apple Account in the 24 hours before the period ends.'],
+    ['p', 'You can cancel anytime in your iPhone’s Settings: tap your name, then Subscriptions. You keep Parakeet until the end of the period you paid for, or the end of your trial.'],
+    ['p', 'If you buy a plan during your free trial, the rest of the trial ends.'],
+    ['p', 'Refunds are handled by Apple, not by us. You can ask Apple for one at reportaproblem.apple.com.'],
+    ['p', 'An email address left on this page is used for one email, on launch day, and nothing else. An address left for Android is kept until 90 days after Parakeet is on Android, then deleted. It is used to tell you when it’s out, and maybe once before, to ask if you’d like to try it early, and nothing else. Replying to that email, or writing to the address below, removes it.'],
+    ['p', 'Grocery totals shown in the app are estimates from regular shelf prices and can differ from what a store charges on the day.'],
+    ['p', 'The page is provided as is. The launch date and the prices may change before launch. Questions: support.parakeet@gmail.com.']
+  ]);
+  assert.equal(main[1].replace(blocks, '').trim(), '', 'nothing else in the main');
+  assert.match(main[1], /Questions: <a href="mailto:support\.parakeet@gmail\.com">support\.parakeet@gmail\.com<\/a>\.<\/p>/, 'the address, a link');
+  assert.ok(textOf(privacy).includes('An address left for Android is kept until 90 days after Parakeet is on Android, then deleted. It is used to tell you when it’s out, and maybe once before, to ask if you’d like to try it early, and nothing else.'), 'the same two sentences as Privacy\'s');
+});
+
 test('support.html: word for word (the address, five questions and their answers), the one link to Apple, the questions at 20/700', () => {
-  const main = /<main class="legal-main">([\s\S]*?)<\/main>/.exec(support);
+  const main = /<main class="legal-main legal-questions">([\s\S]*?)<\/main>/.exec(support);
   assert.ok(main, 'the main');
   // inline tags (the two links) drop out without a space, so each line reads as written
   const plain = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
@@ -320,10 +461,31 @@ test('support.html: word for word (the address, five questions and their answers
   assert.equal(support.split(APPLE_LINK).length, 2, 'the one link to Apple, as written');
   assert.match(support, /<title>Support — Parakeet<\/title>/);
   assert.match(support, /<link rel="stylesheet" href="\/styles\.css">/);
-  assert.match(css, /\.legal-main h2 \{[^}]*font-size: 20px;[^}]*font-weight: 700;[^}]*color: var\(--ink\);/, 'the questions are the H2 of DESIGN.md §3: 20/700, ink');
+  assert.match(css, /\.legal-main\.legal-questions h2 \{ font-size: 20px; font-weight: 700; line-height: 1\.3; color: var\(--ink\); \}/, 'the questions are the H2 of DESIGN.md §3: 20/700, ink, on both layouts');
   assert.match(css, /\.legal-main h2 \+ p \{ margin-top: 6px; \}/, 'each answer sits close under its question');
   legalHeader(support, 'support');
   pageFooter(support, 'support');
+});
+
+test('styles.css: the legal pages\' words in P-393\'s and P-1440\'s sizes, a 680 column on a computer, the header not sticky there', () => {
+  const rule = (src, sel) => {
+    const m = new RegExp(`(?:^|\\n)\\s*${sel.replace(/[.+()]/g, '\\$&')} \\{([^}]*)\\}`).exec(src);
+    assert.ok(m, `${sel} has a rule`);
+    return m[1];
+  };
+  const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const wide = /@media \(min-width: 900px\) \{([\s\S]*?)\n\}/.exec(cssNoComments)[1];
+  const phone = cssNoComments.slice(0, cssNoComments.indexOf('@media (min-width: 900px)'));
+  assert.match(rule(phone, '.legal-main'), /max-width: var\(--col\);[^}]*padding: 24px var\(--gutter\) 0;/, 'the home\'s column, 24 above the title');
+  assert.match(rule(phone, '.legal-main h1'), /margin-bottom: 28px;\s*font-size: 40px;\s*font-weight: 700;\s*line-height: 1\.05;\s*letter-spacing: -0\.03em;/, 'the title 40 at 1.05, 28 above the words');
+  assert.match(rule(phone, '.legal-main p'), /margin-top: 16px;\s*font-size: 16px;\s*line-height: 24px;\s*color: var\(--ink-70\);/, 'the text 16/24, Terms\' paragraphs 16 apart');
+  assert.match(rule(phone, '.legal-main h2'), /margin-top: 28px;\s*font-size: 17px;\s*font-weight: 600;\s*line-height: 22px;\s*color: var\(--ink\);\s*text-wrap: balance;/, 'a heading 17/22 semibold, 28 above it, balanced so no line ends on one word (DESIGN.md §4)');
+  assert.doesNotMatch(cssNoComments, /\.legal-main[^{]*h2 \{[^}]*text-wrap: (wrap|pretty|stable)/, 'and nothing undoes it, on Support\'s questions or on a computer');
+  assert.match(rule(wide, 'body.legal .top'), /position: static;/, 'the header scrolls away: it holds no Reserve');
+  assert.match(rule(wide, '.legal-main'), /max-width: 760px;\s*padding: 24px 40px 0;/, 'a 680 column');
+  assert.match(rule(wide, '.legal-main h1'), /font-size: 64px;/, 'the title 64');
+  assert.match(rule(wide, '.legal-main p'), /font-size: 17px;\s*line-height: 26px;/, 'the text 17/26');
+  assert.match(rule(wide, '.legal-main h2'), /font-size: 19px;\s*line-height: 25px;/, 'a heading 19/25');
 });
 
 test('robots.txt keeps crawlers off /admin and /api/', () => {
@@ -346,9 +508,13 @@ test('app.js: the endpoint, the cookie name, the transport, no http literal, no 
   assert.match(app, /\.style\.setProperty\('--vvh'/, 'the sheet height follows the visual viewport');
   assert.match(app, /classList\.add\('in'\)/, 'the scroll fade adds .in');
   assert.match(app, /setAttribute\('data-picked', plan\)/, 'the plan-dependent lines follow the plan');
+  assert.match(app, /var android = device === 'android';\s*if \(android\) root\.classList\.add\('android'\);/, 'an Android phone gets its words (html.android), set first');
+  assert.match(app, /else if \(button === 'android'\) openSheet\(true\);/, 'Android\'s button opens the sheet on its email step');
+  assert.match(app, /selectedPlan = 'android';\s*sheetRoot\.setAttribute\('data-picked', 'android'\);\s*showStep\(2\);/, 'with the plan android and Android\'s lines');
+  assert.match(css, /#sheet:not\(\[data-picked="android"\]\) \.if-android,\s*#sheet\[data-picked="android"\] \.if-reserve \{ display: none; \}/, 'each .if- line shows only for its own');
 });
 
-test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradient or glow, svh, the system font stack', () => {
+test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, one gradient (the band) and no glow, svh, the system font stack', () => {
   const tokens = {
     '--sky': '#4FA8E8', '--ink': '#0E1B26', '--cream': '#FBF6EC', '--white': '#FFFFFF', '--sky-soft': '#E3F1FC',
     '--ink-70': 'rgba(14, 27, 38, 0.70)', '--ink-62': 'rgba(14, 27, 38, 0.62)', '--ink-48': 'rgba(14, 27, 38, 0.48)',
@@ -370,18 +536,239 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradie
   for (const old of ['--bg', '--bg-2', '--surface', '--sheet', '--fg', '--fg-2', '--fg-3', '--accent', '--accent-ink', '--hairline', '--hair-strong', '--shadow', '--focus']) {
     assert.doesNotMatch(cssNoComments, new RegExp(`${old}\\b(?!-)`), `the old token ${old} is gone`);
   }
-  assert.doesNotMatch(cssNoComments, /gradient\(/, 'no gradient');
+  const gradients = cssNoComments.match(/[^{}]*\{[^{}]*gradient\([^}]*\}/g) || [];
+  assert.equal(gradients.length, 1, 'one gradient: the final button\'s band (DESIGN.md §2, §5)');
+  assert.match(gradients[0], /^\s*\.btn-final\.band::after\s*\{[^}]*background: linear-gradient\(90deg, var\(--cream-0\), var\(--cream-24\), var\(--cream-0\)\);[^}]*animation: band 1\.8s 1s 3 both;/, 'the band: cream at 24% in its middle, three 1.8 s turns from 1 s');
+  assert.match(cssNoComments, /@keyframes band \{\s*0% \{ transform: translateX\(-110%\); animation-timing-function: ease-in-out; \}\s*66\.667%, 100% \{ transform: translateX\(330%\); \}/, 'each turn crosses in 1.2 s, then rests 0.6 s');
+  assert.match(root[1], /--cream-24:\s*rgba\(251, 246, 236, 0\.24\);/);
+  assert.match(root[1], /--cream-0:\s*rgba\(251, 246, 236, 0\);/);
+  assert.match(app, /if \(android && !reduced && !\(win\.matchMedia && win\.matchMedia\('\(min-width: 900px\)'\)\.matches\)\)/, 'the band runs only on an Android phone\'s bar, never with Reduce Motion');
   assert.match(css, /html, body \{ background-color: var\(--cream\); \}/, 'the page is cream');
   assert.match(css, /\.btn\s*\{[^}]*background:\s*var\(--sky\)[^}]*color:\s*var\(--ink\)/, 'the button is ink on sky');
   assert.match(css, /100svh/);
   assert.match(css, /-apple-system/);
   assert.doesNotMatch(css, /Inter/);
-  assert.match(css, /\.cta\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*0/, 'the Reserve sheet is pinned to the bottom');
+  assert.match(css, /\.cta\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*0/, 'the bottom bar is pinned to the bottom');
+  const unpinned = /@media ([^{]*)\{[^@]*?\.cta \{ position: relative;/.exec(cssNoComments);
+  assert.ok(unpinned, 'the bar sits in the page under a media query');
+  for (const q of unpinned[1].split(',')) assert.match(q, /max-height: \d+(\.\d+)?px/, `${q.trim()}: only in a window too short for the words, a 200 px phone and the bar`);
+  assert.match(unpinned[1], /\(scripting: none\) and \(max-width: 267\.98px\) and \(max-height: 635\.98px\)/, 'with the script off, a window where the H1 takes a third line has its own height');
+  assert.match(cssNoComments, /\nhtml\.bar-in-page \.cta \{ position: relative;/, 'or where app.js has measured the page and found the window too short');
+  assert.equal(count(/\.cta \{ position: relative;/g, cssNoComments), 3, 'nowhere else: the iPhone\'s heights, Android\'s and the measured one');
+  assert.match(app, /root\.classList\.toggle\('bar-in-page', short\)/, 'app.js sets it, and takes it off, as the window changes');
+  assert.match(app, /root\.classList\.toggle\('bar-measured', !!bar\)/, 'app.js marks the page measured wherever it measured the bar');
+  const byHeight = [...cssNoComments.matchAll(/@media ([^{]*)\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)].filter((m) => /height/.test(m[1]));
+  const barHeights = byHeight.filter((m) => /\.cta \{/.test(m[2]));
+  assert.equal(barHeights.length, 2, 'two sets of heights for the bar: the iPhone\'s page and Android\'s');
+  for (const m of barHeights) {
+    for (const sel of [...m[2].matchAll(/([^{}]+)\{/g)].map((x) => x[1].trim())) {
+      assert.match(sel, /^html[^ ]*:not\(\.bar-measured\) /, `${sel}: the heights give way once app.js has measured the page, so its measure decides both ways`);
+    }
+  }
+  // and one for the computer's story tile: held at --story-top (88 + 8k, k from 0 at 1024 wide to 1 at 1440)
+  // with its floor of 280, it needs a window of 368 + (width - 1024) / 52, drawn in 1 px steps
+  const holdHeights = byHeight.filter((m) => !/\.cta \{/.test(m[2]));
+  assert.equal(holdHeights.length, 1, 'one more set: a computer window too short to hold the story\'s tile');
+  assert.match(cssNoComments, /--k: calc\(\(100vw - 1024px\) \/ 416\);/);
+  assert.match(cssNoComments, /--story-top: clamp\(88px, 88px \+ 8 \* var\(--k\), 96px\);/, 'the held tile\'s top: 88 to 96');
+  assert.match(cssNoComments, /--story-tile: max\(280px, /, 'the tile\'s floor: 280, its phone at 200');
+  const steps = [[900, 367.98], ...Array.from({ length: 8 }, (_, j) => [1024.02 + 52 * j, 368.98 + j])];
+  assert.deepEqual(holdHeights[0][1].split(',').map((q) => q.trim()),
+    steps.map(([w, h]) => `(min-width: ${+w.toFixed(2)}px) and (max-height: ${+h.toFixed(2)}px)`),
+    'from 900 wide, in a window under 280 + 88 + (width - 1024) / 52 px');
+  assert.deepEqual([...holdHeights[0][2].matchAll(/([^{}]+)\{([^}]*)\}/g)].map((x) => [x[1].trim(), x[2].replace(/\s+/g, ' ').trim()]), [
+    ['.story-pin', 'position: relative; top: auto;'],
+    ['.story-step:last-child', 'min-height: var(--step-h);']
+  ], 'there the story\'s tile isn\'t held and scrolls with its lines, its fourth step as tall as the others');
+  assert.match(app, /200 \+ parseFloat\(tile\.paddingTop\) \+ parseFloat\(tile\.paddingBottom\)/, 'counting a 200 px phone with its tile\'s padding');
   assert.match(css, /--sheet-pad-bottom:[^;]*env\(safe-area-inset-bottom/, 'with the bottom safe-area inset');
-  assert.match(css, /\[data-reveal\]\.in\s*\{\s*animation:\s*rise 500ms/, 'the scroll fade: 500 ms, only once .in is added');
-  assert.doesNotMatch(cssNoComments, /\[data-reveal\](?!\.in)[^{,]*\{[^}]*opacity:\s*0/, 'the rows are visible at rest');
+  assert.match(css, /\[data-reveal\]\.in\s*\{\s*animation:\s*rise 500ms var\(--curve\) both;/, 'the rise: 500 ms on the standard curve, only once .in is added');
+  assert.doesNotMatch(cssNoComments, /\[data-reveal\](?!\.in|\.wait)[^{,]*\{[^}]*opacity:\s*0/, 'the parts are visible at rest');
+  assert.match(cssNoComments, /\[data-reveal\]\.wait\s*\{\s*opacity:\s*0;\s*transform:\s*translateY\(14px\);\s*\}/, 'the waiting state is the script\'s .wait');
+  assert.doesNotMatch(index, /class="[^"]*\bwait\b/, 'the markup never waits: only app.js adds .wait');
+  assert.match(app, /classList\.add\('wait'\)/, 'app.js adds the waiting state');
+  assert.match(app, /var shownH = windowH - pinnedBarH\(\);\s*for \([^)]*\) \{\s*if \(reveals\[rv\]\.getBoundingClientRect\(\)\.top > shownH\)/, 'only to a part whose top is out of sight at load: below the window, or under the pinned bar');
+  assert.match(app, /threshold: 0\.12/, 'it rises once 12% of it shows, as the boards do it');
+  // the story's focus line (SITE-04 §6.3, §6.9 #3): a computer's is the window's middle; a phone's is halfway
+  // between the held tile's bottom and the bar's top, worked out from the page's boxes
+  const focusBlock = /\/\* -+ the story's focus -+[\s\S]*?\n  \} \} catch \(e\) \{\}\n/.exec(app);
+  assert.ok(focusBlock, 'app.js has the story\'s focus');
+  const focus = focusBlock[0].replace(/\/\*[\s\S]*?\*\//g, '').replace(/[ \t]*\/\/[^\n]*/g, '');   // its code, without the comments
+  assert.match(focus, /if \(wide && wide\.matches\) return '-50%';/, 'on a computer, the window\'s middle');
+  assert.match(focus, /if \(pinStyle && \/sticky\/\.test\(pinStyle\.position\)\) \{\s*tileEnd = \(parseFloat\(pinStyle\.top\) \|\| 0\) \+ storyTile\.offsetTop \+ storyTile\.getBoundingClientRect\(\)\.height;/,
+    'on a phone, the held tile\'s bottom: the pin\'s sticky top, the tile\'s place in the pin as laid out (not as its rise moves it) and its height');
+  assert.match(focus, /var tileEnd = 0;/, 'or the window\'s top where the tile isn\'t held');
+  assert.match(focus, /var barTop = windowH;\s*if \(cta && cta\.offsetHeight && win\.getComputedStyle\(cta\)\.position === 'fixed'\) barTop = cta\.getBoundingClientRect\(\)\.top;/,
+    'and the bar\'s top where it is pinned, or the window\'s bottom where it sits in the page');
+  assert.match(focus, /return -Math\.round\(\(windowH - \(tileEnd \+ barTop\) \/ 2\) \* 100\) \/ 100;/, 'halfway between them, as a bottom margin in px');
+  assert.match(focus, /rootMargin: '100000px 0px ' \+ \(typeof margin === 'number' \? margin \+ 'px' : margin\) \+ ' 0px'/, 'the observer\'s root runs from far above the window down to the focus line');
+  assert.equal(count(/new IntersectionObserver\(/g, focus), 1, 'one observer for the story');
+  assert.match(focus, /Math\.abs\(margin - storyMargin\) < 0\.5\)\)\) return;\s*storyMargin = margin;\s*if \(storyObs\) storyObs\.disconnect\(\);\s*crossed = \[\];/,
+    'built again only where the line has moved half a pixel or more, the old one disconnected first, so one is live');
+  assert.match(focus, /if \(!storyRaf\) storyRaf = win\.requestAnimationFrame\(watchStory\);/, 'a frame later, once however many asked');
+  for (const [hook, what] of [
+    [/barPlaced = queueStory;/, 'as the bar is placed'],
+    [/win\.addEventListener\('resize', queueStory\);/, 'on a resize'],
+    [/win\.addEventListener\('load', queueStory\);/, 'at load'],
+    [/wide\.addEventListener\('change', queueStory\);\s*else if \(wide && wide\.addListener\) wide\.addListener\(queueStory\);/, 'as the window crosses 900 wide'],
+    [/new win\.ResizeObserver\(queueStory\)\.observe\(storyTile\)/, 'as the tile changes size']
+  ]) assert.match(focus, hook, `the focus line is worked out again ${what}`);
+  assert.match(app, /root\.classList\.toggle\('bar-measured', !!bar\);[^\n]*\n\s*if \(barPlaced\) barPlaced\(\);/, 'placeBar tells the story when it has placed the bar');
+  assert.doesNotMatch(app, /-34%|0\.66|\b66%/, 'nothing left of the old focus line at 66% of the window');
+  assert.equal(count(/new IntersectionObserver\(/g, app), 3, 'one observer each: seen, the rise, the story');
+  assert.doesNotMatch(focus, /scroll/, 'the story\'s focus listens to no scroll');
+  assert.deepEqual([...app.matchAll(/([\w.]+)\.addEventListener\(\s*['"]scroll['"]/g)].map((m) => m[1]), ['win.visualViewport'],
+    'no scroll listener on the page: the one there is is the visual viewport\'s, which fits the open sheet to a keyboard or a pinch zoom');
+  assert.doesNotMatch(app, /\bonscroll\b/, 'nor an onscroll');
+  // the phone's story tile: the boards' 404, shorter only where a whole story line wouldn't fit above the bar
+  assert.match(cssNoComments, /\n\.story-tile \{[^}]*height: clamp\(244px, var\(--window-h\) - var\(--cta-h\) - 98px, 404px\);/,
+    'the phone\'s tile: the window less the bar less 98 (a whole story line with air), from 244 to the boards\' 404');
+  assert.doesNotMatch(cssNoComments, /\.story-tile \{[^}]*(0\.66|66svh)/, 'no term left from the old focus line at 66% of the window');
+  assert.match(css, /\.story\.focus \.story-line\s*\{\s*opacity:\s*0\.62;\s*\}/, 'the lines out of focus are ink at 62%');
+  assert.match(cssNoComments, /\n\.story-line \{[^}]*text-wrap: balance;/, 'the story\'s lines are headlines, balanced so no line ends on one word (DESIGN.md §4), on both layouts');
+  assert.doesNotMatch(cssNoComments, /\.story-line \{[^}]*text-wrap: (wrap|pretty|stable)/, 'and nothing undoes it');
+  assert.match(cssNoComments, /\.sheet \{[^}]*transform: translateY\(100%\);\s*transition: transform 320ms var\(--curve\);/, 'the phone\'s sheet rises, and slides down, in 320 ms');
+  assert.match(cssNoComments, /\.sheet-backdrop \{[^}]*opacity: 0;\s*transition: opacity 200ms linear;/, 'the dim fades out in 200 ms');
+  assert.match(cssNoComments, /\.sheet-root\.open \.sheet-backdrop \{\s*opacity: 1;/, 'and fades in as the sheet opens');
+  assert.match(cssNoComments, /transform: translateY\(12px\);\s*opacity: 0;\s*transition: transform 240ms var\(--curve\), opacity 240ms var\(--curve\);/, 'the computer\'s dialog rises 12 px as it fades in, and drops as it fades out, in 240 ms');
+  assert.match(cssNoComments, /@keyframes step-in \{\s*from \{ opacity: 0; transform: translateY\(4px\); \}/, 'the next step and the done line rise 4 px as they fade in');
+  assert.match(cssNoComments, /\.step\.step-in \{ animation: step-in 200ms var\(--curve\) both; \}/, 'in 200 ms');
+  assert.match(app, /showStep\(2, true\)/, 'Hold my spot moves on to the email step');
+  assert.match(app, /showStep\(3, true\)/, 'a good address moves on to the done line');
+  assert.match(cssNoComments, /\.plan::before \{[^}]*background: var\(--sky-soft\);\s*box-shadow: inset 0 0 0 1\.5px var\(--sky\);\s*opacity: 0;\s*transition: opacity 150ms linear;/, 'a row\'s ring and fill change in 150 ms');
+  assert.match(cssNoComments, /@keyframes tick-pop \{\s*0% \{ transform: scale\(0\.8\);[^}]*\}\s*60% \{ transform: scale\(1\.12\);[^}]*\}\s*100% \{ transform: none; \}/, 'a tick pops from 80% to 112% and back');
+  assert.match(cssNoComments, /\.tick\.pop \{ animation: tick-pop 260ms both; \}/, 'in 260 ms');
+  assert.match(app, /if \(on && !was && !reduced\) popTick\(/, 'only as it turns on');
   assert.match(css, /@keyframes rise\s*\{\s*from\s*\{\s*opacity:\s*0;\s*transform:\s*translateY\(14px\)/);
-  assert.match(css, /\.answer-3\s*\{\s*animation:\s*answer-3 400ms linear 5s both;/, 'the last answer fades in at 5 s and stays');
+  for (const n of [1, 2, 3]) {
+    assert.match(css, new RegExp(`\\.answer-${n}\\s*\\{\\s*animation:\\s*answer-${n} 5\\.8s ease-in-out 0\\.3s both;`), `answer ${n}: the one 5.8 s pass from 0.3 s, as the boards run it`);
+  }
+  assert.match(css, /@keyframes answer-3\s*\{\s*0%, 93\.1%\s*\{\s*opacity:\s*0;\s*\}\s*100%\s*\{\s*opacity:\s*1;\s*\}/, 'the last answer fades in at the end and stays');
+  assert.match(css, /\.first-words\s*\{\s*animation:\s*first-in 600ms var\(--curve\) both;/, 'at load the words rise 16 px and fade in');
+  assert.match(css, /\.first-tile\s*\{\s*animation:\s*first-rise 600ms var\(--curve\) 100ms both;/, 'the phone\'s tile rises 100 ms later');
+  assert.match(css, /@keyframes first-rise\s*\{\s*from\s*\{\s*transform:\s*translateY\(16px\);\s*\}\s*to\s*\{\s*transform:\s*none;\s*\}\s*\}/, 'the phone\'s tile only rises: the bezel never fades');
+  assert.match(css, /--curve:\s*cubic-bezier\(0\.22, 1, 0\.36, 1\);/, 'the standard curve');
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[^}]*\.answer-1, \.answer-2, \.answer-3\s*\{\s*animation:\s*none;/, 'reduced motion: the answers do not move');
   assert.doesNotMatch(cssNoComments, /box-shadow:\s*0\s+\d+px\s+\d+px/, 'flat: no drop shadow');
+});
+
+// Splits a CSS value at its top-level commas (not those inside var(), cubic-bezier() and the like).
+function splitTop(value) {
+  const parts = [];
+  let depth = 0;
+  let from = 0;
+  for (let i = 0; i < value.length; i++) {
+    if (value[i] === '(') depth += 1;
+    else if (value[i] === ')') depth -= 1;
+    else if (value[i] === ',' && depth === 0) {
+      parts.push(value.slice(from, i).trim());
+      from = i + 1;
+    }
+  }
+  parts.push(value.slice(from).trim());
+  return parts;
+}
+
+test('styles.css and app.js: only transform and opacity move (SITE-04 §6.3, DESIGN.md §6)', () => {
+  const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const MOVES = new Set(['opacity', 'transform']);
+
+  // every @keyframes animates transform or opacity; a frame may also set its own timing function
+  const keyframes = [...cssNoComments.matchAll(/@(?:-webkit-)?keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)];
+  assert.ok(keyframes.length > 0, 'the page has keyframes');
+  assert.equal(keyframes.length, count(/@(?:-webkit-)?keyframes\b/g, cssNoComments), 'every @keyframes read whole');
+  for (const [, name, body] of keyframes) {
+    const props = [...body.matchAll(/([\w-]+)\s*:/g)].map((m) => m[1]);
+    assert.ok(props.length > 0, `@keyframes ${name} sets something`);
+    for (const p of props) {
+      assert.ok(MOVES.has(p) || p === 'animation-timing-function', `@keyframes ${name}: ${p} moves; only transform and opacity may`);
+    }
+  }
+
+  // every transition names transform or opacity (never all, never a bare duration), or is none
+  const transitions = [...cssNoComments.matchAll(/(?:^|[;{\s])((?:-webkit-)?transition(?:-property)?)\s*:\s*([^;}]*)/g)];
+  assert.ok(transitions.length > 0, 'the page has transitions');
+  for (const [, prop, value] of transitions) {
+    if (value.trim() === 'none') continue;
+    for (const item of splitTop(value)) {
+      const name = item.split(/\s+/)[0];
+      assert.ok(MOVES.has(name), `${prop}: ${value.trim()}: ${name} moves; only transform and opacity may`);
+    }
+  }
+
+  // and the script moves nothing by itself: no Web Animations, no transition or animation set inline
+  assert.doesNotMatch(app, /\.animate\(/, 'app.js starts no Web Animation');
+  assert.doesNotMatch(app, /\.style\.(?:webkit)?(?:transition|animation)\b|setProperty\(\s*['"](?:-webkit-)?(?:transition|animation)/i, 'app.js sets no transition or animation inline');
+});
+
+// The questions above the footer (SITE-04 §6.10; DESIGN.md §4, §6 and §8): Umyt's words, word for word, the
+// iPhone's and Android's split by for-reserve and for-android, the browser's own details and summary with
+// nothing that moves, and the computer header's FAQ link, which jumps at once and isn't counted.
+const FAQ_IPHONE = [
+  ['When does Parakeet launch?', 'There’s no date yet. If you reserve, we’ll send you one email on launch day.'],
+  ['Do you charge anything today?', 'No. Reserve the yearly plan now and you’ll have 2 free weeks at launch.'],
+  ['What does it cost after that?', 'It’s $29.99 a year, or $9.99 a month. Those are the prices at launch.'],
+  ['How do I cancel?', 'Cancel in your iPhone’s Settings, at least a day before your free weeks end. The app will remind you 2 days before, if you turn on its reminders.'],
+  ['Does it fit my family?', 'You pick your budget, how many people and which nights, and some nights can be vegetarian.'],
+  ['Is it on Android?', 'Parakeet is iPhone only for now. We plan to bring it to Android. On an Android phone, you can leave your email on this page, and we’ll tell you when it’s there.'],
+  ['What do you do with my email?', 'We send you one email, on launch day, and nothing else. We never share or sell it, and we delete it 90 days after launch.']
+];
+const FAQ_ANDROID = {
+  0: 'There’s no date yet.',
+  5: 'Parakeet is iPhone only for now. We plan to bring it to Android. Tap “Email me when it’s on Android” and we’ll tell you when it’s there.',
+  6: 'We’ll email you when it’s on Android, and maybe once before, to ask if you’d like to try it early, and never for anything else. We never share or sell it, and we delete it 90 days after it’s on Android.'
+};
+const FAQ_RESERVE_ONLY = [1, 2, 3];   // today's charge, the cost, cancelling: hidden on an Android phone
+
+test('index.html: the questions, word for word, between Prices and Recipes and the footer', () => {
+  const start = index.indexOf('<section class="faq" id="faq" aria-labelledby="faq-title" data-reveal>');
+  assert.ok(start > index.indexOf('<div class="facts" data-reveal>'), 'the questions come after Prices and Recipes');
+  const end = index.indexOf('</section>', start);
+  assert.ok(end > start && end < index.indexOf('</main>') && end < index.indexOf('<footer'), 'and before the footer, inside the page\'s main');
+  const faq = index.slice(start, end);
+  assert.match(faq, /^<section[^>]*>\s*<h2 class="label" id="faq-title">Questions<\/h2>\s*<div class="faq-list">/, 'labeled Questions, as the other tiles are labeled');
+
+  const plus = '<svg class="faq-plus" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path class="faq-v" d="M12 5v14"/></svg>';
+  const details = [...faq.matchAll(/<details([^>]*)>([\s\S]*?)<\/details>/g)];
+  assert.equal(details.length, 7, 'seven questions');
+  details.forEach(([, attrs, inner], i) => {
+    const [question, answer] = FAQ_IPHONE[i];
+    assert.equal(attrs, FAQ_RESERVE_ONLY.includes(i) ? ' class="for-reserve"' : '', `${question}: ${FAQ_RESERVE_ONLY.includes(i) ? 'hidden on Android' : 'on every phone'}; it starts closed, and any number can be open (no open, no name)`);
+    assert.ok(inner.includes(`<summary><span class="faq-q">${question}</span>${plus}</summary>`), `${question}: the summary holds the question and the plus, hidden from VoiceOver`);
+    const ps = [...inner.matchAll(/<p( class="[^"]+")?>([^<]*)<\/p>/g)].map((m) => [m[1] || '', m[2]]);
+    if (i in FAQ_ANDROID) {
+      assert.deepEqual(ps, [[' class="for-reserve"', answer], [' class="for-android"', FAQ_ANDROID[i]]], `${question}: the iPhone's answer, then Android's`);
+    } else {
+      assert.deepEqual(ps, [['', answer]], `${question}: its answer`);
+    }
+  });
+  assert.equal(count(/<details\b/g, index), 7, 'no other details on the page');
+});
+
+test('the questions: nothing moves, and the header\'s FAQ jumps at once and isn\'t counted', () => {
+  const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules = [...cssNoComments.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ sel: m[1].trim(), body: m[2] }));
+  const faqRules = rules.filter((r) => /\.faq|details|summary/.test(r.sel));
+  assert.ok(faqRules.length >= 10, 'the questions\' rules');
+  for (const r of faqRules) assert.doesNotMatch(r.body, /\b(transition|animation)\b/, `${r.sel}: no transition or animation`);
+  assert.doesNotMatch(cssNoComments, /interpolate-size|::details-content/, 'no opening animation');
+  assert.doesNotMatch(cssNoComments, /(?<![\w-])scroll-behavior/, 'no smooth scrolling: the FAQ link jumps (the sheet\'s overscroll-behavior is another thing)');
+  assert.doesNotMatch(app, /scroll-?behavior|behavior:\s*['"]smooth/i, 'app.js scrolls nothing smoothly');
+  assert.doesNotMatch(app, /\bfaq\b|<details|\bdetails\b|summary/i, 'app.js leaves the questions to the browser');
+
+  const body = (sel) => rules.filter((r) => r.sel === sel).map((r) => r.body).join(';');
+  assert.match(body('.faq summary'), /list-style: none;/, 'the summary has no marker');
+  assert.match(body('.faq summary::-webkit-details-marker'), /display: none;/, 'nor Safari\'s');
+  assert.match(body('.faq summary'), /min-height: 56px;/, 'a phone\'s rows are 56 tall');
+  assert.match(body('.faq-q'), /text-wrap: balance;/, 'a question never ends on one word');
+  assert.match(body('.faq details[open] .faq-v'), /opacity: 0;/, 'open, the plus is a minus');
+  assert.match(body('.faq-plus path'), /stroke-width: 1\.8px;[\s\S]*vector-effect: non-scaling-stroke;/, 'the plus in the 1.8 px line of the sheet\'s X');
+  assert.match(cssNoComments, /--faq-line: clamp\(1\.8px, 1\.8px \+ 0\.2 \* var\(--k\), 2px\);/, '2 px at 28');
+  assert.match(cssNoComments, /\.faq \{[^}]*scroll-margin-top: calc\(var\(--top-h\) \+ env\(safe-area-inset-top, 0px\) \+ 16px\);/, 'the link lands the questions 16 px under the sticky header');
+
+  assert.equal(count(/href="#faq"/g, index), 1, 'one link to the questions');
+  assert.match(index, /<a class="top-link" href="#faq">FAQ<\/a>/, 'the header\'s FAQ, not counted (no data-tap)');
+  assert.match(body('.top-link'), /height: 44px;/, 'its target is 44 px tall');
+  assert.match(cssNoComments, /\.top-link, \.top-btn, \.first-btn, \.first-note, \.first-stores \{ display: none; \}/, 'a phone\'s header has no FAQ');
+  for (const page of [privacy, terms, support]) assert.doesNotMatch(page, /#faq|top-link/, 'the legal pages\' header has no FAQ');
 });

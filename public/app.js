@@ -9,6 +9,14 @@
   var COOKIE = 'pk_v';
   var NINETY_DAYS = 90 * 24 * 60 * 60;
 
+  /* ---------- the device, first: an Android phone gets its own words and its own bar (html.android) ---------- */
+
+  var ua = navigator.userAgent || '';
+  var device = (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) ? 'ios'
+    : /Android/.test(ua) ? 'android' : 'other';
+  var android = device === 'android';
+  if (android) root.classList.add('android');
+
   /* ---------- --screen-h: innerHeight in px, only where svh units are unknown ---------- */
 
   var hasSvh = false;
@@ -27,8 +35,47 @@
   var cta = doc.querySelector('.cta');
   function setCtaH() {
     try { if (cta && cta.offsetHeight) root.style.setProperty('--cta-h', cta.offsetHeight + 'px'); } catch (e) {}
+    placeBar();
   }
+
+  /* ---------- the bar's place: pinned, or in the page in a window too short for it ----------
+     The bar stays pinned to the bottom unless the window is too short for the header, the words, a 200 px
+     phone with its tile's padding and the bar together (DESIGN.md §4); then it sits in the page under the
+     first screen (html.bar-in-page, styles.css). styles.css puts it there by the window's height alone,
+     with heights measured in a stand-in font, and with the script off that is all there is; here the
+     page itself is measured, so a window where the words take more lines than those heights allow (the
+     H1's third line under about 280 wide) is caught too, and once it is measured (html.bar-measured) those
+     heights give way to it, so a window where the words take fewer lines keeps the bar pinned (under 360
+     wide, where they count a two-line answer line). Each part is measured as it is either way (the
+     bar without the bottom edge it gets in the page), so the answer never flips back by itself. The
+     window's height is the layout's (the small viewport on a phone, as svh is), so toolbars that slide
+     away as the page scrolls never move the bar. */
+
+  var topBar = doc.querySelector('.top');
+  var firstWords = doc.querySelector('.first-words');
+  var firstTile = doc.querySelector('.first-tile');
+  function placeBar() {
+    try {
+      if (!cta || !topBar || !firstWords || !firstTile) return;
+      var short = false;
+      var bar = cta.getBoundingClientRect().height;
+      if (bar) {
+        var tile = win.getComputedStyle(firstTile);
+        var needs = topBar.getBoundingClientRect().height +
+          firstWords.getBoundingClientRect().height + parseFloat(win.getComputedStyle(firstWords).marginBottom) +
+          200 + parseFloat(tile.paddingTop) + parseFloat(tile.paddingBottom) +
+          bar - parseFloat(win.getComputedStyle(cta).borderBottomWidth);
+        short = needs > (root.clientHeight || win.innerHeight) + 0.5;
+      }
+      root.classList.toggle('bar-in-page', short);
+      root.classList.toggle('bar-measured', !!bar);   // then the measure decides, both ways, not styles.css's heights
+      if (barPlaced) barPlaced();   // the story's focus line hangs on the bar's place and height (below)
+    } catch (e) {}
+  }
+  var barPlaced = null;
+
   setCtaH();
+  win.addEventListener('resize', placeBar);
   try {
     if (cta && win.ResizeObserver) new win.ResizeObserver(setCtaH).observe(cta);
     else win.addEventListener('resize', setCtaH);
@@ -87,9 +134,6 @@
     return m ? m[0] : '';
   }
 
-  var ua = navigator.userAgent || '';
-  var device = (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) ? 'ios'
-    : /Android/.test(ua) ? 'android' : 'other';
   var inapp = /BytedanceWebview|musical_ly|TikTok/i.test(ua) ? 'tiktok'
     : /Instagram/i.test(ua) ? 'instagram'
     : /FBAN|FBAV|FB_IAB|FBIOS|FB4A/.test(ua) ? 'facebook' : 'none';
@@ -166,7 +210,8 @@
     if (plan) { extra.via = 'card'; planTapped = true; }
     try { send('tap', extra); } catch (e) {}
     try {
-      if (button === 'reserve') openSheet();
+      if (button === 'reserve') openSheet(false);
+      else if (button === 'android') openSheet(true);
       else if (plan) selectPlan(plan);
     } catch (e) {}
   }
@@ -212,21 +257,191 @@
     seenObs.observe(price);
   } } catch (e) {}
 
-  var reduced = false;   // closeSheet and the scroll fade read it
+  var reduced = false;   // closeSheet, the sheet's steps and the rise below the first screen read it
   try { reduced = !!(win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
 
-  /* ---------- the scroll fade: each row and the footer, once, the first time they enter the viewport ---------- */
+  var wide = null;   // the computer's layout, 900 px wide and up: the story's focus line and fitSheet read it
+  try { wide = win.matchMedia ? win.matchMedia('(min-width: 900px)') : null; } catch (e) {}
+
+  /* ---------- Android's band: once per load, where the bar shows (a phone's layout), never with Reduce
+     Motion; it crosses the button from 1 s after now, and the class goes when it ends (styles.css) ---------- */
+
+  try { if (android && !reduced && !(win.matchMedia && win.matchMedia('(min-width: 900px)').matches)) {
+    var finalButton = cta && cta.querySelector('.btn-final');
+    if (finalButton) {
+      var endBand = function () { finalButton.classList.remove('band'); };
+      finalButton.addEventListener('animationend', endBand);
+      finalButton.addEventListener('animationcancel', endBand);
+      finalButton.classList.add('band');
+    }
+  } } catch (e) {}
+
+  /* ---------- the rise below the first screen: each part, once, the first time it scrolls into view ----------
+     Only a part whose top is out of sight at load waits (.wait, styles.css): below the window, or under the
+     bar where the bar is pinned over the window's bottom (the headline under a phone's first screen, which
+     waits unseen behind it); one already in sight never moves, and with the script off nothing waits. It
+     rises once 12% of it shows, as the boards do it, counted above the bar where the bar is pinned, and
+     above the window's bottom where the bar sits in the page or isn't shown. The bar can change with the window (a turn, a window
+     crossing 900 wide or a short window's height), so after a resize the observer is built again with the
+     bar as it is then, for the parts still waiting. */
 
   try { if (!reduced && 'IntersectionObserver' in win) {
     var reveals = doc.querySelectorAll('[data-reveal]');
-    var revealObs = new IntersectionObserver(function (entries) {
-      for (var i = 0; i < entries.length; i++) {
-        if (!entries[i].isIntersecting) continue;
-        entries[i].target.classList.add('in');
-        revealObs.unobserve(entries[i].target);
-      }
+    var windowH = win.innerHeight || root.clientHeight;
+    var revealObs = null;
+    var revealBarH = -1;
+    var pinnedBarH = function () {
+      try { if (cta && cta.offsetHeight && win.getComputedStyle(cta).position === 'fixed') return cta.offsetHeight; } catch (e) {}
+      return 0;
+    };
+    var watchReveal = function () {
+      var barH = pinnedBarH();
+      if (barH === revealBarH) return;
+      revealBarH = barH;
+      if (revealObs) revealObs.disconnect();
+      revealObs = new IntersectionObserver(function (entries, obs) {
+        for (var i = 0; i < entries.length; i++) {
+          if (!entries[i].isIntersecting) continue;
+          var part = entries[i].target;
+          obs.unobserve(part);
+          part.classList.remove('wait');
+          part.classList.add('in');
+        }
+      }, { threshold: 0.12, rootMargin: '0px 0px ' + (-barH) + 'px 0px' });
+      for (var w = 0; w < reveals.length; w++) if (reveals[w].classList.contains('wait')) revealObs.observe(reveals[w]);
+    };
+    var shownH = windowH - pinnedBarH();
+    for (var rv = 0; rv < reveals.length; rv++) {
+      if (reveals[rv].getBoundingClientRect().top > shownH) reveals[rv].classList.add('wait');
+    }
+    watchReveal();
+    var revealRaf = 0;
+    win.addEventListener('resize', function () {
+      if (revealRaf) return;
+      revealRaf = win.requestAnimationFrame(function () { revealRaf = 0; watchReveal(); });
     });
-    for (var rv = 0; rv < reveals.length; rv++) revealObs.observe(reveals[rv]);
+  } } catch (e) {}
+
+  /* ---------- a rise plays once ----------
+     The two stores tiles show in one layout each, so a window crossing 900 wide shows one anew. Once its
+     rise has ended (or was cut short as its layout hid it), it is marked .risen and rests (styles.css). The
+     computer's, hidden at load in a phone's layout, rests once the first screen's rise has ended. This
+     script is deferred, so on a slow load that rise may have ended before it runs: then it rests at once. */
+
+  var firstStores = doc.querySelector('.first-stores');
+  var phoneStores = doc.querySelector('.stores');
+  var onRisen = function (ev) {
+    var el = ev.target;
+    if (!el || !el.classList) return;
+    if (el === firstStores || (el === phoneStores && el.classList.contains('in'))) el.classList.add('risen');
+    else if (firstStores && el.classList.contains('first-tile') && !firstStores.getClientRects().length) firstStores.classList.add('risen');
+  };
+  doc.addEventListener('animationend', onRisen);
+  doc.addEventListener('animationcancel', onRisen);
+  var riseOver = function (el) {
+    if (!el || !el.getAnimations) return false;
+    var played = el.getAnimations();
+    for (var i = 0; i < played.length; i++) if (played[i].playState !== 'finished') return false;
+    return true;
+  };
+  try {
+    if (firstStores && (firstStores.getClientRects().length ? riseOver(firstStores) : riseOver(doc.querySelector('.first-tile')))) {
+      firstStores.classList.add('risen');
+    }
+  } catch (e) {}
+
+  /* ---------- the story's focus ----------
+     The line in focus is the last one whose text has crossed the focus line (SITE-04 §6.3): on a phone,
+     halfway between the held tile's bottom and the bar's top, the middle of the room a line shows in; on a
+     computer (900 up), the window's middle. Where the phone's tile isn't held (html.bar-in-page) the
+     window's top stands for its bottom, and where the bar isn't pinned the window's bottom stands for its
+     top, so with neither the phone's line is the middle too. The tile's bottom is where it ends while held,
+     wherever the page is scrolled: the pin's sticky top, the tile's place in the pin as laid out (not as
+     its rise moves it) and its height. One IntersectionObserver, its root running from far above the
+     window down to that line, so a line inside it has crossed, a fast jump past the story included; no
+     scroll listener. The line moves with the window, the bar's place and height and the tile's size, so on
+     a resize, once the bar has been placed and as the tile changes size it is worked out again a frame
+     later, and only where it has moved half a pixel or more is the observer built again, the old one
+     disconnected; the new one's first report gives the line in focus again. The line in focus is ink and
+     the phone shows its screen (styles.css), at once with Reduce Motion; with the script off every line is
+     ink and the first screen shows. */
+
+  var story = doc.querySelector('.story');
+  try { if (story && 'IntersectionObserver' in win) {
+    var storyLines = story.querySelectorAll('.story-line');
+    var storyShots = story.querySelectorAll('.shot');
+    var storyPin = story.querySelector('.story-pin');
+    var storyTile = story.querySelector('.story-tile');
+    var crossed = [];
+    var focusAt = -1;
+    var storyObs = null;
+    var storyMargin = null;   // the observer's bottom margin: '-50%' on a computer, px above the window's bottom on a phone
+    var storyRaf = 0;
+    var setFocus = function (n) {
+      if (n === focusAt) return;
+      focusAt = n;
+      for (var i = 0; i < storyLines.length; i++) storyLines[i].classList.toggle('on', i === n);
+      for (var j = 0; j < storyShots.length; j++) storyShots[j].classList.toggle('on', j === n);
+    };
+    var focusMargin = function () {
+      if (wide && wide.matches) return '-50%';
+      var windowH = win.innerHeight || root.clientHeight;
+      var tileEnd = 0;   // the held tile's bottom, or the window's top where it isn't held
+      var pinStyle = storyPin && storyTile ? win.getComputedStyle(storyPin) : null;
+      if (pinStyle && /sticky/.test(pinStyle.position)) {
+        tileEnd = (parseFloat(pinStyle.top) || 0) + storyTile.offsetTop + storyTile.getBoundingClientRect().height;
+      }
+      var barTop = windowH;   // the pinned bar's top, or the window's bottom where it sits in the page
+      if (cta && cta.offsetHeight && win.getComputedStyle(cta).position === 'fixed') barTop = cta.getBoundingClientRect().top;
+      return -Math.round((windowH - (tileEnd + barTop) / 2) * 100) / 100;
+    };
+    var watchStory = function () {
+      storyRaf = 0;
+      var margin = focusMargin();
+      if (storyObs && (margin === storyMargin ||
+          (typeof margin === 'number' && typeof storyMargin === 'number' && Math.abs(margin - storyMargin) < 0.5))) return;
+      storyMargin = margin;
+      if (storyObs) storyObs.disconnect();
+      crossed = [];
+      storyObs = new IntersectionObserver(function (entries) {
+        for (var i = 0; i < entries.length; i++) {
+          for (var k = 0; k < storyLines.length; k++) if (storyLines[k] === entries[i].target) crossed[k] = entries[i].isIntersecting;
+        }
+        var n = 0;
+        for (var m = 0; m < storyLines.length; m++) if (crossed[m]) n = m;
+        setFocus(n);
+      }, { rootMargin: '100000px 0px ' + (typeof margin === 'number' ? margin + 'px' : margin) + ' 0px' });
+      for (var l = 0; l < storyLines.length; l++) storyObs.observe(storyLines[l]);
+    };
+    var queueStory = function () {
+      if (!storyRaf) storyRaf = win.requestAnimationFrame(watchStory);
+    };
+    setFocus(0);
+    story.classList.add('focus');
+    watchStory();
+    barPlaced = queueStory;
+    win.addEventListener('resize', queueStory);
+    win.addEventListener('load', queueStory);
+    if (wide && wide.addEventListener) wide.addEventListener('change', queueStory);
+    else if (wide && wide.addListener) wide.addListener(queueStory);
+    try { if (storyTile && win.ResizeObserver) new win.ResizeObserver(queueStory).observe(storyTile); } catch (e) {}
+  } } catch (e) {}
+
+  /* ---------- the story's fourth line, in the middle of its step on a computer ----------
+     Its step is the taller one that holds the tile until line 4 reaches the header (styles.css), so the
+     line's place there follows from its height: measured here, and again whenever its box changes (the
+     width, the fonts). With the script off it sits where a one-line line would. */
+
+  try { if (story && win.ResizeObserver) {
+    var line4 = story.querySelector('.story-step:last-child .story-line');
+    if (line4) {
+      var setLine4 = function () {
+        var h = line4.getBoundingClientRect().height;
+        if (h) line4.parentNode.style.setProperty('--line-4-h', h + 'px');
+      };
+      new win.ResizeObserver(setLine4).observe(line4);
+      if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(setLine4, function () {});
+    }
   } } catch (e) {}
 
   /* ---------- sheet ---------- */
@@ -248,9 +463,61 @@
   var openedAt = 0;
   var settleTimer = 0;
 
-  /* Step 3 (done) sits inside the email step, as on the boards: it shows under the emptied field */
-  function showStep(n) {
-    for (var i = 0; i < steps.length; i++) steps[i].hidden = !((i + 1) === n || (n === 3 && i === 1));
+  /* Step 3 (done) sits inside the email step, as on the boards: it shows under the emptied field.
+     Moving on (animate), the next step crossfades in 200 ms with a 4 px rise while the step it replaces
+     fades out where it was in the sheet, scrolled or not, out of the flow, so the sheet takes its new height
+     at once; the done line rises in the same way (styles.css). Opening shows its step at once: the sheet
+     itself moves. */
+  var leaving = null;
+  var leaveTimer = 0;
+
+  function endLeave() {
+    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = 0; }
+    if (!leaving) return;
+    leaving.classList.remove('step-out');
+    leaving.removeAttribute('inert');
+    leaving.style.top = '';
+    leaving.style.left = '';
+    leaving.style.width = '';
+    holdButton.style.top = '';
+    holdButton.style.left = '';
+    holdButton.style.width = '';
+    leaving.hidden = true;
+    leaving = null;
+    panel.classList.remove('stepping');
+  }
+
+  function showStep(n, animate) {
+    endLeave();
+    var move = !!animate && !reduced;
+    var show = [];
+    for (var i = 0; i < steps.length; i++) show[i] = (i + 1) === n || (n === 3 && i === 1);
+    for (var j = 0; j < steps.length; j++) {
+      var step = steps[j];
+      step.classList.remove('step-in');
+      if (move && !show[j] && !step.hidden) {
+        // Hold my spot is held where it shows, stuck to the sheet's bottom or not, before its step leaves the
+        // flow: stuck again to the bottom of the shorter sheet, it would jump up over the next step
+        var held = step.contains(holdButton) ? holdButton.getBoundingClientRect() : null;
+        var from = held ? step.getBoundingClientRect() : null;
+        step.style.top = (step.offsetTop - panel.scrollTop) + 'px';   // as the sheet showed it: its scroll goes to 0 below
+        step.style.left = step.offsetLeft + 'px';
+        step.style.width = step.offsetWidth + 'px';
+        step.setAttribute('inert', '');
+        step.classList.add('step-out');
+        if (held) {
+          holdButton.style.top = (held.top - from.top) + 'px';
+          holdButton.style.left = (held.left - from.left) + 'px';
+          holdButton.style.width = held.width + 'px';
+        }
+        panel.classList.add('stepping');
+        leaving = step;
+        continue;
+      }
+      if (move && show[j] && step.hidden) step.classList.add('step-in');
+      step.hidden = !show[j];
+    }
+    if (leaving) leaveTimer = setTimeout(endLeave, 200);
     panel.setAttribute('aria-labelledby', 'sheet-title-' + (n === 3 ? 2 : n));
     panel.scrollTop = 0;
   }
@@ -267,9 +534,27 @@
     sheetRoot.setAttribute('data-picked', plan);   // the lines that depend on the plan (styles.css)
     for (var i = 0; i < planCards.length; i++) {
       var on = planCards[i].getAttribute('data-plan') === plan;
+      var was = planCards[i].getAttribute('aria-checked') === 'true';
       planCards[i].setAttribute('aria-checked', on ? 'true' : 'false');
       planCards[i].setAttribute('tabindex', on ? '0' : '-1');
+      if (on && !was && !reduced) popTick(planCards[i]);
     }
+  }
+
+  /* A tick pops only as it turns on: never on the row turning off, nor on the preselected row as the
+     sheet opens, nor with Reduce Motion (DESIGN.md §6) */
+  function popTick(card) {
+    var tick = card.querySelector('.tick');
+    if (!tick) return;
+    tick.classList.remove('pop');
+    void tick.offsetWidth;   // restarts it on a quick second turn
+    tick.classList.add('pop');
+  }
+
+  for (var tk = 0; tk < planCards.length; tk++) {
+    planCards[tk].addEventListener('animationend', function (ev) {
+      if (ev.target.classList && ev.target.classList.contains('tick')) ev.target.classList.remove('pop');
+    });
   }
 
   function onPlanKey(ev) {
@@ -287,7 +572,10 @@
   }
   for (var c = 0; c < planCards.length; c++) planCards[c].addEventListener('keydown', onPlanKey);
 
-  function openSheet() {
+  /* Reserve opens the sheet on its plans. Android's button opens it straight on its email step, with
+     Android's words and its plan, android (SITE-03 §1), and focuses the field inside the tap, so the
+     keyboard opens; the panel then doesn't take the focus back. */
+  function openSheet(emailFirst) {
     if (sheetOpen) return;
     sheetOpen = true;
     openedAt = Date.now();
@@ -301,18 +589,28 @@
     lastFocus = doc.activeElement;
     scrollY = win.pageYOffset || root.scrollTop || 0;
     doc.body.style.top = -scrollY + 'px';
-    showStep(1);   // always step 1; the plan choice is kept across a reopen
+    if (emailFirst) {
+      selectedPlan = 'android';
+      sheetRoot.setAttribute('data-picked', 'android');
+      showStep(2);
+    } else {
+      showStep(1);   // always step 1 for Reserve; the plan choice is kept across a reopen
+    }
     emailInput.value = '';
     emailInput.removeAttribute('aria-invalid');
     emailInput.classList.remove('shake');
     setEmailState(false);
     sheetRoot.hidden = false;
+    // the scroll bar's width, where the window has a classic one: the lock gives it back (styles.css)
+    try { root.style.setProperty('--sb', Math.max(0, win.innerWidth - root.clientWidth) + 'px'); } catch (e) {}
     root.classList.add('sheet-open');
     fitSheet();
+    if (emailFirst) { try { emailInput.focus({ preventScroll: true }); } catch (e) { emailInput.focus(); } }
     win.requestAnimationFrame(function () {
       win.requestAnimationFrame(function () {
         if (!sheetOpen) return;   // closed in the meantime: nothing to show or focus
         sheetRoot.classList.add('open');
+        if (emailFirst) return;   // the field has the focus
         try { panel.focus({ preventScroll: true }); } catch (e) { panel.focus(); }
       });
     });
@@ -326,6 +624,7 @@
     sheetRoot.classList.remove('open');
     try { doc.activeElement && doc.activeElement.blur(); } catch (e) {}
     root.classList.remove('sheet-open');
+    try { root.style.removeProperty('--sb'); } catch (e) {}
     doc.body.style.top = '';
     try { win.scrollTo(0, scrollY); } catch (e) {}
     var done = function () {
@@ -338,12 +637,14 @@
     if (reduced) done(); else closeTimer = setTimeout(done, 320);
   }
 
+  /* The phone's bottom sheet sits on what the visual viewport leaves (an open keyboard, a pinch zoom); the
+     computer's dialog stays in the middle of the window, so it never takes that offset */
   function fitSheet() {
     var vv = win.visualViewport;
     if (!vv) return;
     root.style.setProperty('--vvh', Math.round(vv.height) + 'px');
     var offset = Math.max(0, Math.round((win.innerHeight || vv.height) - (vv.height + vv.offsetTop)));
-    panel.style.bottom = sheetOpen ? offset + 'px' : '';
+    panel.style.bottom = sheetOpen && !(wide && wide.matches) ? offset + 'px' : '';
   }
 
   if (win.visualViewport) {
@@ -401,7 +702,7 @@
       planTapped = true;
       try { send('tap', { button: 'plan_' + selectedPlan, via: 'hold' }); } catch (e) {}
     }
-    showStep(2);
+    showStep(2, true);
     try { emailInput.focus(); } catch (e) {}   // inside the click: opens the iOS keyboard; fitSheet follows the viewport
   });
 
@@ -428,7 +729,7 @@
     for (var d = 0; d < doneEmails.length; d++) doneEmails[d].textContent = v;
     emailInput.value = '';
     setEmailState(true);
-    showStep(3);
+    showStep(3, true);
     win.requestAnimationFrame(function () {
       try { panel.focus({ preventScroll: true }); } catch (e) {}
       fitSheet();

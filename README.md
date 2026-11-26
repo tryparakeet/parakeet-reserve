@@ -1,8 +1,8 @@
 # Parakeet reserve page
 
-A one-screen "reserve" page for Gate 0, a seven-day paid-traffic test: day 1 is the day video 1 goes up with the paid link (target Mon Oct 26, 2026, or Sat Oct 24 / Sun Oct 25 if everything is ready sooner), the window is day 1 → day 7, and the read is the morning after day 7 (Mon Nov 2 on a Monday start, Sat Oct 31 on a Saturday, Sun Nov 1 on a Sunday), its file named for its day. `GATE_START` in `netlify/functions/event.mjs` is Sat Oct 24, 00:00 CDT (`2026-10-24T05:00:00.000Z`), the earliest possible day 1: every visit received before it resolves to `excluded.prestart` at read, and the per-hour summary cache rebuilds by itself when it changes. Raw days are UTC: CDT evening rows after 7 pm land on the next UTC day (after 6 pm once Dallas leaves CDT on Sun Nov 1 at 2 am). From Sat Oct 24, 00:00 CDT, every test visit opens the smoke link first in that same browser (see ACCEPTANCE.md).
+A "reserve" page for Gate 0, a seven-day paid-traffic test: day 1 is the day video 1 goes up with the paid link (target Mon Oct 26, 2026, or Sat Oct 24 / Sun Oct 25 if everything is ready sooner), the window is day 1 → day 7, and the read is the morning after day 7 (Mon Nov 2 on a Monday start, Sat Oct 31 on a Saturday, Sun Nov 1 on a Sunday), its file named for its day. `GATE_START` in `netlify/functions/event.mjs` is Sat Oct 24, 00:00 CDT (`2026-10-24T05:00:00.000Z`), the earliest possible day 1: every visit received before it resolves to `excluded.prestart` at read, and the per-hour summary cache rebuilds by itself when it changes. Raw days are UTC: CDT evening rows after 7 pm land on the next UTC day (after 6 pm once Dallas leaves CDT on Sun Nov 1 at 2 am). From Sat Oct 24, 00:00 CDT, every test visit opens the smoke link first in that same browser (see ACCEPTANCE.md).
 
-The page is built against `DESIGN.md` (the design rulebook; image sources in `CREDITS.md`): hero B, the sky field with Apple's iPhone bezel, and C1 below the first screen. The page is its own instrument: it gives each visitor an id, records pageviews, taps, the plan chosen, emails and the time on page into Netlify Blobs, and serves an admin summary whose one measured number is `plan_rate = plan_taps ÷ uniques` for the paid links. No third-party script, pixel or analytics; the CSP forbids them.
+The page is built against `DESIGN.md` (the design rulebook; image sources in `CREDITS.md`): the website's new look (parakeet-app's `docs/SITE-04-THE-NEW-SITE.md`), a first screen of tiles with Apple's iPhone bezel, and the tiles below it. The page is its own instrument: it gives each visitor an id, records pageviews, taps, the plan chosen, emails and the time on page into Netlify Blobs, and serves an admin summary whose one measured number is `plan_rate = plan_taps ÷ uniques` for the paid links. No third-party script, pixel or analytics; the CSP forbids them.
 
 ## Provenance
 
@@ -17,7 +17,7 @@ netlify/functions/beacon-prune.mjs  deletes the beacon's rows and summaries once
 netlify/functions/zip3-states.json  the ZIP3-to-state table the beacon's read uses, from USPS's prefix ranges
 public/                             index.html, styles.css, app.js, privacy.html, terms.html, support.html, robots.txt, icons, media/
 netlify.toml                        rewrites (/beacon, /admin/app → beacon; /api/*, /admin → event; /go → 302; /privacy, /terms, /support), headers (CSP)
-scripts/                            serve.mjs (local harness), make-placeholder-media.sh, make-test-clip.sh, make-icons.mjs
+scripts/                            serve.mjs (local harness), make-site-images.sh, make-placeholder-media.sh, make-test-clip.sh, make-icons.mjs
 tests/unit                          the functions and their summaries (node --test, no browser)
 tests/static                        netlify.toml, public/, repo checks (node --test)
 tests/e2e                           Playwright against the harness (tests/helpers/harness.mjs)
@@ -36,7 +36,7 @@ npm run check           # both
 npm run serve           # the harness on http://localhost:8788 with an in-memory store (PORT, ADMIN_KEY, BEACON_KEY env; Ctrl-C prints the rows)
 ```
 
-The e2e needs a Playwright Chromium matching 1.56.1 at `PLAYWRIGHT_BROWSERS_PATH` (or the default cache). The Playwright runner, config `playwright.config.mjs`, writes the acceptance screenshots (at 375×667 and 393×852: the first screen, the page scrolled to the footer, the plan sheet, the email step and both done states) to `test-results/screenshots/` (ignored by git; Playwright empties `test-results/` when a run starts).
+The e2e needs a Playwright Chromium matching 1.56.1 at `PLAYWRIGHT_BROWSERS_PATH` (or the default cache). The Playwright runner's config is `playwright.config.mjs`. SITE-04 §6.6's shots come from `tests/e2e/shots.spec.mjs`, which writes them to `test-results/screenshots/` on every e2e run (ignored by git; Playwright empties `test-results/` when a run starts).
 
 ## Deploy
 
@@ -56,6 +56,8 @@ https://tryparakeet.netlify.app/admin?key=KEY&table=raw&day=2026-10-25&format=cs
 ```
 
 `day=`, `from=`, `to=` limit the days reported (UTC); the read uses none of them. Check `partial: false` and `pending: []` first; if not, read again a minute later.
+
+An Android phone gets one button, "Email me when it's on Android" (parakeet-app's `docs/SITE-03-ANDROID-LIST.md`), and the summary (version 8) counts it apart from the reserves. Its tap is `android_taps` (visitors) and `tap_events_android` (rows), beside the reserve taps and never in them or in the plan taps; like every button it is in `taps` and `tap_events`. Its email carries plan `android`: `emails` and `email_events` count the reservation emails only, and the Android ones sit beside them as `android_emails` and `email_events_android`. The summary CSV has the same columns; its bare `android` column is still the device (pageviews from Android phones). The email table (`table=emails`) and the summary's `emails[]` list every address with its plan, so the Android ones are the rows with plan `android`.
 
 ## The app's beacon
 
@@ -82,7 +84,7 @@ Known limits: an hour holding more notes than one read can fetch (about 8,000) n
 
 ## Images
 
-Hero B has no clip. The first screen's images are under `public/media/` (served immutable for a year, so a changed image gets a new name): `iphone-bezel-v1.webp` is Apple's product bezel converted losslessly from the 672×1371 PNG (pixels untouched; never cropped, faded, shadowed or overlapped, DESIGN.md §7), and `dish-quesadillas-480.webp` / `dish-wraps-480.webp` are the cards' photos (sources in `CREDITS.md`). The bird is inline SVG (`currentColor`). The old placeholder walkthrough (`walkthrough-v1.mp4` and its poster, `scripts/make-placeholder-media.sh`) is no longer referenced by the page.
+The page has no clip. Its images are under `public/media/` (served immutable for a year, so a changed image gets a new name; sources in `CREDITS.md`): `iphone-bezel-v1.webp` is Apple's product bezel converted losslessly from the 672×1371 PNG (pixels untouched; never cropped, faded, shadowed or overlapped, DESIGN.md §7), the phone in every picture. `icon-v1-<px>.webp` is the logo, the app's icon made small for 28, 30 and 34 px, each at 1x, 2x and 3x (28/56/84, 30/60/90, 34/68/102), in one `srcset`; the CSS rounds its corners at 22.37%. The phone's six screens, `screen-<name>-placeholder-420.webp` and `-640.webp` (nights, budget, week, list, total and yours: the nights question, the budget question, the week, the list, the total card and a price typed in), are placeholders, plain cream with the screen's name, until build 2's screens come (SITE-04 §6.7). `scripts/make-site-images.sh` makes the icon's sizes (`icon`), the placeholders (`placeholders`) and, from build 2's PNGs, the real stills (`stills`). The bird and the wordmark are inline SVG (`currentColor`). The old placeholder walkthrough (`walkthrough-v1.mp4` and its poster, `scripts/make-placeholder-media.sh`) is no longer referenced by the page.
 
 ## Icons
 

@@ -99,11 +99,67 @@ export async function sheetSettled(page) {
   });
 }
 
+// The sheet's focus trap (kept with the instrument): Tab four times, then Shift+Tab three times, from where
+// the focus is (the panel as the sheet opens, or one of its controls). Each press lands on the next or the
+// previous of `ring`, the open step's controls in order, going round at both ends, and never leaves
+// #sheet-panel. A control is named by its id, its data-tap, its aria-label or its words.
+export async function expectFocusTrapped(page, ring, what) {
+  const at = () => page.evaluate(() => {
+    const a = document.activeElement;
+    const name = a.id ? `#${a.id}` : a.getAttribute('data-tap') || a.getAttribute('aria-label') || (a === document.body ? '' : (a.innerText || '').trim().slice(0, 40)) || a.tagName.toLowerCase();
+    return document.getElementById('sheet-panel').contains(a) ? name : `outside the sheet: ${name}`;
+  });
+  const start = await at();
+  expect([...ring, '#sheet-panel'], `${what}: the focus starts in the sheet`).toContain(start);
+  let i = ring.indexOf(start);
+  const want = [];
+  const got = [];
+  for (const key of ['Tab', 'Tab', 'Tab', 'Tab', 'Shift+Tab', 'Shift+Tab', 'Shift+Tab']) {
+    await page.keyboard.press(key);
+    i = key === 'Tab' ? (i + 1) % ring.length : (i <= 0 ? ring.length - 1 : i - 1);
+    want.push(ring[i]);
+    got.push(await at());
+  }
+  expect(got, `${what}: Tab and Shift+Tab go round the sheet's controls and never leave it`).toEqual(want);
+}
+
 export function bbox(locator) {
   return locator.evaluate((el) => {
     const r = el.getBoundingClientRect();
     return { top: r.top, left: r.left, bottom: r.bottom, right: r.right, width: r.width, height: r.height };
   });
+}
+
+// The story's focus line (SITE-04 §6.3), in px from the window's top, worked out from the page's boxes by
+// the brief's rule, not read from app.js: on a computer (900 wide and up) the window's middle; on a phone
+// halfway between the held tile's bottom and the bar's top. The held tile's bottom is where the tile ends
+// while its pin is stuck, wherever the page is scrolled: the pin's sticky top, plus the tile's place in the
+// pin (its box's, less the translate its rise may give it), plus its height. Where the pin isn't sticky the
+// tile isn't held, and the window's top (0) stands for its bottom; where the bar isn't pinned (it sits in
+// the page) the window's bottom stands for its top. So with neither, a phone's focus line is the middle too.
+// focusPartsAt gives the line (at) with the two edges it lies between on a phone; focusLineAt, the line.
+export function focusPartsAt(page) {
+  return page.evaluate(() => {
+    if (matchMedia('(min-width: 900px)').matches) return { computer: true, at: innerHeight / 2 };
+    const pin = document.querySelector('.story-pin');
+    const tile = document.querySelector('.story-tile');
+    const bar = document.querySelector('.cta');
+    const pinStyle = getComputedStyle(pin);
+    let tileBottom = 0;
+    if (pinStyle.position === 'sticky') {
+      const t = tile.getBoundingClientRect();
+      const moved = getComputedStyle(tile).transform;
+      const lift = moved === 'none' ? 0 : new DOMMatrixReadOnly(moved).m42;
+      tileBottom = parseFloat(pinStyle.top) + (t.top - lift - pin.getBoundingClientRect().top) + t.height;
+    }
+    const barStyle = getComputedStyle(bar);
+    const barTop = barStyle.display !== 'none' && barStyle.position === 'fixed' ? bar.getBoundingClientRect().top : innerHeight;
+    return { computer: false, tileBottom, barTop, at: (tileBottom + barTop) / 2 };
+  });
+}
+
+export async function focusLineAt(page) {
+  return (await focusPartsAt(page)).at;
 }
 
 export async function viewportSize(page) {

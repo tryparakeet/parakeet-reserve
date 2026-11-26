@@ -2,6 +2,7 @@
 // resolution and differential tests: tiktok paid visitors across the seven creatives, typed /go visitors,
 // own-device smoke visits, untagged visits, bots, multi-load visitors, leaves with and without the video's
 // final state, standalone video rows, pre-start visitors. EDGE_ROWS are hand-written corner cases.
+// ANDROID_ROWS (summary version 8) are kept apart from ALL_ROWS; see below.
 
 import { BOT_UAS, REAL_UAS } from './user-agents.mjs';
 import { vid, pageview, tap, email, video, seen, leave, TIKTOK, TYPED, SMOKE, NO_UTM } from '../helpers/rows.mjs';
@@ -182,3 +183,41 @@ export const EDGE_ROWS = [
 ];
 
 export const ALL_ROWS = [...FIXTURE_ROWS, ...EDGE_ROWS].sort((a, b) => (a.received < b.received ? -1 : a.received > b.received ? 1 : 0));
+
+// Android rows, new in summary version 8: until then the function refused the tap android and the plan
+// android, so no earlier version stored one. They are kept out of ALL_ROWS, the differential's v6-era
+// fixture, and added to it by the differential's Android case.
+const AN = (label) => vid(`android-${label}`);
+export const ANDROID_VIDS = {
+  tiktok: AN('tiktok'),     // TikTok's browser: the button twice, the address, a leave
+  chrome: AN('chrome'),     // Chrome from the typed link: the button, the address sent twice
+  returns: AN('returns'),   // a paid pageview, then an untagged return with the button and the address
+  noEmail: AN('no-email'),  // the button and no address
+  smoke: AN('smoke')        // an own Android phone on the smoke link: the button and the address
+};
+const IN_TIKTOK = { device: 'android', inapp: 'tiktok', ref: 'https://www.tiktok.com' };
+const IN_CHROME = { device: 'android', inapp: 'none' };
+const ANDROID_TIKTOK_UA = REAL_UAS.tiktok_android;
+const ANDROID_CHROME_UA = REAL_UAS.chrome_android;
+
+export const ANDROID_ROWS = [
+  pageview(ANDROID_VIDS.tiktok, '2026-10-27T09:00:00.000Z', { utm_content: 'tue27', ...IN_TIKTOK, ua: ANDROID_TIKTOK_UA, scr: '412x915' }),
+  tap(ANDROID_VIDS.tiktok, 'android', '2026-10-27T09:00:04.000Z', { utm_content: 'tue27', ...IN_TIKTOK }),
+  tap(ANDROID_VIDS.tiktok, 'android', '2026-10-27T09:00:09.000Z', { utm_content: 'tue27', ...IN_TIKTOK }),
+  email(ANDROID_VIDS.tiktok, '2026-10-27T09:00:20.000Z', { utm_content: 'tue27', ...IN_TIKTOK, plan: 'android' }),
+  leave(ANDROID_VIDS.tiktok, 31, '2026-10-27T09:00:31.000Z', { utm_content: 'tue27', ...IN_TIKTOK }),
+  pageview(ANDROID_VIDS.chrome, '2026-10-28T14:00:00.000Z', { tags: TYPED, ...IN_CHROME, ua: ANDROID_CHROME_UA, scr: '360x800' }),
+  tap(ANDROID_VIDS.chrome, 'android', '2026-10-28T14:00:03.000Z', { tags: TYPED, ...IN_CHROME }),
+  email(ANDROID_VIDS.chrome, '2026-10-28T14:00:15.000Z', { tags: TYPED, ...IN_CHROME, plan: 'android' }),
+  email(ANDROID_VIDS.chrome, '2026-10-28T14:00:40.000Z', { tags: TYPED, ...IN_CHROME, plan: 'android' }),
+  pageview(ANDROID_VIDS.returns, '2026-10-28T08:00:00.000Z', { utm_content: 'wed28', ...IN_TIKTOK, ua: ANDROID_TIKTOK_UA, scr: '412x915' }),
+  pageview(ANDROID_VIDS.returns, '2026-10-29T08:00:00.000Z', { tags: NO_UTM, ...IN_CHROME, ua: ANDROID_CHROME_UA, scr: '412x915' }),
+  tap(ANDROID_VIDS.returns, 'android', '2026-10-29T08:00:05.000Z', { tags: NO_UTM, ...IN_CHROME }),
+  email(ANDROID_VIDS.returns, '2026-10-29T08:00:20.000Z', { tags: NO_UTM, ...IN_CHROME, plan: 'android' }),
+  pageview(ANDROID_VIDS.noEmail, '2026-10-29T12:00:00.000Z', { utm_content: 'thu29', ...IN_TIKTOK, ua: ANDROID_TIKTOK_UA, scr: '360x800' }),
+  tap(ANDROID_VIDS.noEmail, 'android', '2026-10-29T12:00:02.000Z', { utm_content: 'thu29', ...IN_TIKTOK }),
+  leave(ANDROID_VIDS.noEmail, 12, '2026-10-29T12:00:12.000Z', { utm_content: 'thu29', ...IN_TIKTOK }),
+  pageview(ANDROID_VIDS.smoke, '2026-10-30T18:00:00.000Z', { tags: SMOKE, ...IN_CHROME, ua: ANDROID_CHROME_UA, scr: '412x915' }),
+  tap(ANDROID_VIDS.smoke, 'android', '2026-10-30T18:00:03.000Z', { tags: SMOKE, ...IN_CHROME }),
+  email(ANDROID_VIDS.smoke, '2026-10-30T18:00:10.000Z', { tags: SMOKE, ...IN_CHROME, plan: 'android' })
+];

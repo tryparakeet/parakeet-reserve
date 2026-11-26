@@ -54,7 +54,7 @@ curl -sI "$S/go/"     | grep -iE '^(HTTP|location)'
 
 # admin: 401 with a wrong key
 curl -s -o /dev/null -w '%{http_code}\n' "$S/admin?key=wrong"          # 401
-# 503 before ADMIN_KEY is set, then 200 (the empty summary: version 7, gate_start, days [])
+# 503 before ADMIN_KEY is set, then 200 (the empty summary: version 8, gate_start, days [])
 curl -s -o /dev/null -w '%{http_code}\n' "$S/admin?key=$KEY"           # 503 on the first deploy, 200 after the env var + redeploy
 curl -s "$S/admin?key=$KEY" | head -20
 
@@ -103,7 +103,7 @@ Columns: **A** iPhone, TikTok's in-app browser · **B** iPhone, Safari · **C** 
 
 ### Where to look
 
-Summary: `GET /admin?key=KEY` (JSON). Per bucket: `total.sources.tiktok`, `total.sources.typed`, `total.blended`, `total.excluded.{smoke,no_utm,bot,prestart}`; each has `uniques, reserve_taps, plan_taps, plan_yearly_taps, plan_monthly_taps, plan_rate, play_taps, emails, pageviews, seen, video {playing, blocked, both}, video_events, leave {n, avg_seconds}, device, inapp`; `sources.<source>.content.<creative>` repeats the shape per creative. `days[]` has the same per UTC day. `emails[]` lists the addresses with the plan.
+Summary: `GET /admin?key=KEY` (JSON). Per bucket: `total.sources.tiktok`, `total.sources.typed`, `total.blended`, `total.excluded.{smoke,no_utm,bot,prestart}`; each has `uniques, reserve_taps, android_taps, plan_taps, plan_yearly_taps, plan_monthly_taps, plan_rate, play_taps, emails, android_emails, pageviews, seen, video {playing, blocked, both}, video_events, leave {n, avg_seconds}, device, inapp`, with the row counts beside them (`tap_events_android` and `email_events_android` among them); `sources.<source>.content.<creative>` repeats the shape per creative. `emails` counts the reservation emails only: an Android phone's button and email are `android_taps` and `android_emails` (rows: `tap_events_android`, `email_events_android`), never in the reserve or plan taps. `days[]` has the same per UTC day. `emails[]` lists the addresses with the plan (`android` for an Android phone's).
 
 Rows: `GET /admin?key=KEY&table=raw&day=YYYY-MM-DD&format=csv` (one row per event; columns `received, event, vid, flag, ts, utm_*, device, inapp, ref, button, via, email, plan, video, seconds, ua, wd, scr`). Emails: `&table=emails&format=csv`. Summary as CSV: `&format=csv`.
 

@@ -30,3 +30,10 @@ export const REAL_UAS = {
 
 // The user agent of the e2e browser context (an iPhone in Safari).
 export const DEFAULT_MOBILE_UA = REAL_UAS.safari_ios;
+
+// A computer's browsers, for the e2e runs of the computer's layout (900 wide and up). Kept apart from
+// REAL_UAS, whose list the seeded week of rows (tests/fixtures/rows.mjs) picks from: one more entry there
+// would change every seeded row.
+export const COMPUTER_UAS = {
+  safari_mac: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15'
+};

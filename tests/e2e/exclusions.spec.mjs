@@ -25,7 +25,7 @@ test.describe('smoke', () => {
     const [tagged] = rowsOf(blobs, { event: 'pageview', utm_source: 'tiktok' });
     expect(tagged.vid).toBe(pv.vid);
     expect(tagged.flag, 'stored as gate; the visitor is resolved to smoke at read').toBe('gate');
-    await page.locator('[data-tap="reserve"]').click();
+    await page.locator('.cta [data-tap="reserve"]').click();
     await waitForRows(blobs, { event: 'tap', button: 'reserve' });
     out = await harness.admin();
     expect(out.total.excluded.smoke.uniques).toBe(1);
@@ -61,7 +61,7 @@ test.describe('bots', () => {
     await page.goto(TAGGED_QS);
     const [pv] = await waitForRows(blobs, { event: 'pageview' });
     expect(pv.wd).toBe(true);
-    await page.locator('[data-tap="reserve"]').click();
+    await page.locator('.cta [data-tap="reserve"]').click();
     await waitForRows(blobs, { event: 'tap', button: 'reserve' });
     const out = await harness.admin();
     expect(out.total.excluded.bot.uniques).toBe(1);
@@ -136,7 +136,7 @@ test.describe('prestart', () => {
       const pvs = await waitForRows(blobs, { event: 'pageview' }, { count: 2 });
       expect(pvs[1].vid).toBe(pv.vid);
       expect(pvs[1].received, 'sorted by received: the later visit').toBe('2026-10-25T12:00:00.000Z');
-      await page.locator('[data-tap="reserve"]').click();
+      await page.locator('.cta [data-tap="reserve"]').click();
       await waitForRows(blobs, { event: 'tap', button: 'reserve' });
 
       out = await harness.admin();
@@ -186,7 +186,7 @@ test.describe('closed-hour cache', () => {
     const { blobs, clock } = harness;
     await page.goto(TAGGED_QS);
     const [pv] = await waitForRows(blobs, { event: 'pageview' });
-    await page.locator('[data-tap="reserve"]').click();
+    await page.locator('.cta [data-tap="reserve"]').click();
     await waitForRows(blobs, { event: 'tap', button: 'reserve' });
     expect(Object.keys(blobs.dump('summaries'))).toEqual([]);
 
@@ -199,7 +199,7 @@ test.describe('closed-hour cache', () => {
     expect(out.generated).toBe('2026-10-25T14:05:00.000Z');
     const cached = blobs.dump('summaries');
     expect(Object.keys(cached)).toEqual(['2026-10-25/12']);
-    expect(cached['2026-10-25/12'].v).toBe(7);
+    expect(cached['2026-10-25/12'].v).toBe(8);
     expect(cached['2026-10-25/12'].gs).toBe(GATE_START);
     expect(cached['2026-10-25/12'].rows).toBe(blobs.rows('events').length);
     expect(out.total.sources.tiktok.uniques).toBe(1);

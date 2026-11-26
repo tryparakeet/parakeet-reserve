@@ -1,12 +1,10 @@
 // The site's routes as the harness reproduces the toml: /go (302 with the exact Location, and the landing
 // counted under sources.typed.content.endcard), /privacy, /terms, /support, /robots.txt, the CSP header on
-// /, /privacy and /support, traversal rejected, 404; plus the screenshots for the acceptance record.
+// /, /privacy and /support, traversal rejected, 404.
 
-import { mkdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { test, expect, TAGGED_QS, TYPED_LOCATION, waitForRows, sheetSettled, RESULTS_DIR } from './fixtures.mjs';
-import { parseHeaderRules, TOML_PATH } from '../helpers/harness.mjs';
 import { readFileSync } from 'node:fs';
+import { test, expect, TYPED_LOCATION, waitForRows } from './fixtures.mjs';
+import { parseHeaderRules, TOML_PATH } from '../helpers/harness.mjs';
 
 const CSP = parseHeaderRules(readFileSync(TOML_PATH, 'utf8')).find((r) => r.for === '/*').values['Content-Security-Policy'];
 
@@ -101,52 +99,3 @@ test('traversal is rejected after decoding, unknown paths are 404, static assets
   expect(media.headers()['content-type']).toBe('image/webp');
   expect(media.headers()['cache-control']).toBe('public, max-age=31536000, immutable');
 });
-
-// The acceptance record (brief 2, step 10): at 375x667 and 393x852, the first screen (after the answer
-// line's one pass), the page scrolled to the footer, the plan sheet, the email step, and both done states,
-// written to test-results/screenshots/ on every run (Playwright empties test-results/ when a run starts,
-// so the set is always the current page).
-async function settleMotion(page) {
-  await page.evaluate(() => { for (const a of document.getAnimations()) a.finish(); });
-  await page.waitForTimeout(100);
-}
-
-for (const vp of [{ width: 375, height: 667 }, { width: 393, height: 852 }]) {
-  for (const plan of ['yearly', 'monthly']) {
-    test(`screenshots at ${vp.width}x${vp.height}, ${plan}: the first screen, the footer, the plan sheet, the email step, done`, async ({ page }) => {
-      const size = `${vp.width}x${vp.height}`;
-      const dir = join(RESULTS_DIR, 'screenshots');
-      mkdirSync(dir, { recursive: true });
-      const shot = (name) => page.screenshot({ path: join(dir, `${size}-${name}.png`), fullPage: false });
-      await page.setViewportSize(vp);
-      await page.goto(TAGGED_QS);
-      await expect(page.locator('h1')).toBeVisible();
-      await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
-      await settleMotion(page);
-      if (plan === 'yearly') {
-        await shot('1-first-screen');
-        for (let y = 100; y <= 1400; y += 100) await page.evaluate((top) => window.scrollTo(0, top), y);
-        await page.waitForTimeout(700);   // past the 500 ms scroll fade
-        await shot('2-footer');
-        await page.evaluate(() => window.scrollTo(0, 0));
-      }
-
-      await page.locator('[data-tap="reserve"]').click();
-      await sheetSettled(page);
-      if (plan === 'monthly') await page.locator('[data-tap="plan_monthly"]').click();
-      if (plan === 'yearly') await shot('3-plan-sheet');
-
-      await page.locator('#hold').click();
-      await expect(page.locator('#step-2')).toBeVisible();
-      await expect(page.locator('#email')).toBeFocused();
-      await page.waitForTimeout(200);
-      if (plan === 'yearly') await shot('4-email-step');
-
-      await page.locator('#email').fill('you@example.com');
-      await page.locator('#email-form button[type="submit"]').click();
-      await expect(page.locator('#step-3')).toBeVisible();
-      await page.waitForTimeout(200);
-      await shot(`5-done-${plan}`);
-    });
-  }
-}
