@@ -422,7 +422,14 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradie
   assert.match(css, /\[data-reveal\]\.in\s*\{\s*animation:\s*rise 500ms/, 'the scroll fade: 500 ms, only once .in is added');
   assert.doesNotMatch(cssNoComments, /\[data-reveal\](?!\.in)[^{,]*\{[^}]*opacity:\s*0/, 'the rows are visible at rest');
   assert.match(css, /@keyframes rise\s*\{\s*from\s*\{\s*opacity:\s*0;\s*transform:\s*translateY\(14px\)/);
-  assert.match(css, /\.answer-3\s*\{\s*animation:\s*answer-3 400ms linear 5s both;/, 'the last answer fades in at 5 s and stays');
+  for (const n of [1, 2, 3]) {
+    assert.match(css, new RegExp(`\\.answer-${n}\\s*\\{\\s*animation:\\s*answer-${n} 5\\.8s ease-in-out 0\\.3s both;`), `answer ${n}: the one 5.8 s pass from 0.3 s, as the boards run it`);
+  }
+  assert.match(css, /@keyframes answer-3\s*\{\s*0%, 93\.1%\s*\{\s*opacity:\s*0;\s*\}\s*100%\s*\{\s*opacity:\s*1;\s*\}/, 'the last answer fades in at the end and stays');
+  assert.match(css, /\.first-words\s*\{\s*animation:\s*first-in 600ms var\(--curve\) both;/, 'at load the words rise 16 px and fade in');
+  assert.match(css, /\.first-tile\s*\{\s*animation:\s*first-rise 600ms var\(--curve\) 100ms both;/, 'the phone\'s tile rises 100 ms later');
+  assert.match(css, /@keyframes first-rise\s*\{\s*from\s*\{\s*transform:\s*translateY\(16px\);\s*\}\s*to\s*\{\s*transform:\s*none;\s*\}\s*\}/, 'the phone\'s tile only rises: the bezel never fades');
+  assert.match(css, /--curve:\s*cubic-bezier\(0\.22, 1, 0\.36, 1\);/, 'the standard curve');
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[^}]*\.answer-1, \.answer-2, \.answer-3\s*\{\s*animation:\s*none;/, 'reduced motion: the answers do not move');
   assert.doesNotMatch(cssNoComments, /box-shadow:\s*0\s+\d+px\s+\d+px/, 'flat: no drop shadow');
 });

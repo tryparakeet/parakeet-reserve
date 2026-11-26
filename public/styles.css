@@ -16,6 +16,7 @@
   --ink-10: rgba(14, 27, 38, 0.10);   /* hairlines */
   --sky-soft: #E3F1FC;                /* a selected row's fill; the stores' tile */
   --cream-14: rgba(251, 246, 236, 0.14);   /* the final button's edge (§5) */
+  --curve: cubic-bezier(0.22, 1, 0.36, 1);   /* the standard curve, which settles a move (§6) */
   --col: 430px;
   --gutter: 20px;
   /* The reserve sheet's bottom padding: the home indicator's 34 on a Face ID iPhone (R1-393), 32 on an SE
@@ -163,6 +164,23 @@ a { color: inherit; }
 
 .first-words { margin-bottom: var(--tile-mt); }
 
+/* At load the first screen rises 16 px into place once, 600 ms on the standard curve, 100 ms apart: the
+   words fade in as they rise, and the phone's tile only rises, so the bezel never fades (DESIGN.md §6; on a
+   computer the stores' tile follows, below). Plain CSS, as the answer line is: it plays and ends at rest
+   with the script off too, and nothing waits on the script. The header and the bar stay still. */
+@keyframes first-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes first-rise {
+  from { transform: translateY(16px); }
+  to { transform: none; }
+}
+
+.first-words { animation: first-in 600ms var(--curve) both; }
+.first-tile { animation: first-rise 600ms var(--curve) 100ms both; }
+
 /* The H1 and the answer line: ink and ink-70, left-aligned on the cream (DESIGN.md §4) */
 .first-words h1 {
   margin-top: var(--h1-mt);
@@ -175,7 +193,8 @@ a { color: inherit; }
 }
 
 /* The answer line crossfades once through three answers (about 2.5 s each, 400 ms fades) and stays on the
-   last (DESIGN.md §6). The three share one grid cell, so the line is as tall as the tallest. The two passing
+   last (DESIGN.md §6): one 5.8 s pass from 0.3 s on ease-in-out, its fades at 43.1-50% and 93.1-100%, as
+   the boards run it. The three share one grid cell, so the line is as tall as the tallest. The two passing
    lines are aria-hidden; the last one is the readable text and is what shows at rest, so a browser without
    animations shows it still. The phone's screens carry the same classes: the week, the list, the total. */
 .answer {
@@ -194,24 +213,24 @@ a { color: inherit; }
 .answer-1, .answer-2 { opacity: 0; }
 
 @keyframes answer-1 {
-  0%, 86.2% { opacity: 1; }      /* 0 - 2.5 s */
-  100% { opacity: 0; }           /* 2.9 s */
+  0%, 43.1% { opacity: 1; }      /* 0.3 - 2.8 s */
+  50%, 100% { opacity: 0; }      /* from 3.2 s */
 }
 
 @keyframes answer-2 {
-  0%, 46.3% { opacity: 0; }      /* 0 - 2.5 s */
-  53.7%, 92.6% { opacity: 1; }   /* 2.9 - 5.0 s */
-  100% { opacity: 0; }           /* 5.4 s */
+  0%, 43.1% { opacity: 0; }
+  50%, 93.1% { opacity: 1; }     /* 3.2 - 5.7 s */
+  100% { opacity: 0; }           /* 6.1 s */
 }
 
 @keyframes answer-3 {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  0%, 93.1% { opacity: 0; }
+  100% { opacity: 1; }           /* 6.1 s, and it stays */
 }
 
-.answer-1 { animation: answer-1 2.9s linear both; }
-.answer-2 { animation: answer-2 5.4s linear both; }
-.answer-3 { animation: answer-3 400ms linear 5s both; }
+.answer-1 { animation: answer-1 5.8s ease-in-out 0.3s both; }
+.answer-2 { animation: answer-2 5.8s ease-in-out 0.3s both; }
+.answer-3 { animation: answer-3 5.8s ease-in-out 0.3s both; }
 
 /* Android's line under the answer line (AN1-412): 15/20, 600, ink */
 .android-line {
@@ -1203,6 +1222,9 @@ body.legal .footer {
     background: var(--sky-soft);
   }
 
+  /* the stores' tile fades and rises 200 ms after the words' tile (C-1440) */
+  .first-stores { animation: first-in 600ms var(--curve) 200ms both; }
+
   .first-stores .chips { margin-top: 14px; }
 
   .first-stores .chip {
@@ -1429,6 +1451,7 @@ body.legal .footer {
 @media (prefers-reduced-motion: reduce) {
   .answer-1, .answer-2, .answer-3 { animation: none; }
   .answer-1, .answer-2 { visibility: hidden; }
+  .first-words, .first-tile, .first-stores { animation: none; }
   [data-reveal].in { animation: none; }
   .sheet { transition: none; }
   .field input.shake { animation: none; }
