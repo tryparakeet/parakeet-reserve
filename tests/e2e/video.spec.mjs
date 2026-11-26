@@ -10,7 +10,7 @@ test('no clip: no video row, no play tap, and the leave beacons carry no video s
   await waitForRows(blobs, { event: 'pageview' });
   await expect(page.locator('video')).toHaveCount(0);
   await expect(page.locator('[data-tap="play"]')).toHaveCount(0);
-  await page.locator('[data-tap="reserve"]').click();
+  await page.locator('.cta [data-tap="reserve"]').click();
   await waitForRows(blobs, { event: 'tap', button: 'reserve' });
   expect(await settle(blobs, { event: 'video' }, 800)).toEqual([]);
 

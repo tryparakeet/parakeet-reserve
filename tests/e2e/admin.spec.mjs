@@ -24,13 +24,13 @@ test.describe('without ADMIN_KEY', () => {
   });
 });
 
-test('the empty summary: version 7, gate_start, partial false, pending [], no days', async ({ request }) => {
+test('the empty summary: version 8, gate_start, partial false, pending [], no days', async ({ request }) => {
   const res = await request.get(`/admin?key=${ADMIN_KEY}`);
   expect(res.status()).toBe(200);
   expect(res.headers()['content-type']).toContain('application/json');
   expect(res.headers()['x-robots-tag']).toBe('noindex, nofollow');
   const out = await res.json();
-  expect(out.version).toBe(7);
+  expect(out.version).toBe(8);
   expect(out.gate_start).toBe('2026-10-24T05:00:00.000Z');
   expect(out.generated).toBe('2026-10-25T12:00:00.000Z');
   expect(out.partial).toBe(false);
