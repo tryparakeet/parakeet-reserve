@@ -221,6 +221,9 @@
   var reduced = false;   // closeSheet, the sheet's steps and the rise below the first screen read it
   try { reduced = !!(win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
 
+  var wide = null;   // the computer's layout, 900 px wide and up: the story's focus line and fitSheet read it
+  try { wide = win.matchMedia ? win.matchMedia('(min-width: 900px)') : null; } catch (e) {}
+
   /* ---------- Android's band: once per load, where the bar shows (a phone's layout), never with Reduce
      Motion; it crosses the button from 1 s after now, and the class goes when it ends (styles.css) ---------- */
 
@@ -287,7 +290,6 @@
   try { if (story && 'IntersectionObserver' in win) {
     var storyLines = story.querySelectorAll('.story-line');
     var storyShots = story.querySelectorAll('.shot');
-    var wide = win.matchMedia ? win.matchMedia('(min-width: 900px)') : null;
     var crossed = [];
     var focusAt = -1;
     var storyObs = null;
@@ -511,12 +513,14 @@
     if (reduced) done(); else closeTimer = setTimeout(done, 320);
   }
 
+  /* The phone's bottom sheet sits on what the visual viewport leaves (an open keyboard, a pinch zoom); the
+     computer's dialog stays in the middle of the window, so it never takes that offset */
   function fitSheet() {
     var vv = win.visualViewport;
     if (!vv) return;
     root.style.setProperty('--vvh', Math.round(vv.height) + 'px');
     var offset = Math.max(0, Math.round((win.innerHeight || vv.height) - (vv.height + vv.offsetTop)));
-    panel.style.bottom = sheetOpen ? offset + 'px' : '';
+    panel.style.bottom = sheetOpen && !(wide && wide.matches) ? offset + 'px' : '';
   }
 
   if (win.visualViewport) {

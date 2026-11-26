@@ -797,6 +797,31 @@ test('keyboard proxy: with the sheet open at 375x380, --vvh follows innerHeight 
   expect(hold.height).toBeGreaterThan(0);
 });
 
+// A pinch zoom shrinks the visual viewport. The phone's bottom sheet sits on what it leaves (its bottom
+// offset), but the computer's dialog stays in the middle of the window, its title and plans in reach.
+test.describe('a computer zoomed in by a pinch', () => {
+  test.use({ viewport: { width: 1180, height: 820 }, isMobile: false, hasTouch: false, userAgent: MAC_UA });
+
+  test('the dialog stays in the middle of the window, with no bottom offset', async ({ page }) => {
+    await page.goto(TAGGED_QS);
+    await atRest(page);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 2 });
+    await page.waitForFunction(() => window.visualViewport.height < window.innerHeight);
+    await page.evaluate(() => document.querySelector('.top-btn[data-tap="reserve"]').click());
+    await sheetSettled(page);
+    await atRest(page);
+    const got = await page.evaluate(() => {
+      const panel = document.getElementById('sheet-panel');
+      const r = panel.getBoundingClientRect();
+      return { bottom: panel.style.bottom, top: r.top, end: r.bottom, title: document.getElementById('sheet-title-1').getBoundingClientRect().top, inner: window.innerHeight };
+    });
+    expect(got.bottom, 'no bottom offset on the dialog').toBe('');
+    expect(got.title, 'its title inside the window').toBeGreaterThanOrEqual(0);
+    expect(got.top + got.end, 'in the middle').toBeCloseTo(got.inner, 0);
+  });
+});
+
 test('the sheet closes without Reduce Motion (after its slide down) and the page is left as it was', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto(TAGGED_QS);
