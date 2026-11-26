@@ -469,8 +469,8 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
 /* The story: four lines that scroll under a sky tile that stays in place, its phone on the line's screen.
    The tile is the boards' 404, or less in a window too short for it, so that a whole story line (two lines
    of 32/1.1, with air) always shows between it and the bar (SITE-04 §6.4). The focus line sits halfway in
-   that room (app.js), so a line turns ink there, clear of the tile and the bar, at any bar's height. A cream
-   band over the tile's top 12 px and its top corners hides the lines that scroll under it. */
+   that room (app.js), so a line turns ink as its top reaches the room's middle, whatever the bar's
+   height. A cream band over the tile's top 12 px and its top corners hides the lines that scroll under it. */
 .story {
   position: relative;
   margin-top: 28px;
