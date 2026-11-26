@@ -192,6 +192,37 @@ for (const w of SHORT_PHONES) {
   });
 }
 
+/* ---------- the held story tile ends above the focus line ---------- */
+
+// A story line takes the focus as its text crosses 66% of the window's height, so the held tile ends above
+// that line: otherwise a line turns ink, and the phone changes screen, while it is half under the tile.
+// Android's bar is shorter than the iPhone's, so its tile would reach further down without the cap.
+const FOCUS_WINDOWS = [
+  { width: 360, height: 600, ua: PHONES.Android },
+  { width: 393, height: 600, ua: PHONES.Android },
+  { width: 412, height: 620, ua: PHONES.Android },
+  { width: 412, height: 915, ua: PHONES.Android, tile: 404 },
+  { width: 375, height: 550, ua: PHONES.iPhone },
+  { width: 393, height: 600, ua: PHONES.iPhone },
+  { width: 393, height: 852, ua: PHONES.iPhone, tile: 404 }
+];
+
+for (const w of FOCUS_WINDOWS) {
+  test.describe(`${w.ua === PHONES.Android ? 'Android' : 'iPhone'} at ${w.width}x${w.height}`, () => {
+    test.use({ viewport: { width: w.width, height: w.height }, userAgent: w.ua });
+
+    test('the held story tile ends above the focus line, 66% of the window\'s height', async ({ page }) => {
+      await load(page);
+      expect(await page.locator('.cta').evaluate((el) => getComputedStyle(el).position), 'the bar is pinned').toBe('fixed');
+      await holdStory(page);
+      const tile = await bbox(page.locator('.story-tile'));
+      expect(tile.top, 'the tile is held at the top').toBeLessThan(20);
+      expect(tile.bottom, 'the tile ends above the focus line').toBeLessThanOrEqual(w.height * 0.66);
+      if (w.tile) expect(tile.height, 'a tall window\'s tile stays at its 404').toBeCloseTo(w.tile, 1);
+    });
+  });
+}
+
 for (const vp of [{ width: 1440, height: 780 }, { width: 1024, height: 660 }]) {
   test.describe(`a computer at ${vp.width}x${vp.height}`, () => {
     test.use({ viewport: vp, ...MAC });

@@ -454,8 +454,10 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
 }
 
 /* The story: four lines that scroll under a sky tile that stays in place, its phone on the line's screen.
-   The tile leaves room for a whole story line (two lines of 32/1.1, with air) between it and the bar. A
-   cream band over the tile's top 12 px and its top corners hides the lines that scroll under it. */
+   The tile leaves room for a whole story line (two lines of 32/1.1, with air) between it and the bar, and
+   ends 8 px above the focus line at 66% of the window, so a line takes the focus in the clear (Android's
+   shorter bar would otherwise let the tile reach past it). A cream band over the tile's top 12 px and its
+   top corners hides the lines that scroll under it. */
 .story {
   position: relative;
   margin-top: 28px;
@@ -484,7 +486,7 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
   position: relative;
   display: grid;
   place-items: center;
-  height: clamp(244px, 100svh - var(--cta-h) - 98px, 404px);
+  height: clamp(244px, min(100svh - var(--cta-h) - 98px, 66svh - 20px), 404px);
   border-radius: 28px;
   background: var(--sky);
 }
