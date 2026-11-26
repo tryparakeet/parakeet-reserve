@@ -620,6 +620,10 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, one gradi
   assert.deepEqual([...app.matchAll(/([\w.]+)\.addEventListener\(\s*['"]scroll['"]/g)].map((m) => m[1]), ['win.visualViewport'],
     'no scroll listener on the page: the one there is is the visual viewport\'s, which fits the open sheet to a keyboard or a pinch zoom');
   assert.doesNotMatch(app, /\bonscroll\b/, 'nor an onscroll');
+  // the phone's story tile: the boards' 404, shorter only where a whole story line wouldn't fit above the bar
+  assert.match(cssNoComments, /\n\.story-tile \{[^}]*height: clamp\(244px, var\(--window-h\) - var\(--cta-h\) - 98px, 404px\);/,
+    'the phone\'s tile: the window less the bar less 98 (a whole story line with air), from 244 to the boards\' 404');
+  assert.doesNotMatch(cssNoComments, /\.story-tile \{[^}]*(0\.66|66svh)/, 'no term left from the old focus line at 66% of the window');
   assert.match(css, /\.story\.focus \.story-line\s*\{\s*opacity:\s*0\.62;\s*\}/, 'the lines out of focus are ink at 62%');
   assert.match(cssNoComments, /\n\.story-line \{[^}]*text-wrap: balance;/, 'the story\'s lines are headlines, balanced so no line ends on one word (DESIGN.md §4), on both layouts');
   assert.doesNotMatch(cssNoComments, /\.story-line \{[^}]*text-wrap: (wrap|pretty|stable)/, 'and nothing undoes it');

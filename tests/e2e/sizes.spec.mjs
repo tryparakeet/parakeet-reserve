@@ -9,9 +9,10 @@
 //   held tile and the bar; on a computer at 1440 x 780 and 1024 x 660 (no bar) the held tile fits under the
 //   header, and in a computer window too short to hold it whole (an Android phone on its side) it scrolls
 //   with its lines, the focus line still working;
-// - on a phone the story's focus line sits halfway between the held tile and the bar (the window's middle
-//   where the tile isn't held and the bar sits in the page), through a turn, a change in the bar's or the
-//   tile's size and Reduce Motion (§6.3, §6.9 #3);
+// - the phone's held story tile is the boards' 404 wherever a whole story line fits between it and the bar,
+//   and the story's focus line sits halfway between the held tile and the bar (the window's middle where the
+//   tile isn't held and the bar sits in the page), through a turn, a change in the bar's or the tile's size
+//   and Reduce Motion (§6.3, §6.9 #3);
 // - an upright iPad stops the phone at 343 x 700;
 // - in a browser without svh units, the story's tile keeps its height and its phone;
 // - on a computer the header (72, its Reserve 40 with a 44 px target), the logo, the H1, the answer line and
@@ -248,33 +249,44 @@ for (const w of SHORT_PHONES) {
   });
 }
 
-/* ---------- the held story tile ends above the focus line ---------- */
+/* ---------- the phone's held story tile: its 404, a whole story line under it ---------- */
 
-// A story line takes the focus as its text crosses 66% of the window's height, so the held tile ends above
-// that line: otherwise a line turns ink, and the phone changes screen, while it is half under the tile.
-// Android's bar is shorter than the iPhone's, so its tile would reach further down without the cap.
-const FOCUS_WINDOWS = [
-  { width: 360, height: 600, ua: PHONES.Android },
-  { width: 393, height: 600, ua: PHONES.Android },
-  { width: 412, height: 620, ua: PHONES.Android },
-  { width: 412, height: 915, ua: PHONES.Android, tile: 404 },
-  { width: 375, height: 550, ua: PHONES.iPhone },
-  { width: 393, height: 600, ua: PHONES.iPhone },
-  { width: 393, height: 852, ua: PHONES.iPhone, tile: 404 }
+// The phone's tile is the boards' 404 wherever the window leaves room under it for a whole story line (two
+// lines of 32/1.1, 70.4 px, with air) above the pinned bar, and shorter only where it doesn't (SITE-04
+// §6.4): the window less the bar less 98 (the 12 px above the tile and 86 under it), from 244 to 404. The
+// focus line sits halfway between the held tile and the bar (§6.3), so the tile ends above it at any bar's
+// height, and Android's 96 px bar gives the tile its 404 in the windows the old focus line, 66% of the
+// window's height, held it under (360x600, 393x600 and 412x620). The iPhone's short windows keep their
+// tiles, 306 at 375x550 and 352 at 393x600, where the bar is 146 and 150 (its line in two lines).
+const TILE_WINDOWS = [
+  { width: 360, height: 600, ua: PHONES.Android, bar: 96, tile: 404 },
+  { width: 393, height: 600, ua: PHONES.Android, bar: 96, tile: 404 },
+  { width: 412, height: 620, ua: PHONES.Android, bar: 96, tile: 404 },
+  { width: 412, height: 915, ua: PHONES.Android, bar: 96, tile: 404 },
+  { width: 375, height: 550, ua: PHONES.iPhone, bar: 146, tile: 306 },
+  { width: 393, height: 600, ua: PHONES.iPhone, bar: 150, tile: 352 },
+  { width: 375, height: 667, ua: PHONES.iPhone, bar: 146, tile: 404 },
+  { width: 393, height: 852, ua: PHONES.iPhone, bar: 150, tile: 404 }
 ];
 
-for (const w of FOCUS_WINDOWS) {
+const WHOLE_STORY_LINE = 2 * 32 * 1.1;   // two lines of 32/1.1: 70.4 px
+
+for (const w of TILE_WINDOWS) {
   test.describe(`${w.ua === PHONES.Android ? 'Android' : 'iPhone'} at ${w.width}x${w.height}`, () => {
     test.use({ viewport: { width: w.width, height: w.height }, userAgent: w.ua });
 
-    test('the held story tile ends above the focus line, 66% of the window\'s height', async ({ page }) => {
+    test('the held story tile is 404 wherever a whole story line fits under it, ends above the focus line and leaves a whole line above the bar', async ({ page }) => {
       await load(page);
       expect(await page.locator('.cta').evaluate((el) => getComputedStyle(el).position), 'the bar is pinned').toBe('fixed');
       await holdStory(page);
       const tile = await bbox(page.locator('.story-tile'));
+      const bar = await bbox(page.locator('.cta'));
+      const focus = await focusLineAt(page);
       expect(tile.top, 'the tile is held at the top').toBeLessThan(20);
-      expect(tile.bottom, 'the tile ends above the focus line').toBeLessThanOrEqual(w.height * 0.66);
-      if (w.tile) expect(tile.height, 'a tall window\'s tile stays at its 404').toBeCloseTo(w.tile, 1);
+      expect(tile.height, `the window less the ${bar.height} px bar less 98, from 244 to 404`).toBeCloseTo(Math.min(404, Math.max(244, w.height - bar.height - 98)), 1);
+      if (Math.abs(bar.height - w.bar) < 0.5) expect(tile.height, `with a ${w.bar} px bar the tile is ${w.tile}`).toBeCloseTo(w.tile, 1);
+      expect(tile.bottom, `the tile ends above the focus line (${focus})`).toBeLessThan(focus);
+      expect(bar.top - tile.bottom, 'a whole story line between the tile and the bar').toBeGreaterThanOrEqual(WHOLE_STORY_LINE);
     });
   });
 }
@@ -321,16 +333,15 @@ async function crossFocusLine(page, at, where) {
   await expectFocus(page, 0, `${where}: back to the first line`);
 }
 
-// Android's bar is its button alone (96), so where its tile is 404 its focus line holds in any font:
-// (416 + window - 96) / 2. Elsewhere focusLineAt() gives it.
+// Android's bar is its button alone (96), so its focus lines hold in any font: (416 + window - 96) / 2.
 const FOCUS_LINES = [
   { width: 393, height: 852, ua: PHONES.iPhone, focus: 559 },
   { width: 375, height: 667, ua: PHONES.iPhone, focus: 468.5 },
   { width: 412, height: 915, ua: PHONES.Android, focus: 617.5 },
   { width: 360, height: 800, ua: PHONES.Android, focus: 560 },
-  { width: 360, height: 600, ua: PHONES.Android },
-  { width: 393, height: 600, ua: PHONES.Android },
-  { width: 412, height: 620, ua: PHONES.Android },
+  { width: 360, height: 600, ua: PHONES.Android, focus: 460 },
+  { width: 393, height: 600, ua: PHONES.Android, focus: 460 },
+  { width: 412, height: 620, ua: PHONES.Android, focus: 470 },
   { width: 852, height: 393, ua: PHONES.iPhone, inPage: true },
   { width: 393, height: 560, ua: PHONES.iPhone, inPage: true },
   { width: 800, height: 360, ua: PHONES.Android, inPage: true }
