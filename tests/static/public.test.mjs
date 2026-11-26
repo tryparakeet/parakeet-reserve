@@ -479,7 +479,8 @@ test('styles.css: the legal pages\' words in P-393\'s and P-1440\'s sizes, a 680
   assert.match(rule(phone, '.legal-main'), /max-width: var\(--col\);[^}]*padding: 24px var\(--gutter\) 0;/, 'the home\'s column, 24 above the title');
   assert.match(rule(phone, '.legal-main h1'), /margin-bottom: 28px;\s*font-size: 40px;\s*font-weight: 700;\s*line-height: 1\.05;\s*letter-spacing: -0\.03em;/, 'the title 40 at 1.05, 28 above the words');
   assert.match(rule(phone, '.legal-main p'), /margin-top: 16px;\s*font-size: 16px;\s*line-height: 24px;\s*color: var\(--ink-70\);/, 'the text 16/24, Terms\' paragraphs 16 apart');
-  assert.match(rule(phone, '.legal-main h2'), /margin-top: 28px;\s*font-size: 17px;\s*font-weight: 600;\s*line-height: 22px;\s*color: var\(--ink\);/, 'a heading 17/22 semibold, 28 above it');
+  assert.match(rule(phone, '.legal-main h2'), /margin-top: 28px;\s*font-size: 17px;\s*font-weight: 600;\s*line-height: 22px;\s*color: var\(--ink\);\s*text-wrap: balance;/, 'a heading 17/22 semibold, 28 above it, balanced so no line ends on one word (DESIGN.md §4)');
+  assert.doesNotMatch(cssNoComments, /\.legal-main[^{]*h2 \{[^}]*text-wrap: (wrap|pretty|stable)/, 'and nothing undoes it, on Support\'s questions or on a computer');
   assert.match(rule(wide, 'body.legal .top'), /position: static;/, 'the header scrolls away: it holds no Reserve');
   assert.match(rule(wide, '.legal-main'), /max-width: 760px;\s*padding: 24px 40px 0;/, 'a 680 column');
   assert.match(rule(wide, '.legal-main h1'), /font-size: 64px;/, 'the title 64');

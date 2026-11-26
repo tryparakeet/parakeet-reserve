@@ -1136,6 +1136,7 @@ html.sheet-open .cta { right: var(--sb, 0px); }
   font-weight: 600;
   line-height: 22px;
   color: var(--ink);
+  text-wrap: balance;   /* headlines: no line ends on one word (DESIGN.md §4), Support's questions too */
 }
 
 .legal-main h2 + p { margin-top: 6px; }
