@@ -14,7 +14,8 @@
 //   the chips take the 1024 boards' numbers up to 1024 wide and the 1440 ones at 1440, in a straight line;
 // - above 1440 wide the page is a centred 1440 column;
 // - the footer's giant row (the bird beside the wordmark) never overflows its row at 320 wide, nor at
-//   196 (a 393 phone at 200% zoom).
+//   196 (a 393 phone at 200% zoom);
+// - the footer's address has a 44 px target that overlaps none of the links' targets, on every page.
 //
 // How many lines the words take depends on the font; the container has no SF Pro, so whether the words, a
 // 200 px phone and the bar fit is measured on the page, never pinned.
@@ -606,6 +607,56 @@ for (const w of GIANT) {
         // as large as the band allows: the board's min(296px, 20.5vw), held under (the row - its own gap) / 4.3
         const fit = Math.min(296, 0.205 * w.width, (got.row[1] - got.row[0] - got.gap) / 4.3);
         expect(got.bird[2], `the bird as large as the row allows with its ${got.gap} px gap`).toBeCloseTo(fit, 1);
+      }
+    });
+  });
+}
+
+/* ---------- the footer's address: a 44 px target clear of the links' targets ---------- */
+
+// The address keeps today's markup; its target is 44 tall by technique (its ::after, from 8 px under its
+// last line up), and never overlaps Privacy's, Terms' or Support's 44 px targets under it, on any page,
+// with the address on one line or wrapped onto two (196 wide). The target's box is taken from the
+// address's own lines, so it holds whatever the font; the clearance is about 1 px, so 0.5 px is allowed.
+const FOOT_WINDOWS = [
+  { width: 196, height: 426, use: { userAgent: PHONES.iPhone }, name: 'a 393 phone at 200% zoom (196x426)' },
+  { width: 320, height: 568, use: { userAgent: PHONES.Android }, name: 'an Android phone at 320x568' },
+  { width: 393, height: 852, use: { userAgent: PHONES.iPhone }, name: 'an iPhone at 393x852' },
+  { width: 1440, height: 900, use: MAC, name: 'a computer at 1440x900' }
+];
+
+for (const w of FOOT_WINDOWS) {
+  test.describe(`${w.name}: the footer's address`, () => {
+    test.use({ viewport: { width: w.width, height: w.height }, ...w.use });
+
+    test('its target is 44 px tall and overlaps none of the links\' targets, on every page', async ({ page }) => {
+      for (const path of ['/', '/privacy', '/terms', '/support']) {
+        await page.goto(path);
+        await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+        if (path === '/') await expect(page.locator('.footer')).toHaveClass(/\bin\b/);
+        await page.evaluate(() => { for (const a of document.getAnimations()) a.finish(); });
+        await frames(page);
+        const got = await page.evaluate(() => {
+          const a = document.querySelector('.foot-contact a');
+          const lines = [...a.getClientRects()];
+          const cs = getComputedStyle(a, '::after');
+          const bottom = Math.max(...lines.map((r) => r.bottom)) - parseFloat(cs.bottom);
+          const target = { top: bottom - parseFloat(cs.height), bottom, left: Math.min(...lines.map((r) => r.left)), right: Math.max(...lines.map((r) => r.right)) };
+          const links = [...document.querySelectorAll('.foot-links a')].map((l) => {
+            const r = l.getBoundingClientRect();
+            return { name: l.textContent, top: r.top, bottom: r.bottom, left: r.left, right: r.right, height: r.height };
+          });
+          return { lines: lines.length, height: cs.height, offset: cs.bottom, target, links };
+        });
+        expect(got.height, `${path}: the address's target is 44 tall`).toBe('44px');
+        expect(got.offset, `${path}: from 8 px under its last line`).toBe('-8px');
+        expect(got.links.map((l) => l.name)).toEqual(['Privacy', 'Terms', 'Support']);
+        for (const l of got.links) {
+          expect(l.height, `${path}: the ${l.name} link's target is 44 tall`).toBeCloseTo(44, 1);
+          const across = l.left < got.target.right - 0.5 && l.right > got.target.left + 0.5;
+          const down = l.top < got.target.bottom - 0.5 && l.bottom > got.target.top + 0.5;
+          expect(across && down, `${path}: the address's target (${got.target.top.toFixed(1)} to ${got.target.bottom.toFixed(1)}, ${got.lines} line(s)) clear of the ${l.name} link's (${l.top.toFixed(1)} to ${l.bottom.toFixed(1)})`).toBe(false);
+        }
       }
     });
   });
