@@ -35,8 +35,42 @@
   var cta = doc.querySelector('.cta');
   function setCtaH() {
     try { if (cta && cta.offsetHeight) root.style.setProperty('--cta-h', cta.offsetHeight + 'px'); } catch (e) {}
+    placeBar();
   }
+
+  /* ---------- the bar's place: pinned, or in the page in a window too short for it ----------
+     The bar stays pinned to the bottom unless the window is too short for the header, the words, a 200 px
+     phone with its tile's padding and the bar together (DESIGN.md §4); then it sits in the page under the
+     first screen (html.bar-in-page, styles.css). styles.css puts it there by the window's height alone,
+     with heights measured in a stand-in font, and with the script off that is all there is; here the
+     page itself is measured, so a window where the words take more lines than those heights allow (the
+     H1's third line under about 280 wide) is caught too. Each part is measured as it is either way (the
+     bar without the bottom edge it gets in the page), so the answer never flips back by itself. The
+     window's height is the layout's (the small viewport on a phone, as svh is), so toolbars that slide
+     away as the page scrolls never move the bar. */
+
+  var topBar = doc.querySelector('.top');
+  var firstWords = doc.querySelector('.first-words');
+  var firstTile = doc.querySelector('.first-tile');
+  function placeBar() {
+    try {
+      if (!cta || !topBar || !firstWords || !firstTile) return;
+      var short = false;
+      var bar = cta.getBoundingClientRect().height;
+      if (bar) {
+        var tile = win.getComputedStyle(firstTile);
+        var needs = topBar.getBoundingClientRect().height +
+          firstWords.getBoundingClientRect().height + parseFloat(win.getComputedStyle(firstWords).marginBottom) +
+          200 + parseFloat(tile.paddingTop) + parseFloat(tile.paddingBottom) +
+          bar - parseFloat(win.getComputedStyle(cta).borderBottomWidth);
+        short = needs > (root.clientHeight || win.innerHeight) + 0.5;
+      }
+      root.classList.toggle('bar-in-page', short);
+    } catch (e) {}
+  }
+
   setCtaH();
+  win.addEventListener('resize', placeBar);
   try {
     if (cta && win.ResizeObserver) new win.ResizeObserver(setCtaH).observe(cta);
     else win.addEventListener('resize', setCtaH);

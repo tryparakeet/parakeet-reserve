@@ -550,8 +550,13 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, one gradi
   assert.doesNotMatch(css, /Inter/);
   assert.match(css, /\.cta\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*0/, 'the bottom bar is pinned to the bottom');
   const unpinned = /@media ([^{]*)\{[^@]*?\.cta \{ position: relative;/.exec(cssNoComments);
-  assert.ok(unpinned, 'the bar sits in the page only under a media query');
+  assert.ok(unpinned, 'the bar sits in the page under a media query');
   for (const q of unpinned[1].split(',')) assert.match(q, /max-height: \d+(\.\d+)?px/, `${q.trim()}: only in a window too short for the words, a 200 px phone and the bar`);
+  assert.match(unpinned[1], /\(scripting: none\) and \(max-width: 267\.98px\) and \(max-height: 635\.98px\)/, 'with the script off, a window where the H1 takes a third line has its own height');
+  assert.match(cssNoComments, /\nhtml\.bar-in-page \.cta \{ position: relative;/, 'or where app.js has measured the page and found the window too short');
+  assert.equal(count(/\.cta \{ position: relative;/g, cssNoComments), 3, 'nowhere else: the iPhone\'s heights, Android\'s and the measured one');
+  assert.match(app, /root\.classList\.toggle\('bar-in-page', short\)/, 'app.js sets it, and takes it off, as the window changes');
+  assert.match(app, /200 \+ parseFloat\(tile\.paddingTop\) \+ parseFloat\(tile\.paddingBottom\)/, 'counting a 200 px phone with its tile\'s padding');
   assert.match(css, /--sheet-pad-bottom:[^;]*env\(safe-area-inset-bottom/, 'with the bottom safe-area inset');
   assert.match(css, /\[data-reveal\]\.in\s*\{\s*animation:\s*rise 500ms var\(--curve\) both;/, 'the rise: 500 ms on the standard curve, only once .in is added');
   assert.doesNotMatch(cssNoComments, /\[data-reveal\](?!\.in|\.wait)[^{,]*\{[^}]*opacity:\s*0/, 'the parts are visible at rest');

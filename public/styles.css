@@ -69,9 +69,14 @@
 }
 
 /* Under 360 wide the line under the button takes a third 18 px line, so the bar's fallback height counts
-   it: with the script off the tile still ends 12 px above the bar (app.js writes the measured height) */
+   it: with the script off the tile still ends 12 px above the bar (app.js writes the measured height).
+   Under 268 wide (a stand-in font's width) it takes a fourth. */
 @media (max-width: 359.98px) {
   :root { --cta-h: calc(133px + var(--bar-pb)); }
+}
+
+@media (max-width: 267.98px) {
+  :root { --cta-h: calc(151px + var(--bar-pb)); }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -712,10 +717,16 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
    stand-in for SF Pro, and each device has its own: Android's line under the answer adds 52 px and its bar
    saves 50 under 390 wide and 54 from 390. The iPhone's page (with the script off, every visitor's): the
    393 board's sizes from 390 wide (583), the 375 board's from 360 (546; 375 x 550 keeps the bar) and, under
-   360, a two-line answer line and a three-line line under the button (586). Android's: 581, 548 and 570. */
+   360, a two-line answer line and a three-line line under the button (586). Android's: 581, 548 and 570.
+   Narrower still the H1 takes a third line, under 278 wide in the stand-in (about 262 in SF Pro), and under
+   268 the line under the button a fourth, so no height above holds: there app.js measures the page itself
+   and sets html.bar-in-page (below), and with the script off two more heights hold, 618 and 636, at the
+   stand-in's widths. */
 @media (min-width: 390px) and (max-width: 899.98px) and (max-height: 582.98px),
        (min-width: 360px) and (max-width: 389.98px) and (max-height: 545.98px),
-       (max-width: 359.98px) and (max-height: 585.98px) {
+       (max-width: 359.98px) and (max-height: 585.98px),
+       (scripting: none) and (min-width: 268px) and (max-width: 277.98px) and (max-height: 617.98px),
+       (scripting: none) and (max-width: 267.98px) and (max-height: 635.98px) {
   html:not(.android) .first { height: auto; }
   html:not(.android) .cta { position: relative; z-index: auto; border-bottom: 1px solid var(--ink-10); border-radius: 24px; }
   html:not(.android) .story-pin { position: relative; }
@@ -732,6 +743,13 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
   html.android .story-tile { height: clamp(244px, 100svh - 24px, 404px); }
   html.android .footer { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* The same wherever app.js has measured the page and found the window too short for it */
+html.bar-in-page .first { height: auto; }
+html.bar-in-page .cta { position: relative; z-index: auto; border-bottom: 1px solid var(--ink-10); border-radius: 24px; }
+html.bar-in-page .story-pin { position: relative; }
+html.bar-in-page .story-tile { height: clamp(244px, 100svh - 24px, 404px); }
+html.bar-in-page .footer { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
 
 /* ---------- The sheet: plan, email, done (R1, R2, R3) ----------
    On a phone it rises from the bottom, corners 28 (the dialog on a computer is below). The page behind dims

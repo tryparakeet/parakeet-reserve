@@ -131,10 +131,12 @@ for (const layout of LAYOUTS) {
 
 // Under 360 wide the line under the button takes a third line (at 320 it does in any likely face), and with
 // the script off nothing measures the bar, so its fallback height has to count that line: otherwise the
-// pinned bar covers the bottom of the phone's tile. Where the line keeps two, the gap is only wider.
-for (const width of [320, 340, 356]) {
-  test.describe(`the script off, a phone at ${width}x640`, () => {
-    test.use({ viewport: { width, height: 640 }, javaScriptEnabled: false });
+// pinned bar covers the bottom of the phone's tile. Where the line keeps two, the gap is only wider. Under
+// 268 wide (the stand-in font's width) the fallback counts a fourth line, and in a 660 window the words, a
+// 200 px phone and the bar still fit there.
+for (const [width, height] of [[320, 640], [340, 640], [356, 640], [250, 660]]) {
+  test.describe(`the script off, a phone at ${width}x${height}`, () => {
+    test.use({ viewport: { width, height }, javaScriptEnabled: false });
 
     test('the bar is pinned and the phone\'s tile ends 12 px or more above it', async ({ page }) => {
       await page.goto(TAGGED_QS);
@@ -145,10 +147,35 @@ for (const width of [320, 340, 356]) {
         return { tile: r('.first-tile').bottom, phone: r('.first-tile .phone').height, bar: r('.cta').top, barBottom: r('.cta').bottom, lines: Math.round(r('.cta-note').height / 18), position: getComputedStyle(document.querySelector('.cta')).position };
       });
       expect(got.position, 'the bar is pinned').toBe('fixed');
-      expect(got.barBottom).toBeCloseTo(640, 0);
+      expect(got.barBottom).toBeCloseTo(height, 0);
       expect(got.bar - got.tile, `the tile ends 12 or more above the bar (its line in ${got.lines} lines)`).toBeGreaterThanOrEqual(11.5);
-      if (got.lines === 3) expect(got.bar - got.tile, 'with three lines, exactly the 12').toBeCloseTo(12, 0);
+      const counted = width < 268 ? 4 : 3;
+      if (got.lines === counted) expect(got.bar - got.tile, `with ${counted} lines, exactly the 12`).toBeCloseTo(12, 0);
       expect(got.phone, 'the bezel at least 200 px').toBeGreaterThanOrEqual(199.99);
     });
   });
 }
+
+/* ---------- a phone under 280 wide, the script off: a window too short ---------- */
+
+// At 250 wide the H1 takes three lines (it is wider than the 210 px line in any likely face) and the line
+// under the button three or more, so a 600 px window is too short for the words, a 200 px phone and the bar
+// (617 px or more): with the script off too, the bar sits in the page under the first screen, over nothing.
+test.describe('the script off, a phone at 250x600', () => {
+  test.use({ viewport: { width: 250, height: 600 }, javaScriptEnabled: false });
+
+  test('the bar sits in the page under the first screen, its phone at 200 px', async ({ page }) => {
+    await page.goto(TAGGED_QS);
+    await expect(page.locator('h1')).toHaveText('What’s for dinner this week?');
+    await page.evaluate(() => { for (const a of document.getAnimations()) a.finish(); });
+    const got = await page.evaluate(() => {
+      const r = (sel) => document.querySelector(sel).getBoundingClientRect();
+      return { first: r('.first').bottom, tile: r('.first-tile').bottom, phone: r('.first-tile .phone').height, bar: r('.cta').top, position: getComputedStyle(document.querySelector('.cta')).position, pin: getComputedStyle(document.querySelector('.story-pin')).position };
+    });
+    expect(got.position, 'the bar sits in the page').toBe('relative');
+    expect(got.bar, 'under the first screen').toBeGreaterThanOrEqual(got.first - 0.5);
+    expect(got.bar, 'over nothing of the phone\'s tile').toBeGreaterThanOrEqual(got.tile);
+    expect(got.phone, 'the phone at 200').toBeCloseTo(200, 1);
+    expect(got.pin, 'the story\'s tile scrolls with its lines').toBe('relative');
+  });
+});
