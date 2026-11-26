@@ -619,3 +619,52 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, one gradi
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[^}]*\.answer-1, \.answer-2, \.answer-3\s*\{\s*animation:\s*none;/, 'reduced motion: the answers do not move');
   assert.doesNotMatch(cssNoComments, /box-shadow:\s*0\s+\d+px\s+\d+px/, 'flat: no drop shadow');
 });
+
+// Splits a CSS value at its top-level commas (not those inside var(), cubic-bezier() and the like).
+function splitTop(value) {
+  const parts = [];
+  let depth = 0;
+  let from = 0;
+  for (let i = 0; i < value.length; i++) {
+    if (value[i] === '(') depth += 1;
+    else if (value[i] === ')') depth -= 1;
+    else if (value[i] === ',' && depth === 0) {
+      parts.push(value.slice(from, i).trim());
+      from = i + 1;
+    }
+  }
+  parts.push(value.slice(from).trim());
+  return parts;
+}
+
+test('styles.css and app.js: only transform and opacity move (SITE-04 §6.3, DESIGN.md §6)', () => {
+  const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const MOVES = new Set(['opacity', 'transform']);
+
+  // every @keyframes animates transform or opacity; a frame may also set its own timing function
+  const keyframes = [...cssNoComments.matchAll(/@(?:-webkit-)?keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)];
+  assert.ok(keyframes.length > 0, 'the page has keyframes');
+  assert.equal(keyframes.length, count(/@(?:-webkit-)?keyframes\b/g, cssNoComments), 'every @keyframes read whole');
+  for (const [, name, body] of keyframes) {
+    const props = [...body.matchAll(/([\w-]+)\s*:/g)].map((m) => m[1]);
+    assert.ok(props.length > 0, `@keyframes ${name} sets something`);
+    for (const p of props) {
+      assert.ok(MOVES.has(p) || p === 'animation-timing-function', `@keyframes ${name}: ${p} moves; only transform and opacity may`);
+    }
+  }
+
+  // every transition names transform or opacity (never all, never a bare duration), or is none
+  const transitions = [...cssNoComments.matchAll(/(?:^|[;{\s])((?:-webkit-)?transition(?:-property)?)\s*:\s*([^;}]*)/g)];
+  assert.ok(transitions.length > 0, 'the page has transitions');
+  for (const [, prop, value] of transitions) {
+    if (value.trim() === 'none') continue;
+    for (const item of splitTop(value)) {
+      const name = item.split(/\s+/)[0];
+      assert.ok(MOVES.has(name), `${prop}: ${value.trim()}: ${name} moves; only transform and opacity may`);
+    }
+  }
+
+  // and the script moves nothing by itself: no Web Animations, no transition or animation set inline
+  assert.doesNotMatch(app, /\.animate\(/, 'app.js starts no Web Animation');
+  assert.doesNotMatch(app, /\.style\.(?:webkit)?(?:transition|animation)\b|setProperty\(\s*['"](?:-webkit-)?(?:transition|animation)/i, 'app.js sets no transition or animation inline');
+});
