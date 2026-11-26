@@ -503,6 +503,7 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
+  text-wrap: balance;   /* headlines: no line ends on one word (DESIGN.md §4) */
 }
 
 /* The story's focus (DESIGN.md §6): app.js marks the story .focus and the line in focus and its screen .on.

@@ -563,6 +563,8 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, one gradi
   assert.equal(count(/new IntersectionObserver\(/g, app), 3, 'one observer each: seen, the rise, the story');
   assert.doesNotMatch(app, /win(dow)?\.addEventListener\('scroll'/, 'no scroll listener on the page');
   assert.match(css, /\.story\.focus \.story-line\s*\{\s*opacity:\s*0\.62;\s*\}/, 'the lines out of focus are ink at 62%');
+  assert.match(cssNoComments, /\n\.story-line \{[^}]*text-wrap: balance;/, 'the story\'s lines are headlines, balanced so no line ends on one word (DESIGN.md §4), on both layouts');
+  assert.doesNotMatch(cssNoComments, /\.story-line \{[^}]*text-wrap: (wrap|pretty|stable)/, 'and nothing undoes it');
   assert.match(cssNoComments, /\.sheet \{[^}]*transform: translateY\(100%\);\s*transition: transform 320ms var\(--curve\);/, 'the phone\'s sheet rises, and slides down, in 320 ms');
   assert.match(cssNoComments, /\.sheet-backdrop \{[^}]*opacity: 0;\s*transition: opacity 200ms linear;/, 'the dim fades out in 200 ms');
   assert.match(cssNoComments, /\.sheet-root\.open \.sheet-backdrop \{\s*opacity: 1;/, 'and fades in as the sheet opens');
