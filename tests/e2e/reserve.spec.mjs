@@ -124,7 +124,11 @@ for (const place of PLACES) {
         .every((el) => el.getAnimations().every((a) => a.playState === 'finished')));
       if (place.scroll) {
         await page.mouse.wheel(0, 1600);
-        await page.waitForFunction(() => window.scrollY > 1000);
+        // scrolled, and come to rest (the same place two frames apart)
+        await page.waitForFunction(() => new Promise((done) => {
+          const y = window.scrollY;
+          requestAnimationFrame(() => requestAnimationFrame(() => done(y > 1000 && window.scrollY === y)));
+        }));
         const top = await bbox(page.locator('.top'));
         expect(top.top, 'the header holds the top while the page scrolls').toBe(0);
       }
