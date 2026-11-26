@@ -2,22 +2,28 @@
 // the copied instrument before any count change) and the live version 8. Everything v6 counted must be
 // unchanged; the v6 -> v8 mapping is explicit; the one intended divergence (the video state carried by
 // leave rows, which v6 never saw) is documented by the second case. The shared fixture holds no Android
-// rows (the function refused the android tap and plan until version 8), so the Android fields are 0 here.
+// rows (the function refused the android tap and plan until version 8), so the Android fields are 0 there.
+// The third case adds the Android rows: they show only in v8's new fields, and the one v6 field they move
+// is the email count, which v8 keeps to the reservations (SITE-04 §6.8) with the Android emails beside it.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as v8 from '../../netlify/functions/event.mjs';
 import * as v6 from '../previous/summary-v6.mjs';
 import { run } from '../helpers/rows.mjs';
-import { ALL_ROWS } from '../fixtures/rows.mjs';
+import { ALL_ROWS, ANDROID_ROWS } from '../fixtures/rows.mjs';
 
 // v6 field -> v8 field, equal for every bucket
 const SAME = ['uniques', 'taps', 'emails', 'pageviews', 'tap_events', 'email_events', 'seen', 'leave', 'device', 'inapp'];
 // v6-only fields: Restline's events, always 0 on Parakeet rows
 const GONE = ['answers', 'answer_events', 'tap_events_card', 'tap_events_bar'];
+// v8's Android fields: 0 without Android rows
+const ANDROID = ['android_taps', 'tap_events_android', 'android_emails', 'email_events_android'];
+// v6 counted every email; v8's emails and email_events are the reservations, the Android ones apart
+const EMAILS = ['emails', 'email_events'];
 
-function compareBucket(b6, b8, path, { videoEvents }) {
-  for (const k of SAME) assert.deepEqual(b8[k], b6[k], `${path}.${k}`);
+function compareBucket(b6, b8, path, { videoEvents, android = false }) {
+  for (const k of SAME) if (!(android && EMAILS.includes(k))) assert.deepEqual(b8[k], b6[k], `${path}.${k}`);
   const tapRate = b8.uniques ? Number((b8.taps / b8.uniques).toFixed(4)) : 0;
   assert.equal(b6.tap_rate, tapRate, `${path}.tap_rate recomputed from v8`);
   for (const k of GONE) assert.equal(b6[k], 0, `${path}.${k}`);
@@ -28,8 +34,26 @@ function compareBucket(b6, b8, path, { videoEvents }) {
   assert.ok(b8.play_taps <= b8.taps, `${path}.play_taps`);
   assert.ok(b8.android_taps <= b8.taps, `${path}.android_taps`);
   assert.equal(b8.tap_events, b8.tap_events_reserve + b8.tap_events_android + b8.tap_events_play + b8.tap_events_plan_yearly + b8.tap_events_plan_monthly, `${path}: the button counters add up`);
-  // no Android rows in this fixture: the Android fields are 0
-  for (const k of ['android_taps', 'tap_events_android', 'android_emails', 'email_events_android']) assert.equal(b8[k], 0, `${path}.${k}`);
+  if (android) {
+    // the explicit mapping: v6's email rows are v8's reservation rows plus its Android rows; the same for
+    // visitors, as no visitor in the fixture leaves both kinds of address
+    assert.equal(b8.email_events + b8.email_events_android, b6.email_events, `${path}: email rows`);
+    assert.equal(b8.emails + b8.android_emails, b6.emails, `${path}: email visitors`);
+  } else {
+    for (const k of ANDROID) assert.equal(b8[k], 0, `${path}.${k}: no Android rows`);
+  }
+}
+
+// Every bucket of a finalized day by its path: the sources, their creatives, blended and the exclusions.
+function bucketsOf(d) {
+  const out = new Map();
+  for (const s of Object.keys(d.sources)) {
+    out.set(`sources.${s}`, d.sources[s]);
+    for (const c of Object.keys(d.sources[s].content)) out.set(`sources.${s}.content.${c}`, d.sources[s].content[c]);
+  }
+  out.set('blended', d.blended);
+  for (const x of Object.keys(d.excluded)) out.set(`excluded.${x}`, d.excluded[x]);
+  return out;
 }
 
 function compareDay(d6, d8, path, opts) {
@@ -113,4 +137,43 @@ test('the one intended divergence: a leave row with a video state is a video eve
   const b8 = out8.total.blended;
   assert.ok(b8.video.playing + b8.video.blocked + b8.video.both <= b8.video_events.playing + b8.video_events.blocked);
   assert.ok(b8.video.both > 0, 'the fixture has a visitor with a playing load and a blocked load');
+});
+
+test('Android rows, new in v8: they show only in the new fields; the emails v6 counted are v8 reservations plus Android emails', () => {
+  assert.ok(ANDROID_ROWS.every((r) => v8.EVENTS.has(r.event)), 'only live events');
+  const isTap = (r) => r.event === 'tap' && r.button === 'android';
+  const isEmail = (r) => r.event === 'email' && r.plan === 'android';
+  assert.ok(ANDROID_ROWS.every((r) => r.event !== 'email' || isEmail(r)), 'every Android address carries plan android');
+  assert.ok(!ANDROID_ROWS.some((r) => r.event === 'tap' && !isTap(r)), 'an Android phone sends no reserve and no plan tap');
+  const rows = [...withoutLeaveVideo, ...ANDROID_ROWS];
+  const out6 = run(v6, rows);
+  const out8 = run(v8, rows);
+  compare(out6, out8, { videoEvents: true, android: true });
+
+  // the rows stay where they were stored: the counters by flag are the Android rows by flag
+  const n = (flag, pred) => ANDROID_ROWS.filter((r) => r.flag === flag && pred(r)).length;
+  const t = out8.total;
+  assert.deepEqual([t.blended.tap_events_android, t.blended.email_events_android], [n('gate', isTap), n('gate', isEmail)]);
+  assert.deepEqual([t.excluded.no_utm.tap_events_android, t.excluded.no_utm.email_events_android], [n('no_utm', isTap), n('no_utm', isEmail)]);
+  assert.deepEqual([t.excluded.smoke.tap_events_android, t.excluded.smoke.email_events_android], [n('smoke', isTap), n('smoke', isEmail)]);
+  for (const flag of ['gate', 'no_utm', 'smoke']) assert.ok(n(flag, isTap) > 0 && n(flag, isEmail) > 0, `${flag}: exercised`);
+  // the visitors move: the untagged return joins its paid source, the smoke phone stays in smoke
+  assert.deepEqual([t.blended.android_taps, t.blended.android_emails], [4, 3]);
+  assert.deepEqual([t.excluded.no_utm.android_taps, t.excluded.no_utm.android_emails], [0, 0]);
+  assert.deepEqual([t.excluded.smoke.android_taps, t.excluded.smoke.android_emails], [1, 1]);
+  assert.equal(t.sources.tiktok.content.wed28.android_emails, 1, 'the return joined its creative');
+  assert.ok(t.blended.android_emails > 0 && out6.total.blended.emails > t.blended.emails, 'the email split is exercised');
+
+  // against v8 without them: nothing about the reserves, the plans, play or the reservation emails moves
+  const RESERVES = ['reserve_taps', 'tap_events_reserve', 'plan_taps', 'plan_yearly_taps', 'plan_monthly_taps', 'tap_events_plan_yearly', 'tap_events_plan_monthly', 'play_taps', 'tap_events_play', 'emails', 'email_events'];
+  const base = run(v8, withoutLeaveVideo);
+  assert.equal(out8.days.length, base.days.length);
+  const days = [...base.days.map((d, i) => [`days[${i}]`, d, out8.days[i]]), ['total', base.total, out8.total]];
+  for (const [path, d0, d1] of days) {
+    const after = bucketsOf(d1);
+    for (const [key, b0] of bucketsOf(d0)) {
+      assert.ok(after.has(key), `${path}.${key}`);
+      for (const k of RESERVES) assert.equal(after.get(key)[k], b0[k], `${path}.${key}.${k}`);
+    }
+  }
 });
