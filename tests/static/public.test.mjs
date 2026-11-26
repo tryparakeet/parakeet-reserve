@@ -295,7 +295,7 @@ function legalHeader(html, name) {
   assert.equal(count(/<use href="#pk-mark"\/>/g, html), 1, `${name}: the bird once, in the footer`);
   assert.equal(count(/<use href="#pk-word"\/>/g, html), 2, `${name}: the wordmark twice, the header and the footer`);
   const icon = /<img class="logo-icon" [^>]*>/.exec(index)[0];
-  const header = '<header class="top">\n  <a class="logo-link" href="/">' + icon + '<svg class="logo-word" role="img" aria-label="Parakeet" focusable="false"><use href="#pk-word"/></svg></a>\n</header>\n<main class="legal-main">';
+  const header = '<header class="top">\n  <a class="logo-link" href="/">' + icon + '<svg class="logo-word" role="img" aria-label="Parakeet" focusable="false"><use href="#pk-word"/></svg></a>\n</header>\n<main class="legal-main';
   assert.ok(html.includes('<div class="page">\n' + header), `${name}: the home's icon and wordmark, one link home, at the top of the home's column`);
   assert.doesNotMatch(html, /data-tap|<button\b/, `${name}: no Reserve`);
   const footer = (s) => /<footer class="footer"[^>]*>[\s\S]*?<\/footer>/.exec(s)[0];
@@ -349,7 +349,7 @@ test('terms.html: in development, launch prices, nothing charged, the address', 
 });
 
 test('support.html: word for word (the address, five questions and their answers), the one link to Apple, the questions at 20/700', () => {
-  const main = /<main class="legal-main">([\s\S]*?)<\/main>/.exec(support);
+  const main = /<main class="legal-main legal-questions">([\s\S]*?)<\/main>/.exec(support);
   assert.ok(main, 'the main');
   // inline tags (the two links) drop out without a space, so each line reads as written
   const plain = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
@@ -373,10 +373,30 @@ test('support.html: word for word (the address, five questions and their answers
   assert.equal(support.split(APPLE_LINK).length, 2, 'the one link to Apple, as written');
   assert.match(support, /<title>Support — Parakeet<\/title>/);
   assert.match(support, /<link rel="stylesheet" href="\/styles\.css">/);
-  assert.match(css, /\.legal-main h2 \{[^}]*font-size: 20px;[^}]*font-weight: 700;[^}]*color: var\(--ink\);/, 'the questions are the H2 of DESIGN.md §3: 20/700, ink');
+  assert.match(css, /\.legal-main\.legal-questions h2 \{ font-size: 20px; font-weight: 700; line-height: 1\.3; color: var\(--ink\); \}/, 'the questions are the H2 of DESIGN.md §3: 20/700, ink, on both layouts');
   assert.match(css, /\.legal-main h2 \+ p \{ margin-top: 6px; \}/, 'each answer sits close under its question');
   legalHeader(support, 'support');
   pageFooter(support, 'support');
+});
+
+test('styles.css: the legal pages\' words in P-393\'s and P-1440\'s sizes, a 680 column on a computer, the header not sticky there', () => {
+  const rule = (src, sel) => {
+    const m = new RegExp(`(?:^|\\n)\\s*${sel.replace(/[.+()]/g, '\\$&')} \\{([^}]*)\\}`).exec(src);
+    assert.ok(m, `${sel} has a rule`);
+    return m[1];
+  };
+  const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const wide = /@media \(min-width: 900px\) \{([\s\S]*?)\n\}/.exec(cssNoComments)[1];
+  const phone = cssNoComments.slice(0, cssNoComments.indexOf('@media (min-width: 900px)'));
+  assert.match(rule(phone, '.legal-main'), /max-width: var\(--col\);[^}]*padding: 24px var\(--gutter\) 0;/, 'the home\'s column, 24 above the title');
+  assert.match(rule(phone, '.legal-main h1'), /margin-bottom: 28px;\s*font-size: 40px;\s*font-weight: 700;\s*line-height: 1\.05;\s*letter-spacing: -0\.03em;/, 'the title 40 at 1.05, 28 above the words');
+  assert.match(rule(phone, '.legal-main p'), /margin-top: 16px;\s*font-size: 16px;\s*line-height: 24px;\s*color: var\(--ink-70\);/, 'the text 16/24, Terms\' paragraphs 16 apart');
+  assert.match(rule(phone, '.legal-main h2'), /margin-top: 28px;\s*font-size: 17px;\s*font-weight: 600;\s*line-height: 22px;\s*color: var\(--ink\);/, 'a heading 17/22 semibold, 28 above it');
+  assert.match(rule(wide, 'body.legal .top'), /position: static;/, 'the header scrolls away: it holds no Reserve');
+  assert.match(rule(wide, '.legal-main'), /max-width: 760px;\s*padding: 24px 40px 0;/, 'a 680 column');
+  assert.match(rule(wide, '.legal-main h1'), /font-size: 64px;/, 'the title 64');
+  assert.match(rule(wide, '.legal-main p'), /font-size: 17px;\s*line-height: 26px;/, 'the text 17/26');
+  assert.match(rule(wide, '.legal-main h2'), /font-size: 19px;\s*line-height: 25px;/, 'a heading 19/25');
 });
 
 test('robots.txt keeps crawlers off /admin and /api/', () => {
