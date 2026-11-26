@@ -46,6 +46,8 @@
      with the measured height (a third line on a narrow phone, a larger safe area, Android's bar). */
   --cta-h: calc(117px + var(--bar-pb));
   --vvh: 100svh;
+  /* The window's height for the story's tile: 100svh, or --screen-h where svh is unknown (below) */
+  --window-h: 100svh;
 }
 
 /* The 375 board's sizes (C-375) on a phone under 390 wide: only the phone changes with the window's height */
@@ -172,8 +174,10 @@ a { color: inherit; }
   min-height: min-content;
 }
 
-/* --screen-h is innerHeight in px, set by app.js only where svh is unknown */
+/* --screen-h is innerHeight in px, set by app.js only where svh is unknown; the story's tile takes it
+   through --window-h, so it keeps its height and its phone there too */
 @supports not (height: 1svh) {
+  :root { --window-h: var(--screen-h, 0px); }
   .first { height: calc(var(--screen-h, 0px) - var(--top-h) - env(safe-area-inset-top, 0px) - var(--cta-h)); }
   .sheet { max-height: calc(var(--vvh, 0px) - 12px); }
 }
@@ -495,7 +499,7 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
   position: relative;
   display: grid;
   place-items: center;
-  height: clamp(244px, min(100svh - var(--cta-h) - 98px, 66svh - 20px), 404px);
+  height: clamp(244px, min(var(--window-h) - var(--cta-h) - 98px, 0.66 * var(--window-h) - 20px), 404px);
   border-radius: 28px;
   background: var(--sky);
 }
@@ -730,7 +734,7 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
   html:not(.android) .first { height: auto; }
   html:not(.android) .cta { position: relative; z-index: auto; border-bottom: 1px solid var(--ink-10); border-radius: 24px; }
   html:not(.android) .story-pin { position: relative; }
-  html:not(.android) .story-tile { height: clamp(244px, 100svh - 24px, 404px); }
+  html:not(.android) .story-tile { height: clamp(244px, var(--window-h) - 24px, 404px); }
   html:not(.android) .footer { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
 }
 
@@ -740,7 +744,7 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
   html.android .first { height: auto; }
   html.android .cta { position: relative; z-index: auto; border-bottom: 1px solid var(--ink-10); border-radius: 24px; }
   html.android .story-pin { position: relative; }
-  html.android .story-tile { height: clamp(244px, 100svh - 24px, 404px); }
+  html.android .story-tile { height: clamp(244px, var(--window-h) - 24px, 404px); }
   html.android .footer { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
 }
 
@@ -748,7 +752,7 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
 html.bar-in-page .first { height: auto; }
 html.bar-in-page .cta { position: relative; z-index: auto; border-bottom: 1px solid var(--ink-10); border-radius: 24px; }
 html.bar-in-page .story-pin { position: relative; }
-html.bar-in-page .story-tile { height: clamp(244px, 100svh - 24px, 404px); }
+html.bar-in-page .story-tile { height: clamp(244px, var(--window-h) - 24px, 404px); }
 html.bar-in-page .footer { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
 
 /* ---------- The sheet: plan, email, done (R1, R2, R3) ----------
@@ -1225,7 +1229,7 @@ body.legal .footer {
     --story-top: clamp(88px, 88px + 8 * var(--k), 96px);
     /* The story's tile: the boards' 640 to 760, or less in a short window so it fits under the header
        (40 to 44 px to spare below it); its phone keeps 40 above and below and never goes under 200. */
-    --story-tile: max(280px, min(clamp(640px, 640px + 120 * var(--k), 760px), 100svh - clamp(128px, 128px + 12 * var(--k), 140px)));
+    --story-tile: max(280px, min(clamp(640px, 640px + 120 * var(--k), 760px), var(--window-h) - clamp(128px, 128px + 12 * var(--k), 140px)));
     --yours-h: clamp(560px, 560px + 120 * var(--k), 680px);
     --yours-px: clamp(56px, 56px + 16 * var(--k), 72px);
     --yours-w: clamp(440px, 440px + 160 * var(--k), 600px);

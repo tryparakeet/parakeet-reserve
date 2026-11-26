@@ -8,6 +8,7 @@
 //   held tile and the bar; on a computer at 1440 x 780 and 1024 x 660 (no bar) the held tile fits under the
 //   header;
 // - an upright iPad stops the phone at 343 x 700;
+// - in a browser without svh units, the story's tile keeps its height and its phone;
 // - above 1440 wide the page is a centred 1440 column;
 // - the footer's giant row (the bird beside the wordmark) never overflows its row at 320 wide, nor at
 //   196 (a 393 phone at 200% zoom).
@@ -15,7 +16,9 @@
 // How many lines the words take depends on the font; the container has no SF Pro, so whether the words, a
 // 200 px phone and the bar fit is measured on the page, never pinned.
 
-import { test, expect, TAGGED_QS, frames, bbox } from './fixtures.mjs';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { test, expect, TAGGED_QS, ROOT, frames, bbox } from './fixtures.mjs';
 import { REAL_UAS, COMPUTER_UAS } from '../fixtures/user-agents.mjs';
 
 const PHONES = { iPhone: REAL_UAS.safari_ios, Android: REAL_UAS.chrome_android };
@@ -246,6 +249,50 @@ for (const vp of [{ width: 1440, height: 780 }, { width: 1024, height: 660 }]) {
       await frames(page);
       expect((await bbox(page.locator('.story-tile'))).top, 'held in place as the lines scroll').toBeCloseTo(tile.top, 0);
       for (const p of await phoneHeights(page)) expect(p.height, `${p.where}: at least 200 px`).toBeGreaterThanOrEqual(199.99);
+    });
+  });
+}
+
+/* ---------- a browser without svh units: the story's tile keeps its height and its phone ---------- */
+
+// Safari before 15.4 and Chrome before 108 know no svh: there app.js sets --screen-h, and the story's tile
+// takes its height from it. A browser like that is played here by serving styles.css with every svh renamed
+// to a unit no browser knows, and app.js with its svh check failing; the story's tile, its phone and the
+// fourth step (which holds the tile until line 4 reaches the header) come out as in a real load.
+const NO_SVH = [
+  { width: 393, height: 852, ua: PHONES.iPhone, tile: 404 },
+  { width: 852, height: 393, ua: PHONES.iPhone, tile: 369 },
+  { width: 250, height: 600, ua: PHONES.Android, tile: 404 },
+  { width: 1440, height: 900, ua: COMPUTER_UAS.safari_mac, mobile: false, tile: 760 },
+  { width: 1024, height: 768, ua: COMPUTER_UAS.safari_mac, mobile: false, tile: 640 },
+  { width: 1440, height: 780, ua: COMPUTER_UAS.safari_mac, mobile: false, tile: 640 }
+];
+
+const storyBoxes = (page) => page.evaluate(() => ['.story-tile', '.story-tile .phone', '.story-step:last-child', '.first'].map((sel) => {
+  const r = document.querySelector(sel).getBoundingClientRect();
+  return [sel, Math.round(r.width * 10) / 10, Math.round(r.height * 10) / 10];
+}));
+
+for (const w of NO_SVH) {
+  test.describe(`a browser without svh units at ${w.width}x${w.height}`, () => {
+    test.use({ viewport: { width: w.width, height: w.height }, userAgent: w.ua, ...(w.mobile === false ? { isMobile: false, hasTouch: false } : {}) });
+
+    test('the story\'s tile keeps its height and its phone, as with svh', async ({ page }) => {
+      await load(page);
+      const real = await storyBoxes(page);
+      expect(real[0][2], 'the story\'s tile').toBeCloseTo(w.tile, 1);
+
+      const css = readFileSync(join(ROOT, 'public', 'styles.css'), 'utf8').replace(/svh/g, 'qqh');
+      const js = readFileSync(join(ROOT, 'public', 'app.js'), 'utf8').replace("'1svh'", "'1qqh'");
+      await page.route('**/styles.css', (r) => r.fulfill({ status: 200, contentType: 'text/css', body: css }));
+      await page.route('**/app.js', (r) => r.fulfill({ status: 200, contentType: 'application/javascript', body: js }));
+      await load(page);
+      expect(await page.evaluate(() => [
+        [...document.styleSheets].some((s) => [...s.cssRules].some((r) => r.cssText.includes('qqh'))),
+        CSS.supports('height', '1qqh'),
+        getComputedStyle(document.documentElement).getPropertyValue('--screen-h')
+      ]), 'no svh here: the stylesheet has none, and app.js has set --screen-h').toEqual([true, false, `${w.height}px`]);
+      expect(await storyBoxes(page), 'the story\'s tile, its phone, the fourth step and the first screen, as with svh').toEqual(real);
     });
   });
 }
