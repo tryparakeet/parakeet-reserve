@@ -1116,9 +1116,7 @@ body.legal .footer {
   .top-btn:active { filter: brightness(0.94); }
 
   /* The page's scroll lock (html.sheet-open) pins the body where it was; the header then holds the top by
-     itself, and the page keeps its place under it. A classic scroll bar leaves its gutter behind, so the
-     page doesn't shift sideways behind the dim. */
-  html.sheet-open { scrollbar-gutter: stable; }
+     itself, and the page keeps its place under it. */
   html.sheet-open .top { position: fixed; right: 0; left: 0; max-width: 1440px; margin: 0 auto; }
   html.sheet-open .page { padding-top: calc(var(--top-h) + env(safe-area-inset-top, 0px)); }
 
@@ -1390,6 +1388,42 @@ body.legal .footer {
      on the first screen, so the phone's stores tile further down isn't shown. */
   .cta,
   .stores { display: none; }
+
+  /* The reserve sheet as a dialog in the middle (R1-1440 to R3-1440): 480 wide, corners 36, padding 48 36
+     36, its X at 14/14 and no grabber. The root centres it, so it is centred again at each step and rests
+     with no transform. Shut, it waits 12 px low and faded out, where the motion starts from. */
+  .sheet-root {
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+
+  .sheet {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: 480px;
+    max-width: 100%;
+    max-height: calc(100svh - 48px);
+    margin: 0;
+    padding: 48px 36px 36px;
+    border-radius: 36px;
+    transform: translateY(12px);
+    opacity: 0;
+  }
+
+  .sheet-root.open .sheet {
+    transform: none;
+    opacity: 1;
+  }
+
+  .grabber { display: none; }
+
+  .sheet-x {
+    top: 14px;
+    right: 14px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
