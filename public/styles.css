@@ -18,8 +18,9 @@
   --cream-14: rgba(251, 246, 236, 0.14);   /* the final button's edge (§5) */
   --col: 430px;
   --gutter: 20px;
-  /* The reserve sheet's bottom padding (the sheet's own look comes later) */
-  --sheet-pad-bottom: max(32px, calc(16px + env(safe-area-inset-bottom, 0px)));
+  /* The reserve sheet's bottom padding: the home indicator's 34 on a Face ID iPhone (R1-393), 32 on an SE
+     (as its bar, C-375); Android's is 24 (below) */
+  --sheet-pad-bottom: max(32px, env(safe-area-inset-bottom, 0px));
   /* The 393 board's sizes (C-393), from 390 wide up: the header, the logo, the H1, the answer line, the
      phone's tile and the bottom bar. Under 390 wide the 375 board's take their place (below). */
   --top-h: 56px;
@@ -642,7 +643,12 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
   .footer { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
 }
 
-/* ---------- The sheet: plan, email, done ---------- */
+/* ---------- The sheet: plan, email, done (R1, R2, R3) ----------
+   On a phone it rises from the bottom, corners 28 (the dialog on a computer is below). The page behind dims
+   to ink at 48%. The motion hooks: .sheet-root.open on the root, the step's hidden attribute, a plan's
+   aria-checked, and .tick inside it. */
+html.android { --sheet-pad-bottom: max(24px, env(safe-area-inset-bottom, 0px)); }
+
 .sheet-root {
   position: fixed;
   top: 0;
@@ -673,7 +679,7 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
   max-height: calc(var(--vvh) - 12px);
   margin: 0 auto;
   padding: 12px var(--gutter) var(--sheet-pad-bottom);
-  border-radius: 22px 22px 0 0;
+  border-radius: 28px 28px 0 0;
   background: var(--white);
   color: var(--ink);
   overflow-y: auto;
@@ -689,7 +695,7 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
 .grabber {
   width: 36px;
   height: 4px;
-  margin: 0 auto 16px;
+  margin: 0 auto 28px;
   border-radius: 999px;
   background: var(--ink-10);
 }
@@ -711,7 +717,7 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
   -webkit-tap-highlight-color: transparent;
 }
 
-.step { padding-top: 24px; }
+.step { padding-top: 0; }
 .step[hidden] { display: none; }
 
 /* The sheet's title and small print are centred (Umyt's "center them all", DESIGN.md §4) */
@@ -733,12 +739,13 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
   text-wrap: balance;
 }
 
-/* Selection rows (DESIGN.md §5): white, 14 px radius, hairline; selected = sky-soft fill, a 1.5 px
-   sky inset stroke and a sky tick with a white check. Each row is a tag over one line. */
+/* Selection rows (DESIGN.md §5), corners 20 on the website: white with a hairline; selected = sky-soft
+   fill, a 1.5 px sky ring (its 1 px edge turned sky plus 0.5 inside, so both rows stay 84 tall) and a sky
+   tick with a white check. Each row is a tag over one line. */
 .plans {
   display: grid;
-  row-gap: 12px;
-  margin-top: 20px;
+  row-gap: 10px;
+  margin-top: 24px;
 }
 
 .plan {
@@ -746,11 +753,11 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 64px;
+  min-height: 76px;
   margin: 0;
-  padding: 16px;
+  padding: 16px 18px;
   border: 1px solid var(--ink-10);
-  border-radius: 14px;
+  border-radius: 20px;
   background: var(--white);
   text-align: left;
   cursor: pointer;
@@ -759,9 +766,9 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
 }
 
 .plan[aria-checked="true"] {
-  border-color: transparent;
+  border-color: var(--sky);
   background: var(--sky-soft);
-  box-shadow: inset 0 0 0 1.5px var(--sky);
+  box-shadow: inset 0 0 0 0.5px var(--sky);
 }
 
 .plan-body {
@@ -789,7 +796,7 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
 }
 
 .plan-price {
-  margin-top: 4px;
+  margin-top: 6px;
   font-size: 15px;
   line-height: 20px;
   color: var(--ink-70);
@@ -823,15 +830,17 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
   box-shadow: 0 0 0 8px var(--white);
 }
 
-/* The email step and the done state (the boards' look) */
+/* The email step and the done state: the field 24 under the title, the button 12 under it, the small
+   print 16 under the button, or 12 under the done line once it shows */
 #email-form {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 24px;
 }
 
 #email-form .sheet-small { margin-top: 0; }
+#email-form #step-3[hidden] ~ .sheet-small { margin-top: 4px; }
 
 .field {
   display: flex;
@@ -840,7 +849,7 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
   height: 56px;
   padding: 0 16px;
   border: 1px solid var(--ink-22);
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--white);
   color: var(--ink-62);
   cursor: text;
@@ -892,7 +901,7 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
 
 .done {
   padding: 16px;
-  border-radius: 14px;
+  border-radius: 20px;
   background: var(--cream);
   font-size: 15px;
   line-height: 20px;
