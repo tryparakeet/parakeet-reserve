@@ -1,6 +1,6 @@
 // public/: what ships. No vh units (svh only), no external URL but Support's one link to Apple, nothing
-// inline, no Netlify Forms; the page's ids, the four data-tap values equal to BUTTONS, the one script and
-// the one stylesheet, the viewport flags, the video element, the exact copy; every page's footer; the legal
+// inline, no Netlify Forms; the page's ids, every data-tap value of BUTTONS but play, the one script and
+// the one stylesheet, the viewport flags, the pictures, the exact copy; every page's footer; the legal
 // pages' promises; Privacy's part about the app; Support's words; robots.txt; app.js's endpoint, cookie name
 // and transport.
 
@@ -112,7 +112,7 @@ test('nothing inline and no Netlify Forms in any html', () => {
 test('index.html head: title, description, theme-color, viewport flags, one deferred /app.js, one /styles.css', () => {
   assert.match(index, /<title>Parakeet<\/title>/);
   assert.match(index, /<meta name="description" content="What’s for dinner this week\?">/);
-  assert.match(index, /<meta name="theme-color" content="#4FA8E8">/i);
+  assert.match(index, /<meta name="theme-color" content="#FBF6EC">/i, 'the browser bar is cream (DESIGN.md §4)');
   assert.match(index, /<meta name="color-scheme" content="light">/);
   const viewport = /<meta name="viewport" content="([^"]+)">/.exec(index);
   assert.ok(viewport, 'viewport meta');
@@ -136,26 +136,34 @@ test('index.html ids: each required id exactly once', () => {
   }
 });
 
-test('index.html data-tap: the BUTTONS of event.mjs but play, each once; play stays allowlisted and nothing emits it', () => {
+test('index.html data-tap: every BUTTON of event.mjs but play is on the page, and nothing else; play stays allowlisted and nothing emits it', () => {
   const taps = [...index.matchAll(/\sdata-tap="([^"]*)"/g)].map((m) => m[1]);
-  assert.equal(taps.length, 3, 'three data-tap attributes');
-  assert.deepEqual([...taps].sort(), ['plan_monthly', 'plan_yearly', 'reserve']);
+  assert.deepEqual([...new Set(taps)].sort(), ['android', 'plan_monthly', 'plan_yearly', 'reserve'], 'the page carries every BUTTON but play');
+  for (const t of taps) assert.ok([...BUTTONS].includes(t), `${t} is one of BUTTONS`);
+  assert.equal(taps.filter((t) => t.startsWith('plan_')).length, 2, 'each plan once, in the sheet');
   assert.deepEqual([...BUTTONS].sort(), ['android', 'plan_monthly', 'plan_yearly', 'play', 'reserve'], 'play is still allowlisted');
   assert.doesNotMatch(app, /'play'/, 'app.js never sends play');
   assert.match(index, /<button[^>]*\sdata-tap="reserve"[^>]*>/);
+  assert.match(index, /<button[^>]*\sdata-tap="android"[^>]*>/);
   assert.match(index, /<button[^>]*\srole="radio"[^>]*\sdata-tap="plan_yearly"[^>]*\sdata-plan="yearly"[^>]*\saria-checked="true"/);
   assert.match(index, /<button[^>]*\srole="radio"[^>]*\sdata-tap="plan_monthly"[^>]*\sdata-plan="monthly"[^>]*\saria-checked="false"/);
   assert.match(index, /<button[^>]*\sid="hold"[^>]*>/);
   assert.doesNotMatch(index, /data-tap="[^"]*"[^>]*data-tap=/, 'no element carries two data-tap attributes');
 });
 
-test('index.html hero B: no clip; the bird inline (currentColor); every img sized and decoded async under /media; the price is the seen target', () => {
-  assert.doesNotMatch(index, /<video\b/i, 'no video on hero B');
+test('index.html pictures: no clip; the bird and the wordmark inline (currentColor); every img sized and decoded async under /media; the phones\' screens; the price is the seen target', () => {
+  assert.doesNotMatch(index, /<video\b/i, 'no video');
   assert.doesNotMatch(index, /walkthrough/, 'the walkthrough clip is gone from the page');
+  assert.doesNotMatch(index, /dish-|class="(app|week|dinners?)"/, 'the drawn week and its dish photos are gone');
   assert.match(index, /<symbol id="pk-mark" viewBox="228 90 572 856"><g fill="currentColor">/);
-  assert.equal(count(/<use href="#pk-mark"\/>/g, index), 2, 'the bird twice: the wordmark and the week header');
+  assert.match(index, /<symbol id="pk-word" viewBox="68 -726 4140 737"><path fill="currentColor" d="M188 -257V-379H340Q/, 'the outlined wordmark (Outfit Bold), its fill currentColor');
+  assert.equal(count(/\sid="pk-word"/g, index), 1);
+  assert.equal(count(/<use href="#pk-mark"\/>/g, index), 1, 'the bird once: the footer\'s whole white bird');
+  assert.equal(count(/<use href="#pk-word"\/>/g, index), 2, 'the wordmark twice: the header and the footer');
+  assert.match(index, /<header class="top">\s*<img class="logo-icon" [^>]*>\s*<svg class="logo-word" role="img" aria-label="Parakeet" focusable="false"><use href="#pk-word"\/><\/svg>\s*<\/header>/, 'the header: the icon beside the wordmark, named Parakeet');
+  assert.match(index, /<div class="giant" aria-hidden="true">\s*<svg class="giant-bird" focusable="false"><use href="#pk-mark"\/><\/svg>\s*<svg class="giant-word" focusable="false"><use href="#pk-word"\/><\/svg>\s*<\/div>/, 'the footer: the bird beside the giant wordmark, aria-hidden');
   const imgs = index.match(/<img\b[^>]*>/gi) || [];
-  assert.equal(imgs.length, 3, 'two dish photos and the bezel');
+  assert.equal(imgs.length, 12, 'the icon, three bezels, and the phones\' eight screens');
   for (const img of imgs) {
     assert.match(img, /\ssrc="\/media\/[a-z0-9-]+\.webp"/, `${img}: a WebP under /media`);
     assert.match(img, /\swidth="\d+"/, `${img}: width`);
@@ -163,7 +171,23 @@ test('index.html hero B: no clip; the bird inline (currentColor); every img size
     assert.match(img, /\sdecoding="async"/, `${img}: decoding async`);
     assert.match(img, /\salt=""/, `${img}: decorative (the phone carries the label)`);
   }
-  assert.match(index, /<div class="phone" role="img" aria-label="[^"]*\$58\.12[^"]*\$100 budget[^"]*">/);
+  assert.match(imgs[0], /^<img class="logo-icon" src="\/media\/icon-v1-30\.webp" srcset="[^"]*\/media\/icon-v1-90\.webp 90w[^"]*" sizes="[^"]+" width="30" height="30"/, 'the icon: one srcset for its three sizes at 1x to 3x');
+  const screens = imgs.filter((i) => /class="shot/.test(i));
+  const name = (i) => /\/media\/screen-([a-z]+)-/.exec(i)[1];
+  assert.deepEqual(screens.map(name), ['week', 'list', 'total', 'nights', 'budget', 'week', 'list', 'yours'], 'the first screen\'s three, the story\'s four, the price\'s one');
+  for (const i of screens) {
+    const set = /\ssrcset="([^"]+)"/.exec(i);
+    assert.ok(set && /-420\.webp 420w, \/media\/[a-z0-9-]+-640\.webp 640w$/.test(set[1]), `${i}: srcset at 420 and 640 wide`);
+    assert.match(i, /\ssizes="[^"]+"/, `${i}: sizes`);
+    assert.match(i, /\swidth="420" height="911"/, `${i}: its size`);
+  }
+  screens.slice(0, 3).forEach((i, n) => {
+    assert.match(i, new RegExp(`class="shot answer-${n + 1}"`), `${i}: changes with the answer line`);
+    assert.doesNotMatch(i, /loading=/, `${i}: the first screen's screens load at once`);
+  });
+  for (const i of screens.slice(3)) assert.match(i, /\sloading="lazy"/, `${i}: the story's and the price's screens load lazily`);
+  assert.equal(count(/<div class="phone" role="img" aria-label="Parakeet on an iPhone\.">/g, index), 2, 'the first screen\'s phone and the story\'s');
+  assert.equal(count(/<div class="phone" role="img" aria-label="Parakeet on an iPhone: a price you typed\.">/g, index), 1);
   assert.match(index, /<span class="plan-price" id="price">14 days free, then just \$29\.99\/year\.<\/span>/);
 });
 
@@ -192,11 +216,17 @@ test('index.html copy, verbatim', () => {
     'Know what dinner costs before you shop.',
     'Reserve 2 free weeks',
     'We don’t charge anything today. Reserve the yearly plan now and you will have 2 free weeks at launch.',
-    'Stores', 'Walmart', 'Kroger', 'Target', 'Aldi', 'More soon',
+    'Parakeet is iPhone only for now. We plan to bring it to Android.',
+    'Email me when it’s on Android',
+    'Planning dinners for the whole week?',
+    'You pick your store and your budget, and it plans your week’s dinners so they share ingredients, with one grocery list and the total added up before you shop.',
+    'Pick how many days.', 'Set your budget.', 'We plan the dinners.', 'You get the grocery list.',
+    'When you type what you really paid, it remembers that price for that store.',
+    'Stores Walmart Kroger Target Aldi H-E-B Sprouts Whole Foods Trader Joe’s Meijer Wegmans Hy-Vee Publix',
     'Prices',
     'We use the regular price for the whole pack you’d actually buy. Your total at the register may come out a little different.',
     'Recipes',
-    'Real people will cook every recipe before we add it. Each one will show who made it and link to the original. None will be made by AI.',
+    'The recipes come from food groups and home cooks who said yes to sharing them. Each one will show who made it and link to the original. None will be made by AI.',
     'Parakeet is an app in development. The plan prices are what you’d pay at launch.',
     'Contact: support.parakeet@gmail.com',
     'Privacy',
@@ -216,11 +246,15 @@ test('index.html copy, verbatim', () => {
     'One email when we launch, nothing else.'
   ];
   for (const s of strings) assert.ok(text.includes(s), `index.html says: ${s}`);
-  for (const gone of ['5 dinners that fit your budget.', 'Yearly', 'Monthly', 'FREE WEEKS', 'Totals are estimates', 'cooked by a real person first', 'Some will come from food creators, and some will be tested recipes from the USDA.', "You're on the list.", 'Done']) {
+  for (const gone of ['5 dinners that fit your budget.', 'Yearly', 'Monthly', 'FREE WEEKS', 'Totals are estimates', 'cooked by a real person first', 'Some will come from food creators, and some will be tested recipes from the USDA.', "You're on the list.", 'Done', 'More soon', 'Real people will cook every recipe', 'Cheese quesadillas', 'Chicken wraps', '$58.12']) {
     assert.ok(!text.includes(gone), `index.html no longer says: ${gone}`);
   }
   assert.match(index, /<h1>What’s for dinner this week\?<\/h1>/);
-  assert.match(index, /<p class="wordmark"><svg class="bird" aria-hidden="true" focusable="false"><use href="#pk-mark"\/><\/svg>Parakeet<\/p>/);
+  assert.match(index, /<h2>Planning dinners for the whole week\?<\/h2>/);
+  assert.match(index, /<ul class="chips">(<li class="chip">[^<]+<\/li>){12}<\/ul>/, 'the twelve stores as chips, nothing else in the list');
+  assert.equal(count(/<p class="story-line">/g, index), 4, 'the story\'s four lines');
+  assert.match(index, /<p class="android-line for-android">Parakeet is iPhone only for now\. We plan to bring it to Android\.<\/p>/, 'Android\'s line, under the answer line');
+  assert.match(index, /<button class="btn-final for-android" type="button" data-tap="android">Email me when it’s on Android<\/button>/, 'Android\'s button, in the bar');
   assert.match(index, /<h2 class="sheet-title" id="sheet-title-1">Parakeet is coming soon\.<br> Which plan do you want\?<\/h2>/);
   assert.match(index, /<span class="tag">2 free weeks<\/span>/);
   assert.match(index, /<span class="tag tag-none">No free weeks<\/span>/);
@@ -238,7 +272,8 @@ test('index.html copy, verbatim', () => {
   assert.match(index, /<a href="\/terms">Terms<\/a>/);
   assert.match(index, /<a href="\/support">Support<\/a>/);
   pageFooter(index, 'index');
-  assert.equal(count(/\sdata-reveal\b/g, index), 4, 'three rows and the footer fade in once');
+  assert.equal(count(/\sdata-reveal\b/g, index), 6, 'the headline, the story\'s tile, the price, the stores, Prices and Recipes, and the footer rise in once');
+  assert.equal(count(/\sdata-reveal="rise"/g, index), 2, 'the two tiles with a phone only rise');
   assert.equal(count(/\bRestline\b/g, index) + count(/\brestline\b/g, index), 0);
 });
 
@@ -376,7 +411,7 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradie
   assert.match(css, /100svh/);
   assert.match(css, /-apple-system/);
   assert.doesNotMatch(css, /Inter/);
-  assert.match(css, /\.cta\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*0/, 'the Reserve sheet is pinned to the bottom');
+  assert.match(css, /\.cta\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*0/, 'the bottom bar is pinned to the bottom');
   assert.match(css, /--sheet-pad-bottom:[^;]*env\(safe-area-inset-bottom/, 'with the bottom safe-area inset');
   assert.match(css, /\[data-reveal\]\.in\s*\{\s*animation:\s*rise 500ms/, 'the scroll fade: 500 ms, only once .in is added');
   assert.doesNotMatch(cssNoComments, /\[data-reveal\](?!\.in)[^{,]*\{[^}]*opacity:\s*0/, 'the rows are visible at rest');

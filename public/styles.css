@@ -1,10 +1,10 @@
-/* Parakeet reserve page, built against DESIGN.md: the four colour tokens and their derived values
-   (§2), the system font stack and the type scale (§3), hero B and C1 (§4), the components (§5), flat
-   with the two page motions (§6). No font file. Heights in svh only: the full viewport unit is wrong
-   inside the in-app browsers. */
+/* Parakeet's website, built against DESIGN.md: the four colour tokens and their derived values (§2), the
+   system font stack (§3), the website's new look, pick C, whose boards' numbers are the numbers (§4), the
+   components (§5), flat, with the motions of §6. No font file. Heights in svh only: the full viewport unit
+   is wrong inside the in-app browsers. The phone's layout is below 900 px wide, in a column up to 430. */
 
 :root {
-  /* DESIGN.md §2: four colours, nothing else; the derived values are ink or white at a set opacity */
+  /* DESIGN.md §2: four colours, nothing else; the derived values are ink, white or cream at a set opacity */
   --sky: #4FA8E8;
   --ink: #0E1B26;
   --cream: #FBF6EC;
@@ -14,19 +14,51 @@
   --ink-48: rgba(14, 27, 38, 0.48);   /* disabled text (§5) */
   --ink-22: rgba(14, 27, 38, 0.22);   /* strokes */
   --ink-10: rgba(14, 27, 38, 0.10);   /* hairlines */
-  --sky-soft: #E3F1FC;                /* a selected row's fill */
-  --white-78: rgba(255, 255, 255, 0.78);   /* the week's header: "$" and its line (§5) */
-  --white-72: rgba(255, 255, 255, 0.72);   /* the page's answer line (§2) */
-  --white-60: rgba(255, 255, 255, 0.60);   /* the "est." outline (§5) */
-  --white-34: rgba(255, 255, 255, 0.34);   /* the meter's track (§5) */
+  --sky-soft: #E3F1FC;                /* a selected row's fill; the stores' tile */
+  --cream-14: rgba(251, 246, 236, 0.14);   /* the final button's edge (§5) */
   --col: 430px;
   --gutter: 20px;
-  /* The pinned Reserve sheet's height: 20 + 56 + 12 + two 16px lines + the bottom padding. app.js
-     replaces it with the measured height (a third line on a narrow phone, a larger safe area). */
+  /* The reserve sheet's bottom padding (the sheet's own look comes later) */
   --sheet-pad-bottom: max(32px, calc(16px + env(safe-area-inset-bottom, 0px)));
-  --cta-h: calc(120px + var(--sheet-pad-bottom));
-  --phone-max: 457px;
+  /* The 393 board's sizes (C-393), from 390 wide up: the header, the logo, the H1, the answer line, the
+     phone's tile and the bottom bar. Under 390 wide the 375 board's take their place (below). */
+  --top-h: 56px;
+  --logo-gap: 9px;
+  --icon: 30px;
+  --word: 14.72px;      /* the wordmark's box: 0.736 x the board's 20 px word, so its capitals match */
+  --h1: 34px;
+  --h1-mt: 12px;
+  --answer: 17px;
+  --answer-lh: 24px;
+  --answer-mt: 10px;
+  --tile-mt: 18px;
+  --tile-pad: 20px;
+  --bar-pt: 16px;
+  --bar-pb: max(34px, env(safe-area-inset-bottom, 0px));
+  /* The bottom bar's height: 1 + 16 + 56 + 8 + two 18 px lines + 34. app.js replaces it with the measured
+     height (a third line on a narrow phone, a larger safe area, Android's bar). */
+  --cta-h: calc(117px + var(--bar-pb));
   --vvh: 100svh;
+}
+
+/* The 375 board's sizes (C-375) on a phone under 390 wide: only the phone changes with the window's height */
+@media (max-width: 389.98px) {
+  :root {
+    --top-h: 52px;
+    --logo-gap: 8px;
+    --icon: 28px;
+    --word: 13.98px;     /* 0.736 x 19 */
+    --h1: 30px;
+    --h1-mt: 8px;
+    --answer: 16px;
+    --answer-lh: 22px;
+    --answer-mt: 8px;
+    --tile-mt: 14px;
+    --tile-pad: 16px;
+    --bar-pt: 14px;
+    --bar-pb: max(32px, env(safe-area-inset-bottom, 0px));
+    --cta-h: calc(115px + var(--bar-pb));
+  }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -71,7 +103,7 @@ a { color: inherit; }
   white-space: nowrap;
 }
 
-/* The bird is defined once (a symbol) and drawn with <use> */
+/* The bird and the wordmark are defined once (symbols) and drawn with <use> */
 .defs {
   position: absolute;
   width: 0;
@@ -79,87 +111,83 @@ a { color: inherit; }
   overflow: hidden;
 }
 
-.bird {
-  flex: none;
-  width: 22px;     /* the mark's crop is 572 x 856 */
-  height: 32px;
+/* ---------- The page: one column up to 430 wide, centred (DESIGN.md §4; Main, C-393, C-375) ---------- */
+.page {
+  max-width: var(--col);
+  margin: 0 auto;
 }
 
-/* ---------- The first screen: hero B (DESIGN.md §4) ----------
-   The whole page at 100svh: the sky field (wordmark, H1, answer line), then the stage, the one
-   flexible row, which holds the phone. The pinned Reserve sheet covers the bottom --cta-h, so the
-   screen leaves that much room under the stage. The phone frame shrinks first; the copy never. */
-.screen {
+/* The header: the app's icon beside the wordmark in ink. Not sticky on a phone. */
+.top {
+  display: flex;
+  align-items: center;
+  gap: var(--logo-gap);
+  height: calc(var(--top-h) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) var(--gutter) 0;
+}
+
+/* The app's icon, its corners as the app draws them: 22.37% of its size */
+.logo-icon {
+  flex: none;
+  width: var(--icon);
+  height: var(--icon);
+  border-radius: 22.37%;
+}
+
+/* The outlined wordmark (Outfit Bold, the symbol #pk-word, viewBox 4140 x 737), its fill currentColor */
+.logo-word {
+  flex: none;
+  height: var(--word);
+  width: calc(var(--word) * 4140 / 737);
+  color: var(--ink);
+}
+
+/* ---------- The first screen: the words on the cream, then the phone on its sky tile ----------
+   The screen is the window under the header and over the pinned bar. The phone's tile takes what the words
+   leave, so the phone shrinks first and the words never: the tile ends 12 px above the bar, and when the
+   phone reaches 200 px only that 12 px gap narrows. An upright iPad stops the phone at 343 x 700; the extra
+   height is cream. */
+.first {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  width: 100%;
-  height: 100svh;
-  padding-bottom: var(--cta-h);
-  background: var(--cream);
-  overflow: hidden;
+  grid-template-rows: auto minmax(calc(200px + 2 * var(--tile-pad)), 1fr) minmax(0, 12px);
+  height: calc(100svh - var(--top-h) - env(safe-area-inset-top, 0px) - var(--cta-h));
+  min-height: min-content;
 }
 
 /* --screen-h is innerHeight in px, set by app.js only where svh is unknown */
 @supports not (height: 1svh) {
-  .screen { height: var(--screen-h, auto); }
+  .first { height: calc(var(--screen-h, 0px) - var(--top-h) - env(safe-area-inset-top, 0px) - var(--cta-h)); }
   .sheet { max-height: calc(var(--vvh, 0px) - 12px); }
 }
 
-.sky {
-  padding-top: env(safe-area-inset-top, 0px);
-  background: var(--sky);
-  color: var(--white);
+.first-words { margin-bottom: var(--tile-mt); }
+
+/* The H1 and the answer line: ink and ink-70, left-aligned on the cream (DESIGN.md §4) */
+.first-words h1 {
+  margin-top: var(--h1-mt);
+  padding: 0 var(--gutter);
+  font-size: var(--h1);
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
 }
 
-.sky > * {
-  max-width: var(--col);
-  margin-right: auto;
-  margin-left: auto;
+/* The answer line crossfades once through three answers (about 2.5 s each, 400 ms fades) and stays on the
+   last (DESIGN.md §6). The three share one grid cell, so the line is as tall as the tallest. The two passing
+   lines are aria-hidden; the last one is the readable text and is what shows at rest, so a browser without
+   animations shows it still. The phone's screens carry the same classes: the week, the list, the total. */
+.answer {
+  display: grid;
+  margin-top: var(--answer-mt);
   padding: 0 var(--gutter);
 }
 
-/* The wordmark: white on the sky, a logotype (DESIGN.md §4) */
-.wordmark {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 64px;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 24px;
-  letter-spacing: -0.02em;
-}
-
-/* The H1 and the answer line: white, centred, Umyt's exception (DESIGN.md §2, §4) */
-h1 {
-  margin-top: 12px;
-  font-size: 34px;
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  text-align: center;
-  text-wrap: balance;
-}
-
-/* The answer line crossfades once through three answers (about 2.5 s each, 400 ms fades) and stays
-   on the last (DESIGN.md §6). The two passing lines are aria-hidden; the last one is the readable
-   text and is what shows at rest, so a browser without animations shows it still. */
-.answer {
-  position: relative;
-  height: 48px;     /* two lines */
-  margin-top: 8px;
-}
-
 .answer-line {
-  position: absolute;
-  top: 0;
-  right: var(--gutter);
-  left: var(--gutter);
-  font-size: 17px;
-  line-height: 24px;
-  color: var(--white-72);
-  text-align: center;
-  text-wrap: balance;
+  grid-area: 1 / 1;
+  font-size: var(--answer);
+  line-height: var(--answer-lh);
+  color: var(--ink-70);
 }
 
 .answer-1, .answer-2 { opacity: 0; }
@@ -184,36 +212,43 @@ h1 {
 .answer-2 { animation: answer-2 5.4s linear both; }
 .answer-3 { animation: answer-3 400ms linear 5s both; }
 
-/* The stage: the phone sits between the sky and the cream. The sky runs on behind the phone to the
-   same point of the frame as on the boards (46.8 % of its height). */
-.stage {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  align-items: start;
-  min-height: 0;
-  padding: 20px 0 16px;
+/* Android's line under the answer line (AN1-412): 15/20, 600, ink */
+.android-line {
+  margin-top: 12px;
+  padding: 0 var(--gutter);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+  text-wrap: balance;
 }
 
-.stage::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: calc(20px + 0.468 * min(100% - 36px, var(--phone-max)));
+/* The words that depend on the device: html.android (set by app.js) shows Android's line and button in
+   place of the Reserve button and its line */
+html:not(.android) .for-android,
+html.android .for-reserve { display: none; }
+
+/* The phone's sky tile: corners 28, the phone centred at its top with the tile's padding above and below */
+.first-tile {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  justify-items: center;
+  max-height: calc(700px + 2 * var(--tile-pad));
+  margin: 0 12px;
+  padding: var(--tile-pad) 0;
+  border-radius: 28px;
   background: var(--sky);
 }
 
-/* Apple's bezel, used as is: the screen sits under its opening, the image on top at 0/0. All the
-   positions are the board's, as fractions of the 224 x 457 frame (10.43/9.05, 203.14 x 438.89,
-   radius 33.15). */
+/* Apple's bezel, whole and straight: the screen sits under its opening, the bezel on top at 0/0. The
+   positions are fractions of the 224 x 457 frame (10.43/9.05, 203.14 x 438.89, radius 33.15). */
 .phone {
   position: relative;
-  height: 100%;
-  max-height: var(--phone-max);
-  max-width: 100%;
   aspect-ratio: 224 / 457;
+}
+
+.first-tile .phone {
+  height: 100%;
+  max-height: min(700px, (min(100vw, var(--col)) - 24px) * 457 / 224);
 }
 
 .phone-screen {
@@ -225,7 +260,6 @@ h1 {
   border-radius: 16.319% / 7.553%;
   overflow: hidden;
   background: var(--cream);
-  container-type: inline-size;
 }
 
 .bezel {
@@ -236,184 +270,22 @@ h1 {
   height: 100%;
 }
 
-/* ---------- The result screen inside the phone ----------
-   The app's 393 x 852 screen at the size of the opening: one design pixel is --u (the screen is
-   393 design px plus a 1 px inset each side), so the mock scales with the frame. */
-.app {
-  --u: 0.25195cqw;
+/* The app's screens, 393 x 852 stills layered in the opening (build 2's, placeholders until then) */
+.shot {
   position: absolute;
-  top: 0.4923cqw;
-  left: 0.4923cqw;
-  width: calc(393 * var(--u));
-  height: calc(852 * var(--u));
-  background: var(--cream);
-  color: var(--ink);
-  font-size: calc(17 * var(--u));
-  line-height: 1.2;
-}
-
-/* The week's header (DESIGN.md §5): sky, white type, no eyebrow line */
-.week {
-  position: relative;
-  padding: calc(76 * var(--u)) calc(20 * var(--u)) calc(22 * var(--u));
-  border-radius: 0 0 calc(22 * var(--u)) calc(22 * var(--u));
-  background: var(--sky);
-  color: var(--white);
-}
-
-.week-bird {
-  position: absolute;
-  top: calc(70 * var(--u));
-  right: calc(14 * var(--u));
-  width: calc(32 * var(--u));
-  height: calc(48 * var(--u));
-}
-
-.week-total {
-  display: flex;
-  align-items: baseline;
-  font-size: calc(64 * var(--u));
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-}
-
-.week-dollar {
-  margin-right: calc(2 * var(--u));
-  font-size: calc(34 * var(--u));
-  font-weight: 600;
-  letter-spacing: 0;
-  color: var(--white-78);
-}
-
-.week-est {
-  margin-left: calc(12 * var(--u));
-  padding: calc(3 * var(--u)) calc(7 * var(--u));
-  border: calc(1 * var(--u)) solid var(--white-60);
-  border-radius: 999px;
-  font-size: calc(13 * var(--u));
-  font-weight: 600;
-  line-height: calc(16 * var(--u));
-  letter-spacing: 0;
-}
-
-.week-of {
-  margin-top: calc(8 * var(--u));
-  font-size: calc(15 * var(--u));
-  line-height: calc(20 * var(--u));
-  color: var(--white-78);
-}
-
-.week-of b { font-weight: 700; color: var(--white); }
-
-.meter {
-  height: calc(8 * var(--u));
-  margin-top: calc(16 * var(--u));
-  border-radius: 999px;
-  background: var(--white-34);
-}
-
-.meter-fill {
-  width: 58.12%;     /* $58.12 of $100 */
-  height: 100%;
-  border-radius: 999px;
-  background: var(--white);
-}
-
-/* The dinner cards (DESIGN.md §5): the day on the right of the dish name, sky text, no pill */
-.dinners {
-  display: flex;
-  flex-direction: column;
-  gap: calc(12 * var(--u));
-  padding: calc(20 * var(--u)) calc(20 * var(--u)) 0;
-}
-
-.dinner {
-  padding: calc(12 * var(--u)) calc(12 * var(--u)) calc(4 * var(--u));
-  border: calc(1 * var(--u)) solid var(--ink-10);
-  border-radius: calc(22 * var(--u));
-  background: var(--white);
-}
-
-.dinner-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: calc(12 * var(--u));
-  padding: calc(4 * var(--u)) calc(4 * var(--u)) calc(8 * var(--u));
-}
-
-.dinner-name {
-  font-size: calc(16 * var(--u));
-  font-weight: 600;
-  line-height: calc(20 * var(--u));
-}
-
-.dinner-meta {
-  margin-top: calc(4 * var(--u));
-  font-size: calc(13 * var(--u));
-  line-height: calc(16 * var(--u));
-  color: var(--ink-62);
-}
-
-.dinner-day {
-  flex: none;
-  font-size: calc(15 * var(--u));
-  font-weight: 600;
-  line-height: calc(20 * var(--u));
-  color: var(--sky);
-}
-
-.dinner-photo {
-  position: relative;
-  aspect-ratio: 16 / 10;
-  border-radius: calc(14 * var(--u));
-  overflow: hidden;
-  background: var(--cream);
-}
-
-.dinner-photo img {
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* the 1 px inner hairline, so a photo on white still reads as a photo */
-.dinner-photo::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  border: calc(1 * var(--u)) solid var(--ink-10);
-  border-radius: inherit;
-}
+/* The story's and the price's phones show one screen at a time: the one marked .on */
+.story .shot, .tile-yours .shot { opacity: 0; }
+.story .shot.on, .tile-yours .shot.on { opacity: 1; }
 
-.dinner-actions {
-  display: flex;
-  align-items: center;
-  gap: calc(4 * var(--u));
-  padding-top: calc(4 * var(--u));
-}
-
-.dinner-actions svg {
-  width: calc(24 * var(--u));
-  height: calc(24 * var(--u));
-  margin: calc(10 * var(--u));
-}
-
-.dinner-actions .dinner-more { margin-left: auto; }
-
-/* Without container queries (iOS before 16) the phone keeps its smallest board size */
-@supports not (width: 1cqw) {
-  :root { --phone-max: 272px; }
-  .app { --u: 0.30667px; top: 1px; left: 1px; }
-}
-
-/* ---------- The pinned Reserve sheet (DESIGN.md §4, C1) ----------
-   The button and Umyt's line, and nothing else, pinned to the bottom while the page scrolls under it. */
+/* ---------- The bottom bar (C-393, C-375): the Reserve button and Umyt's line, pinned ----------
+   White, a hairline with no bottom edge, top corners 24, in the 430 column. */
 .cta {
   position: fixed;
   right: 0;
@@ -422,27 +294,25 @@ h1 {
   z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 20px var(--gutter) var(--sheet-pad-bottom);
+  gap: 8px;
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: var(--bar-pt) var(--gutter) var(--bar-pb);
   border: 1px solid var(--ink-10);
   border-bottom: 0;
-  border-radius: 22px 22px 0 0;
+  border-radius: 24px 24px 0 0;
   background: var(--white);
-}
-
-.cta > * {
-  width: 100%;
-  max-width: calc(var(--col) - 2 * var(--gutter));
-  margin: 0 auto;
 }
 
 .cta-note {
   font-size: 13px;
-  line-height: 16px;
-  color: var(--ink-62);
+  line-height: 18px;
+  color: var(--ink-70);
   text-align: center;
-  text-wrap: balance;
 }
+
+/* Android's bar (AN1-412) holds only its button: padding 16 20 24 */
+html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bottom, 0px)); }
 
 /* Primary button (DESIGN.md §5): pill, 56 px, ink 17/600 on sky (6.7:1); pressed 6% darker */
 .btn {
@@ -476,107 +346,278 @@ h1 {
   filter: none;
 }
 
-/* ---------- Below the first screen (DESIGN.md §4, C1): three rows on cream, then the footer ---------- */
-.below {
-  max-width: var(--col);
-  margin: 0 auto;
-  padding: 12px var(--gutter) calc(var(--cta-h) + 32px);
+/* The final button (DESIGN.md §5), Android's: the primary button's shape, ink with a cream label 17/600 and
+   a 1 px cream edge at 14%. At least 56 tall: its words wrap on a 320 phone. */
+.btn-final {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 56px;
+  padding: 0 20px;
+  overflow: hidden;
+  border: 1px solid var(--cream-14);
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--cream);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.fact {
+/* ---------- Below the first screen (Main) ---------- */
+
+/* The headline and Umyt's sentence (S-A-393), centred, 64 px under the phone's tile */
+.lede {
+  margin: 52px var(--gutter) 0;
+  text-align: center;
+}
+
+.lede h2 {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.lede p {
+  margin-top: 14px;
+  font-size: 17px;
+  line-height: 25px;
+  text-wrap: pretty;
+}
+
+/* The story: four lines that scroll under a sky tile that stays in place, its phone on the line's screen.
+   The tile leaves room for a whole story line (two lines of 32/1.1, with air) between it and the bar. A
+   cream band over the tile's top 12 px and its top corners hides the lines that scroll under it. */
+.story {
+  position: relative;
+  margin-top: 28px;
+  padding-bottom: 120px;
+}
+
+.story-pin {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 12px 12px 0;
+}
+
+.story-pin::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 40px;
+  background: var(--cream);
+}
+
+.story-tile {
+  position: relative;
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
-  align-items: baseline;
-  padding: 20px 0;
+  place-items: center;
+  height: clamp(244px, 100svh - var(--cta-h) - 98px, 404px);
+  border-radius: 28px;
+  background: var(--sky);
 }
 
-.fact + .fact { border-top: 1px solid var(--ink-10); }
+.story-tile .phone { height: calc(100% - 44px); }
 
-.fact dt {
+.story-step {
+  min-height: 300px;
+  padding: 40px var(--gutter) 0;
+}
+
+.story-line {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+/* The remembered price: its words over a phone on a sky tile */
+.tile-yours {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 16px 12px 0;
+  padding: 28px var(--gutter) 24px;
+  border-radius: 28px;
+  background: var(--sky);
+}
+
+.yours-line {
+  align-self: stretch;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 31px;
+  letter-spacing: -0.01em;
+}
+
+.tile-yours .phone {
+  width: 196px;
+  margin-top: 24px;
+}
+
+/* The stores: twelve chips in our own type on a sky-soft tile, never a logo */
+.stores {
+  margin: 16px 12px 0;
+  padding: 24px var(--gutter);
+  border-radius: 28px;
+  background: var(--sky-soft);
+}
+
+.label {
   font-size: 15px;
   font-weight: 600;
   line-height: 20px;
-  color: var(--ink-62);
-}
-
-.fact dd {
-  font-size: 17px;
-  line-height: 25px;
+  color: var(--ink-70);
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 12px;
 }
 
 .chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--ink-22);
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--ink-10);
   border-radius: 999px;
   background: var(--white);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 20px;
 }
 
-.chip-soon {
-  border-style: dashed;
-  background: none;
-  font-weight: 500;
-  color: var(--ink-62);
+/* Prices and Recipes: one white tile with a hairline between them */
+.facts {
+  margin: 16px 12px 0;
+  padding: 24px var(--gutter);
+  border: 1px solid var(--ink-10);
+  border-radius: 28px;
+  background: var(--white);
 }
 
-.footer {
-  display: flex;
-  flex-direction: column;
-  padding-top: 24px;
+.fact p {
+  margin-top: 6px;
+  font-size: 17px;
+  line-height: 24px;
+}
+
+.fact + .fact {
+  margin-top: 20px;
+  padding-top: 20px;
   border-top: 1px solid var(--ink-10);
-  font-size: 15px;
-  line-height: 22px;
-  color: var(--ink-70);
 }
 
-.foot-contact {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  min-height: 44px;
-}
-
-.footer a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  font-weight: 600;
+/* ---------- The footer: a sky band with rounded top corners (Main) ----------
+   The first line, the contact line, the links (15/600, 44 px targets, underlined) and the ©, in ink 13/18;
+   under them the whole white bird beside the giant white wordmark, a logo (DESIGN.md §2). The sky runs on
+   under the pinned bar, so 28 px of it shows under the giant row at the page's end. */
+.footer {
+  margin-top: 40px;
+  padding: 28px var(--gutter) calc(28px + var(--cta-h));
+  border-radius: 28px 28px 0 0;
+  background: var(--sky);
+  font-size: 13px;
+  line-height: 18px;
   color: var(--ink);
-  text-decoration: none;
+  container-type: inline-size;
+}
+
+.foot-contact { margin-top: 4px; }
+
+/* The address's 44 px target, by technique: it reaches up over the first line and stops short of the
+   links' targets 8 px below */
+.foot-contact a {
+  position: relative;
+  font-weight: 600;
+}
+
+.foot-contact a::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -8px;
+  left: 0;
+  height: 44px;
 }
 
 .foot-links {
   display: flex;
   gap: 24px;
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
 }
 
-.foot-copy {
-  margin-top: 4px;
-  font-size: 13px;
-  line-height: 16px;
-  color: var(--ink-62);
+.foot-links a {
+  display: flex;
+  align-items: center;
+  height: 44px;
 }
 
-/* The one-time scroll fade (DESIGN.md §6): app.js adds .in the first time a row or the footer enters
-   the viewport. At rest everything is fully visible, so nothing hides if the script never runs. */
+.foot-copy { margin-top: 4px; }
+
+/* The giant row: the bird (pk-mark, 572 x 856) at min(78px, 19.8vw) beside the wordmark as tall as the
+   board's min(68px, 17.3vw) word (0.736 of it); both shrink further where the row would overflow the band
+   (a 320 phone, 200% zoom), so the whole row never takes more than the footer's width. Its bottom keeps the
+   board's word's descent (0.145 of its size). */
+.giant {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 36px;
+  padding-bottom: min(9.86px, 2.51vw);
+  padding-bottom: min(9.86px, 2.51vw, (100cqw - 10px) / 33.8);
+  color: var(--white);
+}
+
+.giant-bird {
+  flex: none;
+  height: min(78px, 19.8vw);
+  height: min(78px, 19.8vw, (100cqw - 10px) / 4.272);
+  aspect-ratio: 572 / 856;
+}
+
+.giant-word {
+  flex: none;
+  height: min(50.05px, 12.73vw);
+  height: min(50.05px, 12.73vw, (100cqw - 10px) / 6.657);
+  aspect-ratio: 4140 / 737;
+}
+
+/* The one-time scroll fade (DESIGN.md §6): app.js adds .in the first time a part enters the viewport. At
+   rest everything is fully visible, so nothing hides if the script never runs. A tile with a phone only
+   rises, so the bezel never fades. */
 @keyframes rise {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: none; }
 }
 
+@keyframes rise-only {
+  from { transform: translateY(14px); }
+  to { transform: none; }
+}
+
 [data-reveal].in { animation: rise 500ms ease-out both; }
+[data-reveal="rise"].in { animation-name: rise-only; }
 
 /* ---------- The sheet: plan, email, done ---------- */
 .sheet-root {
@@ -849,8 +890,41 @@ html.sheet-open body {
   overflow: hidden;
 }
 
+
 /* ---------- Legal pages ---------- */
 body.legal { display: block; }
+
+/* Their header is still the landing page's of Oct 23 (a sky band with the white bird and the wordmark in
+   type, a link home) until they take the home's new header */
+.sky {
+  padding-top: env(safe-area-inset-top, 0px);
+  background: var(--sky);
+  color: var(--white);
+}
+
+.sky > * {
+  max-width: var(--col);
+  margin-right: auto;
+  margin-left: auto;
+  padding: 0 var(--gutter);
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 64px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: -0.02em;
+}
+
+.bird {
+  flex: none;
+  width: 22px;     /* the mark's crop is 572 x 856 */
+  height: 32px;
+}
 
 .legal-main {
   width: 100%;
@@ -869,8 +943,10 @@ body.legal { display: block; }
 .legal-main h1 {
   margin-top: 28px;
   font-size: 28px;
+  font-weight: 700;
   line-height: 1.2;
-  text-align: left;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 
 .legal-main p {
@@ -888,8 +964,8 @@ body.legal { display: block; }
 
 body.legal .footer {
   max-width: var(--col);
-  margin: 0 auto;
-  padding: 24px var(--gutter) calc(32px + env(safe-area-inset-bottom, 0px));
+  margin: 64px auto 0;
+  padding: 28px var(--gutter) calc(28px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (prefers-reduced-motion: reduce) {
