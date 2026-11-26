@@ -412,6 +412,9 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradie
   assert.match(css, /-apple-system/);
   assert.doesNotMatch(css, /Inter/);
   assert.match(css, /\.cta\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*0/, 'the bottom bar is pinned to the bottom');
+  const unpinned = /@media ([^{]*)\{[^@]*?\.cta \{ position: relative;/.exec(cssNoComments);
+  assert.ok(unpinned, 'the bar sits in the page only under a media query');
+  for (const q of unpinned[1].split(',')) assert.match(q, /max-height: \d+(\.\d+)?px/, `${q.trim()}: only in a window too short for the words, a 200 px phone and the bar`);
   assert.match(css, /--sheet-pad-bottom:[^;]*env\(safe-area-inset-bottom/, 'with the bottom safe-area inset');
   assert.match(css, /\[data-reveal\]\.in\s*\{\s*animation:\s*rise 500ms/, 'the scroll fade: 500 ms, only once .in is added');
   assert.doesNotMatch(cssNoComments, /\[data-reveal\](?!\.in)[^{,]*\{[^}]*opacity:\s*0/, 'the rows are visible at rest');
