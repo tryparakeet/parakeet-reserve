@@ -245,6 +245,28 @@ for (const vp of [{ width: 1440, height: 780 }, { width: 1024, height: 660 }]) {
   });
 }
 
+/* ---------- the first screen on a computer keeps the boards' row heights ---------- */
+
+// The white tile and the stores' tile take the boards' rows, 440 and 200 at 1024 wide and below, 520 and
+// 252 at 1440, and the phone's tile spans both with the 16 px gap; three rows of chips (at 900 wide in any
+// font) still fit the 200.
+for (const vp of [{ width: 900, height: 768, rows: [440, 200] }, { width: 1024, height: 768, rows: [440, 200] }, { width: 1440, height: 900, rows: [520, 252] }]) {
+  test.describe(`the first screen on a computer at ${vp.width}x${vp.height}`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height }, ...MAC });
+
+    test('the tiles keep the boards\' row heights, with three rows of chips too', async ({ page }) => {
+      await load(page);
+      const words = await bbox(page.locator('.first-words'));
+      const stores = await bbox(page.locator('.first-stores'));
+      const tile = await bbox(page.locator('.first-tile'));
+      const chipRows = await page.evaluate(() => new Set([...document.querySelectorAll('.first-stores .chip')].map((c) => Math.round(c.getBoundingClientRect().top))).size);
+      expect(words.height, 'the white tile').toBeCloseTo(vp.rows[0], 1);
+      expect(stores.height, `the stores' tile, its chips in ${chipRows} rows`).toBeCloseTo(vp.rows[1], 1);
+      expect(tile.height, 'the phone\'s tile spans both rows').toBeCloseTo(vp.rows[0] + 16 + vp.rows[1], 1);
+    });
+  });
+}
+
 /* ---------- the story on a computer: each line in the middle of its step, and the hold ---------- */
 
 // Each story line sits in the middle of its step, as the boards draw it, the fourth too, whether it takes

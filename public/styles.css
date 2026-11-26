@@ -1354,12 +1354,15 @@ body.legal .footer {
     max-height: none;
   }
 
+  /* Its bottom padding is 2 px short of its top, so three rows of chips (a narrow window; at 900 in any
+     font) fill the boards' 200 px row exactly instead of growing it; two rows, set at the top, change
+     nothing */
   .first-stores {
     display: block;
     grid-row: 2;
     grid-column: 1;
     min-width: 0;
-    padding: var(--stores-py) var(--stores-px);
+    padding: var(--stores-py) var(--stores-px) calc(var(--stores-py) - 2px);
     border-radius: 36px;
     background: var(--sky-soft);
   }
