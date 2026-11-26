@@ -38,8 +38,9 @@
   --tile-mt: 18px;
   --tile-pad: 20px;
   --bar-pt: 16px;
-  /* The board's bar is 150 tall with padding 34 under a 1 + 16 + 56 + 8 + 36 content that runs 1 px into
-     it, so 33 shows under the line: the bar takes the 33, and a larger safe area (a Face ID iPhone's 34) */
+  /* C-393's bar is a 150 box with padding 34 around 1 + 16 + 56 + 8 + 36 of content, which runs 1 px into
+     that padding, so 33 shows under the line. The bar's bottom padding is that 33, or the safe area where
+     it is larger (a Face ID iPhone's 34). */
   --bar-pb: max(33px, env(safe-area-inset-bottom, 0px));
   /* The bottom bar's height: 1 + 16 + 56 + 8 + two 18 px lines + 33, the board's 150 box. app.js replaces it
      with the measured height (a third line on a narrow phone, a larger safe area, Android's bar). */
