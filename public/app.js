@@ -323,7 +323,8 @@
   /* ---------- a rise plays once ----------
      The two stores tiles show in one layout each, so a window crossing 900 wide shows one anew. Once its
      rise has ended (or was cut short as its layout hid it), it is marked .risen and rests (styles.css). The
-     computer's, hidden at load in a phone's layout, rests once the first screen's rise has ended. */
+     computer's, hidden at load in a phone's layout, rests once the first screen's rise has ended. This
+     script is deferred, so on a slow load that rise may have ended before it runs: then it rests at once. */
 
   var firstStores = doc.querySelector('.first-stores');
   var phoneStores = doc.querySelector('.stores');
@@ -335,6 +336,17 @@
   };
   doc.addEventListener('animationend', onRisen);
   doc.addEventListener('animationcancel', onRisen);
+  var riseOver = function (el) {
+    if (!el || !el.getAnimations) return false;
+    var played = el.getAnimations();
+    for (var i = 0; i < played.length; i++) if (played[i].playState !== 'finished') return false;
+    return true;
+  };
+  try {
+    if (firstStores && (firstStores.getClientRects().length ? riseOver(firstStores) : riseOver(doc.querySelector('.first-tile')))) {
+      firstStores.classList.add('risen');
+    }
+  } catch (e) {}
 
   /* ---------- the story's focus ----------
      The line in focus is the last one whose text has crossed the focus line: 66% of the window's height on

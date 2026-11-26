@@ -660,6 +660,27 @@ test('an upright iPad turned on its side shows the computer\'s stores tile at re
   expect(await still(page, '.first-stores')).toEqual({ running: 0, opacity: '1', transform: 'none' });
 });
 
+// app.js is deferred: on a slow load it can run after the first screen's rise has ended (the computer's
+// stores tile ends at 800 ms, the phone's tile at 700 ms), and missing that rise's end it would let the
+// tile rise again at the first crossing of 900. Held back 1.5 s here, it finds the rise over and rests it.
+for (const [from, to] of [[{ width: 932, height: 430 }, { width: 430, height: 932 }], [{ width: 430, height: 932 }, { width: 932, height: 430 }]]) {
+  test(`with app.js 1.5 s late, the computer's stores tile rests after a phone at ${from.width}x${from.height} turns to ${to.width}x${to.height} and back`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.setViewportSize(from);
+    await page.route('**/app.js', async (route) => {
+      await new Promise((done) => setTimeout(done, 1500));
+      await route.continue();
+    });
+    await page.goto(TAGGED_QS);
+    await expect(page.locator('h1')).toHaveText('What’s for dinner this week?');
+    for (const size of [to, from, to]) {
+      await page.setViewportSize(size);
+      await frames(page, 2);
+      if (size.width >= 900) expect(await still(page, '.first-stores'), `at ${size.width}x${size.height}`).toEqual({ running: 0, opacity: '1', transform: 'none' });
+    }
+  });
+}
+
 test('the phone\'s stores tile rises once as it comes into view, not again after a trip to 1000 wide', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await load(page, { width: 393, height: 852 });
