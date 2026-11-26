@@ -480,6 +480,8 @@
     emailInput.classList.remove('shake');
     setEmailState(false);
     sheetRoot.hidden = false;
+    // the scroll bar's width, where the window has a classic one: the lock gives it back (styles.css)
+    try { root.style.setProperty('--sb', Math.max(0, win.innerWidth - root.clientWidth) + 'px'); } catch (e) {}
     root.classList.add('sheet-open');
     fitSheet();
     if (emailFirst) { try { emailInput.focus({ preventScroll: true }); } catch (e) { emailInput.focus(); } }
@@ -501,6 +503,7 @@
     sheetRoot.classList.remove('open');
     try { doc.activeElement && doc.activeElement.blur(); } catch (e) {}
     root.classList.remove('sheet-open');
+    try { root.style.removeProperty('--sb'); } catch (e) {}
     doc.body.style.top = '';
     try { win.scrollTo(0, scrollY); } catch (e) {}
     var done = function () {

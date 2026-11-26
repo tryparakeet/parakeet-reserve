@@ -252,3 +252,56 @@ for (const place of PLACES) {
     });
   });
 }
+
+/* ---------- a classic scroll bar: nothing behind the dim moves ---------- */
+
+// Windows, and a Mac set to always show them, draw a classic scroll bar, which the sheet's scroll lock takes
+// away. The page behind the dim keeps its width, so nothing in it moves sideways as the sheet opens or
+// closes, and the dim still covers the whole window. Playwright hides scroll bars, so each run launches its
+// own browser with them shown.
+const SCROLL_BARS = [
+  { width: 1440, height: 900, scroll: 0, button: '.top-btn[data-tap="reserve"]' },
+  { width: 1440, height: 900, scroll: 1200, button: '.top-btn[data-tap="reserve"]' },
+  { width: 800, height: 900, scroll: 0, button: '.cta [data-tap="reserve"]' }
+];
+
+for (const run of SCROLL_BARS) {
+  test(`with a classic scroll bar at ${run.width}x${run.height}, scrolled ${run.scroll}, nothing behind the dim moves as the sheet opens and closes`, async ({ playwright, launchOptions, harness }) => {
+    const browser = await playwright.chromium.launch({ ...launchOptions, ignoreDefaultArgs: ['--hide-scrollbars'] });
+    try {
+      // a computer's context (the runner's own defaults are the iPhone's, whose scroll bars overlay the page)
+      const context = await browser.newContext({ baseURL: harness.url, viewport: { width: run.width, height: run.height }, isMobile: false, hasTouch: false, deviceScaleFactor: 1, userAgent: COMPUTER_UAS.safari_mac });
+      const page = await context.newPage();
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(String(e)));
+      const rest = async () => {
+        await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+        await page.evaluate(() => { for (const a of document.getAnimations()) a.finish(); });
+        await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+      };
+      await page.goto(TAGGED_QS);
+      await rest();
+      if (run.scroll) await page.evaluate((y) => window.scrollTo(0, y), run.scroll);
+      await rest();
+      expect(await page.evaluate(() => window.innerWidth - document.documentElement.clientWidth), 'the window draws a classic scroll bar').toBeGreaterThan(0);
+      const where = () => page.evaluate(() => ['.top', '.top-btn', 'h1', '.first-tile', '.lede h2', '.story-tile', '.cta'].map((sel) => {
+        const el = document.querySelector(sel);
+        if (!el.getClientRects().length) return `${sel} not shown`;
+        const r = el.getBoundingClientRect();
+        return `${sel} ${r.left.toFixed(1)}..${r.right.toFixed(1)} at ${r.top.toFixed(1)}`;
+      }));
+      const before = await where();
+      await page.evaluate((sel) => document.querySelector(sel).click(), run.button);
+      await sheetSettled(page);
+      expect(await where(), 'nothing behind the dim moved').toEqual(before);
+      const dim = await bbox(page.locator('.sheet-backdrop'));
+      expect([dim.left, dim.right], 'the dim covers the whole window').toEqual([0, run.width]);
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#sheet')).toBeHidden();
+      expect(await where(), 'nor as it closed').toEqual(before);
+      expect(errors, 'no uncaught exception in the page').toEqual([]);
+    } finally {
+      await browser.close();
+    }
+  });
+}

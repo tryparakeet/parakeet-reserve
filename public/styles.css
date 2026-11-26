@@ -1076,12 +1076,17 @@ html.android { --sheet-pad-bottom: max(24px, env(safe-area-inset-bottom, 0px)); 
 #sheet:not([data-picked="android"]) .if-android,
 #sheet[data-picked="android"] .if-reserve { display: none; }
 
+/* The scroll lock. A classic scroll bar (Windows) goes with it, so app.js keeps its width as --sb: the body
+   and the fixed bar give it back, and nothing behind the dim moves sideways */
 html.sheet-open body {
   position: fixed;
   right: 0;
   left: 0;
+  padding-right: var(--sb, 0px);
   overflow: hidden;
 }
+
+html.sheet-open .cta { right: var(--sb, 0px); }
 
 
 /* ---------- Privacy, Terms and Support (P-393, P-1440) ----------
@@ -1263,7 +1268,7 @@ body.legal .footer {
 
   /* The page's scroll lock (html.sheet-open) pins the body where it was; the header then holds the top by
      itself, and the page keeps its place under it. */
-  html.sheet-open .top { position: fixed; right: 0; left: 0; max-width: 1440px; margin: 0 auto; }
+  html.sheet-open .top { position: fixed; right: var(--sb, 0px); left: 0; max-width: 1440px; margin: 0 auto; }
   html.sheet-open .page { padding-top: calc(var(--top-h) + env(safe-area-inset-top, 0px)); }
 
   /* Privacy, Terms and Support: the same header with no Reserve, so it scrolls away with the page (P-1440) */
