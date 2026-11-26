@@ -1378,9 +1378,10 @@ body.legal .footer {
     font-size: var(--chip-fs);
   }
 
-  /* The headline and Umyt's sentence, centred (S-A-1440) */
+  /* The headline and Umyt's sentence, centred (S-A-1440), in the boards' 860 to 1000 measure inside the
+     side padding */
   .lede {
-    max-width: var(--lede-w);
+    max-width: calc(var(--lede-w) + 2 * var(--pad));
     margin: var(--lede-mt) auto 0;
     padding: 0 var(--pad);
   }

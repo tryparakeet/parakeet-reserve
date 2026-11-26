@@ -267,6 +267,23 @@ for (const vp of [{ width: 900, height: 768, rows: [440, 200] }, { width: 1024, 
   });
 }
 
+/* ---------- the headline under the first screen: the boards' measure ---------- */
+
+// The headline's box is the boards' 860 at 1024 wide and 1000 at 1440 (the page's own side padding around
+// it); at 900 the page holds it to 900 less that padding.
+for (const vp of [{ width: 900, height: 768, measure: 836 }, { width: 1024, height: 768, measure: 860 }, { width: 1440, height: 900, measure: 1000 }, { width: 1600, height: 900, measure: 1000 }]) {
+  test.describe(`the headline on a computer at ${vp.width}x${vp.height}`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height }, ...MAC });
+
+    test('it takes the boards\' measure, centred', async ({ page }) => {
+      await load(page);
+      const h2 = await bbox(page.locator('.lede h2'));
+      expect(h2.width, 'the headline\'s measure').toBeCloseTo(vp.measure, 1);
+      expect((h2.left + h2.right) / 2, 'centred').toBeCloseTo(vp.width / 2, 1);
+    });
+  });
+}
+
 /* ---------- the story on a computer: each line in the middle of its step, and the hold ---------- */
 
 // Each story line sits in the middle of its step, as the boards draw it, the fourth too, whether it takes
