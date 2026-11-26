@@ -381,6 +381,32 @@ test('terms.html: in development, launch prices, nothing charged, the address', 
   pageFooter(terms, 'terms');
 });
 
+// Terms, word for word: today's words with SITE-03 §2's two sentences on the Android addresses, as Privacy has
+// them, right after the launch email's sentence (SITE-04 §6.8 #4), and the day they went in. No headings.
+test('terms.html: word for word, with SITE-03 §2\'s two Android sentences after the launch email\'s', () => {
+  const main = /<main class="legal-main">([\s\S]*?)<\/main>/.exec(terms);
+  assert.ok(main, 'the main');
+  const plain = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const blocks = /<(h1|h2|p)>([\s\S]*?)<\/\1>/g;
+  assert.deepEqual([...main[1].matchAll(blocks)].map((m) => [m[1], plain(m[2])]), [
+    ['h1', 'Terms'],
+    ['p', 'Last updated: November 26, 2026.'],
+    ['p', 'Parakeet is an app in development. This page describes it before launch. Nothing is sold on this page. Nothing is charged: no payment is taken and no card is asked for.'],
+    ['p', 'The prices shown are launch prices: $29.99 a year for Yearly, $9.99 a month for Monthly. Reserving on this page holds two free weeks (14 days) on the yearly plan at launch, delivered as an App Store offer code in the launch email. The standard launch trial is 7 days. Monthly has no free weeks and starts at launch. Billing is through Apple; cancel anytime in Settings. Nothing is charged on this page. Reserving a plan here creates no subscription and no obligation; it only tells us which plan you would start with.'],
+    ['p', 'Payment is charged to your Apple Account when you confirm the purchase. With the free trial, the first charge comes when the trial ends, unless you cancel at least 24 hours before it ends.'],
+    ['p', 'Your subscription renews automatically at the end of each year or month, unless you cancel at least 24 hours before the period ends. The renewal is charged to your Apple Account in the 24 hours before the period ends.'],
+    ['p', 'You can cancel anytime in your iPhone’s Settings: tap your name, then Subscriptions. You keep Parakeet until the end of the period you paid for, or the end of your trial.'],
+    ['p', 'If you buy a plan during your free trial, the rest of the trial ends.'],
+    ['p', 'Refunds are handled by Apple, not by us. You can ask Apple for one at reportaproblem.apple.com.'],
+    ['p', 'An email address left on this page is used for one email, on launch day, and nothing else. An address left for Android is kept until 90 days after Parakeet is on Android, then deleted. It is used to tell you when it’s out, and maybe once before, to ask if you’d like to try it early, and nothing else. Replying to that email, or writing to the address below, removes it.'],
+    ['p', 'Grocery totals shown in the app are estimates from regular shelf prices and can differ from what a store charges on the day.'],
+    ['p', 'The page is provided as is. The launch date and the prices may change before launch. Questions: support.parakeet@gmail.com.']
+  ]);
+  assert.equal(main[1].replace(blocks, '').trim(), '', 'nothing else in the main');
+  assert.match(main[1], /Questions: <a href="mailto:support\.parakeet@gmail\.com">support\.parakeet@gmail\.com<\/a>\.<\/p>/, 'the address, a link');
+  assert.ok(textOf(privacy).includes('An address left for Android is kept until 90 days after Parakeet is on Android, then deleted. It is used to tell you when it’s out, and maybe once before, to ask if you’d like to try it early, and nothing else.'), 'the same two sentences as Privacy\'s');
+});
+
 test('support.html: word for word (the address, five questions and their answers), the one link to Apple, the questions at 20/700', () => {
   const main = /<main class="legal-main legal-questions">([\s\S]*?)<\/main>/.exec(support);
   assert.ok(main, 'the main');
