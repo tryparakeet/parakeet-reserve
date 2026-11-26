@@ -439,9 +439,9 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
   animation: band 1.8s 1s 3 both;
 }
 
-/* The computer's own parts: the header's Reserve, the white tile's button and line, the first screen's
-   stores. A phone never shows them (the bar and the stores further down are its own). */
-.top-btn, .first-btn, .first-note, .first-stores { display: none; }
+/* The computer's own parts: the header's FAQ and Reserve, the white tile's button and line, the first
+   screen's stores. A phone never shows them (the bar and the stores further down are its own). */
+.top-link, .top-btn, .first-btn, .first-note, .first-stores { display: none; }
 
 /* ---------- Below the first screen (Main) ---------- */
 
@@ -606,6 +606,77 @@ html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bo
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid var(--ink-10);
+}
+
+/* The questions (faq-open-393, faq-open-375, faq-end-393; DESIGN.md §4): a white tile above the footer,
+   labeled 'Questions'. Each question is the browser's own details and summary, so it opens with the script
+   off too and any number can be open: a row 56 tall with a hairline between rows, the question 17/24
+   semibold beside a 20 px plus in the 1.8 px line of the sheet's X, and the answer under it, 17/24 at
+   ink-70, kept 36 px clear of the plus. A question opens at once and its plus becomes a minus at once:
+   nothing in the tile has a transition or an animation (DESIGN.md §6), and the tile only rises once, as
+   the other tiles do. An Android phone hides the three questions about reserving and shows its own
+   answers (for-reserve and for-android, above). */
+.faq {
+  margin: 16px 12px 0;
+  padding: 24px var(--gutter) 8px;
+  border: 1px solid var(--ink-10);
+  border-radius: 28px;
+  background: var(--white);
+  scroll-margin-top: 16px;
+}
+
+.faq-list { margin-top: 4px; }
+
+.faq details + details { border-top: 1px solid var(--ink-10); }
+
+.faq summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  padding: 16px 0;
+  list-style: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.faq summary::-webkit-details-marker { display: none; }
+
+.faq-q {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 24px;
+  text-wrap: balance;
+}
+
+/* The plus: two lines drawn at the same width whatever its size (the minus is its level line alone) */
+.faq-plus {
+  display: block;
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.faq-plus path {
+  stroke: currentColor;
+  stroke-width: 1.8px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.faq details[open] .faq-v { opacity: 0; }
+
+/* The header's FAQ jumps to the tile while it still waits 14 px low to rise (styles.css's .wait), and a
+   jump lands the box as it is drawn, so for that jump the tile is drawn in its place: it lands 16 px under
+   the header, and its rise then starts from 14 px low as every tile's does. */
+.faq.wait:target { transform: none; }
+
+.faq details p {
+  padding: 0 36px 16px 0;
+  font-size: 17px;
+  line-height: 24px;
+  color: var(--ink-70);
 }
 
 /* ---------- The footer: a sky band with rounded top corners (Main) ----------
@@ -1245,6 +1316,14 @@ body.legal .footer {
     --fact-r: clamp(32px, 32px + 4 * var(--k), 36px);
     --fact-fs: clamp(17px, 17px + 2 * var(--k), 19px);
     --fact-lh: clamp(25px, 25px + 2 * var(--k), 27px);
+    --faq-px: clamp(40px, 40px + 16 * var(--k), 56px);
+    --faq-pb: clamp(8px, 8px + 4 * var(--k), 12px);
+    --faq-row: clamp(64px, 64px + 8 * var(--k), 72px);
+    --faq-row-py: clamp(18px, 18px + 2 * var(--k), 20px);
+    --faq-plus: clamp(24px, 24px + 4 * var(--k), 28px);
+    --faq-line: clamp(1.8px, 1.8px + 0.2 * var(--k), 2px);
+    --faq-a-w: clamp(600px, 600px + 40 * var(--k), 640px);
+    --faq-a-pb: clamp(20px, 20px + 4 * var(--k), 24px);
     --foot-pt: clamp(40px, 40px + 8 * var(--k), 48px);
     --foot-px: clamp(48px, 48px + 16 * var(--k), 64px);
     --foot-pb: clamp(48px, 48px + 8 * var(--k), 56px);
@@ -1268,13 +1347,30 @@ body.legal .footer {
     background: var(--cream);
   }
 
+  /* The header's FAQ (faq-head-1440): a text link, 15/600 in ink, in a 44 px target 8 px before Reserve.
+     It jumps to the questions at once (nothing sets scroll-behavior), and it isn't counted. */
+  .top-link {
+    display: flex;
+    flex: none;
+    align-items: center;
+    height: 44px;
+    margin-left: auto;
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
   .top-btn {
     position: relative;
     display: flex;
     flex: none;
     align-items: center;
     height: 40px;
-    margin-left: auto;
+    margin-left: 8px;
     padding: 0 18px;
     border: 0;
     border-radius: 999px;
@@ -1546,6 +1642,45 @@ body.legal .footer {
 
   .fact p {
     margin-top: 8px;
+    font-size: var(--fact-fs);
+    line-height: var(--fact-lh);
+  }
+
+  /* The questions (faq-open-1440, faq-open-1024): one column, the words scaled up. From the 1024 board to
+     the 1440 one, the tile's corners go 32 to 36 and its padding 32 40 8 to 40 56 12; the rows 64 to 72,
+     the question at the answer line's size (20/28 to 24/32), the plus 24 to 28 px in a 1.8 to 2 px line,
+     and the answer at Prices and Recipes' size (17/25 to 19/27), kept to 600 to 640 wide. The header's
+     FAQ lands it 16 px under the sticky header. */
+  .faq {
+    margin: 16px var(--pad) 0;
+    padding: var(--fact-pad) var(--faq-px) var(--faq-pb);
+    border-radius: var(--fact-r);
+    scroll-margin-top: calc(var(--top-h) + env(safe-area-inset-top, 0px) + 16px);
+  }
+
+  .faq-list { margin-top: 8px; }
+
+  .faq summary {
+    min-height: var(--faq-row);
+    padding: var(--faq-row-py) 0;
+  }
+
+  .faq-q {
+    font-size: var(--answer);
+    line-height: var(--answer-lh);
+    letter-spacing: -0.01em;
+  }
+
+  .faq-plus {
+    width: var(--faq-plus);
+    height: var(--faq-plus);
+  }
+
+  .faq-plus path { stroke-width: var(--faq-line); }
+
+  .faq details p {
+    max-width: var(--faq-a-w);
+    padding: 0 0 var(--faq-a-pb);
     font-size: var(--fact-fs);
     line-height: var(--fact-lh);
   }

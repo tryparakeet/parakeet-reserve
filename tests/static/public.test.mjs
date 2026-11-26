@@ -189,7 +189,7 @@ test('index.html pictures: no clip; the bird and the wordmark inline (currentCol
   assert.equal(count(/\sid="pk-word"/g, index), 1);
   assert.equal(count(/<use href="#pk-mark"\/>/g, index), 1, 'the bird once: the footer\'s whole white bird');
   assert.equal(count(/<use href="#pk-word"\/>/g, index), 2, 'the wordmark twice: the header and the footer');
-  assert.match(index, /<header class="top">\s*<img class="logo-icon" [^>]*>\s*<svg class="logo-word" role="img" aria-label="Parakeet" focusable="false"><use href="#pk-word"\/><\/svg>\s*<button class="top-btn for-reserve" type="button" data-tap="reserve">Reserve 2 free weeks<\/button>\s*<button class="top-btn for-android" type="button" data-tap="android">Email me when it’s on Android<\/button>\s*<\/header>/, 'the header: the icon beside the wordmark, named Parakeet, then the computer\'s small Reserve (Android\'s button on Android)');
+  assert.match(index, /<header class="top">\s*<img class="logo-icon" [^>]*>\s*<svg class="logo-word" role="img" aria-label="Parakeet" focusable="false"><use href="#pk-word"\/><\/svg>\s*<a class="top-link" href="#faq">FAQ<\/a>\s*<button class="top-btn for-reserve" type="button" data-tap="reserve">Reserve 2 free weeks<\/button>\s*<button class="top-btn for-android" type="button" data-tap="android">Email me when it’s on Android<\/button>\s*<\/header>/, 'the header: the icon beside the wordmark, named Parakeet, then the computer\'s FAQ and its small Reserve (Android\'s button on Android)');
   assert.match(index, /<div class="giant" aria-hidden="true">\s*<svg class="giant-bird" focusable="false"><use href="#pk-mark"\/><\/svg>\s*<svg class="giant-word" focusable="false"><use href="#pk-word"\/><\/svg>\s*<\/div>/, 'the footer: the bird beside the giant wordmark, aria-hidden');
   const imgs = index.match(/<img\b[^>]*>/gi) || [];
   assert.equal(imgs.length, 12, 'the icon, three bezels, and the phones\' eight screens');
@@ -308,7 +308,7 @@ test('index.html copy, verbatim', () => {
   assert.match(index, /<a href="\/terms">Terms<\/a>/);
   assert.match(index, /<a href="\/support">Support<\/a>/);
   pageFooter(index, 'index');
-  assert.equal(count(/\sdata-reveal\b/g, index), 6, 'the headline, the story\'s tile, the price, the stores, Prices and Recipes, and the footer rise in once');
+  assert.equal(count(/\sdata-reveal\b/g, index), 7, 'the headline, the story\'s tile, the price, the stores, Prices and Recipes, the questions and the footer rise in once');
   assert.equal(count(/\sdata-reveal="rise"/g, index), 2, 'the two tiles with a phone only rise');
   assert.equal(count(/\bRestline\b/g, index) + count(/\brestline\b/g, index), 0);
 });
@@ -699,4 +699,76 @@ test('styles.css and app.js: only transform and opacity move (SITE-04 §6.3, DES
   // and the script moves nothing by itself: no Web Animations, no transition or animation set inline
   assert.doesNotMatch(app, /\.animate\(/, 'app.js starts no Web Animation');
   assert.doesNotMatch(app, /\.style\.(?:webkit)?(?:transition|animation)\b|setProperty\(\s*['"](?:-webkit-)?(?:transition|animation)/i, 'app.js sets no transition or animation inline');
+});
+
+// The questions above the footer (SITE-04 §6.10; DESIGN.md §4, §6 and §8): Umyt's words, word for word, the
+// iPhone's and Android's split by for-reserve and for-android, the browser's own details and summary with
+// nothing that moves, and the computer header's FAQ link, which jumps at once and isn't counted.
+const FAQ_IPHONE = [
+  ['When does Parakeet launch?', 'There’s no date yet. If you reserve, we’ll send you one email on launch day.'],
+  ['Do you charge anything today?', 'No. Reserve the yearly plan now and you’ll have 2 free weeks at launch.'],
+  ['What does it cost after that?', 'It’s $29.99 a year, or $9.99 a month. Those are the prices at launch.'],
+  ['How do I cancel?', 'Cancel in your iPhone’s Settings, at least a day before your free weeks end. The app will remind you 2 days before, if you turn on its reminders.'],
+  ['Does it fit my family?', 'You pick your budget, how many people and which nights, and some nights can be vegetarian.'],
+  ['Is it on Android?', 'Parakeet is iPhone only for now. We plan to bring it to Android. On an Android phone, you can leave your email on this page, and we’ll tell you when it’s there.'],
+  ['What do you do with my email?', 'We send you one email, on launch day, and nothing else. We never share or sell it, and we delete it 90 days after launch.']
+];
+const FAQ_ANDROID = {
+  0: 'There’s no date yet.',
+  5: 'Parakeet is iPhone only for now. We plan to bring it to Android. Tap “Email me when it’s on Android” and we’ll tell you when it’s there.',
+  6: 'We’ll email you when it’s on Android, and maybe once before, to ask if you’d like to try it early, and never for anything else. We never share or sell it, and we delete it 90 days after it’s on Android.'
+};
+const FAQ_RESERVE_ONLY = [1, 2, 3];   // today's charge, the cost, cancelling: hidden on an Android phone
+
+test('index.html: the questions, word for word, between Prices and Recipes and the footer', () => {
+  const start = index.indexOf('<section class="faq" id="faq" aria-labelledby="faq-title" data-reveal>');
+  assert.ok(start > index.indexOf('<div class="facts" data-reveal>'), 'the questions come after Prices and Recipes');
+  const end = index.indexOf('</section>', start);
+  assert.ok(end > start && end < index.indexOf('</main>') && end < index.indexOf('<footer'), 'and before the footer, inside the page\'s main');
+  const faq = index.slice(start, end);
+  assert.match(faq, /^<section[^>]*>\s*<h2 class="label" id="faq-title">Questions<\/h2>\s*<div class="faq-list">/, 'labeled Questions, as the other tiles are labeled');
+
+  const plus = '<svg class="faq-plus" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path class="faq-v" d="M12 5v14"/></svg>';
+  const details = [...faq.matchAll(/<details([^>]*)>([\s\S]*?)<\/details>/g)];
+  assert.equal(details.length, 7, 'seven questions');
+  details.forEach(([, attrs, inner], i) => {
+    const [question, answer] = FAQ_IPHONE[i];
+    assert.equal(attrs, FAQ_RESERVE_ONLY.includes(i) ? ' class="for-reserve"' : '', `${question}: ${FAQ_RESERVE_ONLY.includes(i) ? 'hidden on Android' : 'on every phone'}; it starts closed, and any number can be open (no open, no name)`);
+    assert.ok(inner.includes(`<summary><span class="faq-q">${question}</span>${plus}</summary>`), `${question}: the summary holds the question and the plus, hidden from VoiceOver`);
+    const ps = [...inner.matchAll(/<p( class="[^"]+")?>([^<]*)<\/p>/g)].map((m) => [m[1] || '', m[2]]);
+    if (i in FAQ_ANDROID) {
+      assert.deepEqual(ps, [[' class="for-reserve"', answer], [' class="for-android"', FAQ_ANDROID[i]]], `${question}: the iPhone's answer, then Android's`);
+    } else {
+      assert.deepEqual(ps, [['', answer]], `${question}: its answer`);
+    }
+  });
+  assert.equal(count(/<details\b/g, index), 7, 'no other details on the page');
+});
+
+test('the questions: nothing moves, and the header\'s FAQ jumps at once and isn\'t counted', () => {
+  const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules = [...cssNoComments.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ sel: m[1].trim(), body: m[2] }));
+  const faqRules = rules.filter((r) => /\.faq|details|summary/.test(r.sel));
+  assert.ok(faqRules.length >= 10, 'the questions\' rules');
+  for (const r of faqRules) assert.doesNotMatch(r.body, /\b(transition|animation)\b/, `${r.sel}: no transition or animation`);
+  assert.doesNotMatch(cssNoComments, /interpolate-size|::details-content/, 'no opening animation');
+  assert.doesNotMatch(cssNoComments, /(?<![\w-])scroll-behavior/, 'no smooth scrolling: the FAQ link jumps (the sheet\'s overscroll-behavior is another thing)');
+  assert.doesNotMatch(app, /scroll-?behavior|behavior:\s*['"]smooth/i, 'app.js scrolls nothing smoothly');
+  assert.doesNotMatch(app, /\bfaq\b|<details|\bdetails\b|summary/i, 'app.js leaves the questions to the browser');
+
+  const body = (sel) => rules.filter((r) => r.sel === sel).map((r) => r.body).join(';');
+  assert.match(body('.faq summary'), /list-style: none;/, 'the summary has no marker');
+  assert.match(body('.faq summary::-webkit-details-marker'), /display: none;/, 'nor Safari\'s');
+  assert.match(body('.faq summary'), /min-height: 56px;/, 'a phone\'s rows are 56 tall');
+  assert.match(body('.faq-q'), /text-wrap: balance;/, 'a question never ends on one word');
+  assert.match(body('.faq details[open] .faq-v'), /opacity: 0;/, 'open, the plus is a minus');
+  assert.match(body('.faq-plus path'), /stroke-width: 1\.8px;[\s\S]*vector-effect: non-scaling-stroke;/, 'the plus in the 1.8 px line of the sheet\'s X');
+  assert.match(cssNoComments, /--faq-line: clamp\(1\.8px, 1\.8px \+ 0\.2 \* var\(--k\), 2px\);/, '2 px at 28');
+  assert.match(cssNoComments, /\.faq \{[^}]*scroll-margin-top: calc\(var\(--top-h\) \+ env\(safe-area-inset-top, 0px\) \+ 16px\);/, 'the link lands the questions 16 px under the sticky header');
+
+  assert.equal(count(/href="#faq"/g, index), 1, 'one link to the questions');
+  assert.match(index, /<a class="top-link" href="#faq">FAQ<\/a>/, 'the header\'s FAQ, not counted (no data-tap)');
+  assert.match(body('.top-link'), /height: 44px;/, 'its target is 44 px tall');
+  assert.match(cssNoComments, /\.top-link, \.top-btn, \.first-btn, \.first-note, \.first-stores \{ display: none; \}/, 'a phone\'s header has no FAQ');
+  for (const page of [privacy, terms, support]) assert.doesNotMatch(page, /#faq|top-link/, 'the legal pages\' header has no FAQ');
 });

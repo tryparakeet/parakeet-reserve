@@ -5,7 +5,7 @@
 // short for the words, a 200 px phone and the bar, the bar sits in the page under the first screen. An
 // upright iPad's phone stops at 343 x 700. Then the motion (DESIGN.md §6): the load rise (plain CSS, so it
 // plays with the script off too), the answer line's one 5.8 s pass with the phone's screens moving with it,
-// the six parts below the first screen that rise once, Reduce Motion's still end states and the script
+// the seven parts below the first screen that rise once, Reduce Motion's still end states and the script
 // off. Then the pictures' weight, the bar while the page scrolls, the sheet under a keyboard-sized window,
 // and closing the sheet with and without Reduce Motion.
 //
@@ -432,7 +432,7 @@ for (const vp of TALL) {
     expect(gap, 'more than the 12 px a phone leaves').toBeGreaterThan(12.5);
     const under = await page.evaluate(({ x, y }) => {
       const el = document.elementFromPoint(x, y);
-      return { inPart: !!el.closest('.first-tile, .lede, .story, .tile-yours, .stores, .facts, .footer, .cta'), bg: getComputedStyle(document.body).backgroundColor };
+      return { inPart: !!el.closest('.first-tile, .lede, .story, .tile-yours, .stores, .facts, .faq, .footer, .cta'), bg: getComputedStyle(document.body).backgroundColor };
     }, { x: vp.width / 2, y: m.tile.bottom + gap / 2 });
     expect(under.inPart, 'nothing but the page between the tile and the bar').toBe(false);
     expect(under.bg).toBe(CREAM);
@@ -509,9 +509,9 @@ test('the answer line: one 5.8 s pass from 0.3 s through its three answers (abou
   expect(mid.slice(3), 'the screens fade with them').toEqual(mid.slice(0, 3));
 });
 
-/* ---------- the six parts below the first screen rise once ---------- */
+/* ---------- the seven parts below the first screen rise once ---------- */
 
-const REVEALS = ['lede', 'story-tile', 'tile-yours', 'stores', 'facts', 'footer'];
+const REVEALS = ['lede', 'story-tile', 'tile-yours', 'stores', 'facts', 'faq', 'footer'];
 
 async function revealState(page) {
   return page.evaluate(() => [...document.querySelectorAll('[data-reveal]')].map((el) => ({
@@ -533,18 +533,18 @@ async function scrollThrough(page) {
   }
 }
 
-test('the six parts below the first screen: the headline, the story\'s tile, the price\'s tile, the stores, Prices and Recipes, the footer', async ({ page }) => {
+test('the seven parts below the first screen: the headline, the story\'s tile, the price\'s tile, the stores, Prices and Recipes, the questions, the footer', async ({ page }) => {
   await page.goto(TAGGED_QS);
   const parts = await revealState(page);
   expect(parts.map((p) => p.part)).toEqual(REVEALS);
   expect(parts.filter((p) => p.kind === 'rise').map((p) => p.part), 'the tiles with a phone only rise').toEqual(['story-tile', 'tile-yours']);
-  expect(parts.filter((p) => p.kind === '').map((p) => p.part)).toEqual(['lede', 'stores', 'facts', 'footer']);
+  expect(parts.filter((p) => p.kind === '').map((p) => p.part)).toEqual(['lede', 'stores', 'facts', 'faq', 'footer']);
 });
 
 test('on a phone the parts below the bar wait, then rise 14 px once, 500 ms on the curve, the first time they show above it; the tiles with a phone don\'t fade', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await load(page, { width: 393, height: 852 });
-  const below = ['lede', 'story-tile', 'tile-yours', 'stores', 'facts', 'footer'];
+  const below = ['lede', 'story-tile', 'tile-yours', 'stores', 'facts', 'faq', 'footer'];
   const before = await revealState(page);
   for (const p of before.filter((x) => below.includes(x.part))) {
     expect(p.wait, `${p.part} waits`).toBe(true);
@@ -607,7 +607,7 @@ test.describe('on a computer', () => {
   test('the parts below the first screen wait, then rise 14 px once as they come into view; the headline fades in too; the stores sit on the first screen', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await load(page);
-    const below = ['lede', 'story-tile', 'tile-yours', 'facts', 'footer'];
+    const below = ['lede', 'story-tile', 'tile-yours', 'facts', 'faq', 'footer'];
     const before = await revealState(page);
     expect(before.filter((p) => !p.shown).map((p) => p.part), 'the phone\'s stores tile isn\'t shown').toEqual(['stores']);
     for (const p of before.filter((x) => below.includes(x.part))) {
@@ -764,7 +764,7 @@ test('Reduce Motion: nothing moves; the last answer and the total show, the pass
 test.describe('the script off', () => {
   test.use({ javaScriptEnabled: false });
 
-  test('everything shows: the six parts, every story line in ink, the nights\' screen, the price\'s screen and the last answer', async ({ page }) => {
+  test('everything shows: the seven parts, every story line in ink, the nights\' screen, the price\'s screen and the last answer', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(TAGGED_QS);
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
@@ -775,7 +775,7 @@ test.describe('the script off', () => {
       expect(p.opacity, `${p.part} opacity`).toBe('1');
       expect(p.transform, `${p.part} in place`).toBe('none');
     }
-    for (const sel of ['.lede', '.story-tile', '.tile-yours', '.stores', '.facts', '.footer']) await expect(page.locator(sel)).toBeVisible();
+    for (const sel of ['.lede', '.story-tile', '.tile-yours', '.stores', '.facts', '.faq', '.footer']) await expect(page.locator(sel)).toBeVisible();
     const story = await page.evaluate(() => ({
       focus: document.querySelector('.story').classList.contains('focus'),
       lines: [...document.querySelectorAll('.story-line')].map((el) => getComputedStyle(el).opacity),

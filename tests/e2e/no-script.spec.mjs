@@ -16,6 +16,7 @@ const BOTH = [
   '.story-tile', '.story .shot.on', '.story-tile .bezel', '.story-line',
   '.tile-yours', '.yours-line', '.tile-yours .shot', '.tile-yours .bezel',
   '.facts', '.fact', '.fact .label', '.fact p',
+  '.faq', '.faq .label', '.faq summary', '.faq-q', '.faq-plus',
   '.footer', '.footer > p', '.foot-links a', '.giant', '.giant-bird', '.giant-word'
 ];
 
@@ -24,15 +25,15 @@ const LAYOUTS = [
     name: 'a phone at 393x852',
     use: { viewport: { width: 393, height: 852 } },
     parts: [...BOTH, '.cta', '.cta .btn.for-reserve', '.cta-note', '.stores', '.stores .label', '.stores .chip'],
-    hidden: ['.top-btn', '.first-btn', '.first-note', '.first-stores', '.for-android'],
-    order: ['.first-tile', '.lede', '.story', '.tile-yours', '.stores', '.facts', '.footer']
+    hidden: ['.top-link', '.top-btn', '.first-btn', '.first-note', '.first-stores', '.for-android'],
+    order: ['.first-tile', '.lede', '.story', '.tile-yours', '.stores', '.facts', '.faq', '.footer']
   },
   {
     name: 'a computer at 1440x900',
     use: { viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: false, userAgent: COMPUTER_UAS.safari_mac },
-    parts: [...BOTH, '.top-btn.for-reserve', '.first-words', '.first-btn.for-reserve', '.first-note', '.first-stores', '.first-stores .label', '.first-stores .chip'],
+    parts: [...BOTH, '.top-link', '.top-btn.for-reserve', '.first-words', '.first-btn.for-reserve', '.first-note', '.first-stores', '.first-stores .label', '.first-stores .chip'],
     hidden: ['.cta', '.stores', '.for-android'],
-    order: ['.first', '.lede', '.story', '.tile-yours', '.facts', '.footer']
+    order: ['.first', '.lede', '.story', '.tile-yours', '.facts', '.faq', '.footer']
   }
 ];
 
@@ -91,7 +92,7 @@ for (const layout of LAYOUTS) {
         waiting: document.querySelectorAll('.wait, .in, .band, [data-reveal].wait, [data-reveal].in').length,
         reveals: [...document.querySelectorAll('[data-reveal]')].map((el) => el.classList[0])
       }));
-      expect(state).toEqual({ html: '', focus: false, waiting: 0, reveals: ['lede', 'story-tile', 'tile-yours', 'stores', 'facts', 'footer'] });
+      expect(state).toEqual({ html: '', focus: false, waiting: 0, reveals: ['lede', 'story-tile', 'tile-yours', 'stores', 'facts', 'faq', 'footer'] });
 
       // every part, at the top and after scrolling to the end
       for (const at of ['top', 'end']) {
