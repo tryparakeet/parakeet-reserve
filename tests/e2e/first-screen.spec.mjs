@@ -225,6 +225,7 @@ async function sizesOf(page) {
       answer: cs('.answer-line.answer-3').fontSize,
       answerLh: cs('.answer-line.answer-3').lineHeight,
       bar: [cta.paddingTop, cta.paddingRight, cta.paddingBottom, cta.paddingLeft],
+      chips: [...document.querySelectorAll('.chip')].filter((c) => c.getClientRects().length).map((c) => c.getBoundingClientRect().height),
       androidLine: [cs('.first-words .android-line').fontSize, cs('.first-words .android-line').lineHeight, cs('.first-words .android-line').fontWeight, cs('.first-words .android-line').color]
     };
   });
@@ -245,6 +246,8 @@ function expectSet({ m, css }, s) {
   expect(css.answerLh).toBe(`${s.answerLh}px`);
   expect(m.answer.top - m.h1.bottom, `${s.board}: the answer line's margin`).toBeCloseTo(s.answerMt, 1);
   expect(m.phone.top - m.tile.top, `${s.board}: the tile's padding over the phone`).toBeCloseTo(s.tilePad, 1);
+  expect(css.chips, 'the stores\' twelve chips').toHaveLength(12);
+  for (const h of css.chips) expect(h, 'a chip is 34 tall on a phone').toBeCloseTo(34, 1);
 }
 
 for (const s of SETS) {

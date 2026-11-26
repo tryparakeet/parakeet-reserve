@@ -10,6 +10,8 @@
 //   with its lines, the focus line still working;
 // - an upright iPad stops the phone at 343 x 700;
 // - in a browser without svh units, the story's tile keeps its height and its phone;
+// - on a computer the header (72, its Reserve 40 with a 44 px target), the logo, the H1, the answer line and
+//   the chips take the 1024 boards' numbers up to 1024 wide and the 1440 ones at 1440, in a straight line;
 // - above 1440 wide the page is a centred 1440 column;
 // - the footer's giant row (the bird beside the wordmark) never overflows its row at 320 wide, nor at
 //   196 (a 393 phone at 200% zoom).
@@ -387,6 +389,68 @@ for (const vp of [{ width: 900, height: 768, rows: [440, 200] }, { width: 1024, 
       expect(words.height, 'the white tile').toBeCloseTo(vp.rows[0], 1);
       expect(stores.height, `the stores' tile, its chips in ${chipRows} rows`).toBeCloseTo(vp.rows[1], 1);
       expect(tile.height, 'the phone\'s tile spans both rows').toBeCloseTo(vp.rows[0] + 16 + vp.rows[1], 1);
+    });
+  });
+}
+
+/* ---------- the computer's header, logo, words and chips: the 1024 boards' numbers to the 1440 ones ---------- */
+
+// The header is 72 tall, its Reserve drawn 40 tall at 15/600 with padding 0 18 and a 44 px target from its
+// ::after; the logo is the 34 px icon, a 10 px gap and the wordmark as tall as the boards' 21 px word's
+// capitals. The H1, the answer line and the stores' chips go in a straight line from F-1024's numbers at
+// 1024 wide to C-1440's at 1440 (§6.8 #2 and #7), so 1232 is half way, and the 1024 numbers hold down to
+// 900. None of these depends on the font.
+const lerp = (width, at1024, at1440) => at1024 + (at1440 - at1024) * Math.min(1, Math.max(0, (width - 1024) / 416));
+
+for (const vp of [{ width: 900, height: 700 }, { width: 1024, height: 768 }, { width: 1232, height: 900 }, { width: 1440, height: 900 }]) {
+  test.describe(`the computer's sizes at ${vp.width}x${vp.height}`, () => {
+    test.use({ viewport: vp, ...MAC });
+
+    test('the header, its Reserve and the logo; the H1, the answer line and the chips, linear from 1024 to 1440', async ({ page }) => {
+      await load(page);
+      const got = await page.evaluate(() => {
+        const q = (s) => document.querySelector(s);
+        const r = (s) => q(s).getBoundingClientRect();
+        const cs = (s, pseudo) => getComputedStyle(q(s), pseudo);
+        const btn = cs('.top [data-tap="reserve"]');
+        const chips = [...document.querySelectorAll('.first-stores .chip')].map((c) => {
+          const ccs = getComputedStyle(c);
+          return [c.getBoundingClientRect().height, parseFloat(ccs.fontSize), ccs.fontWeight, parseFloat(ccs.paddingLeft), parseFloat(ccs.paddingRight)];
+        });
+        return {
+          top: r('.top').height,
+          btn: {
+            height: r('.top [data-tap="reserve"]').height,
+            font: [btn.fontSize, btn.fontWeight],
+            padding: [btn.paddingTop, btn.paddingRight, btn.paddingBottom, btn.paddingLeft],
+            target: cs('.top [data-tap="reserve"]', '::after').height
+          },
+          icon: [r('.top .logo-icon').width, r('.top .logo-icon').height],
+          word: r('.top .logo-word').height,
+          gap: r('.top .logo-word').left - r('.top .logo-icon').right,
+          h1: parseFloat(cs('h1').fontSize),
+          answer: [parseFloat(cs('.answer-line.answer-3').fontSize), parseFloat(cs('.answer-line.answer-3').lineHeight)],
+          chips
+        };
+      });
+      expect(got.top, 'the header is 72 tall').toBeCloseTo(72, 1);
+      expect(got.btn.height, 'Reserve is drawn 40 tall').toBeCloseTo(40, 1);
+      expect(got.btn.font, 'at 15/600').toEqual(['15px', '600']);
+      expect(got.btn.padding, 'with padding 0 18').toEqual(['0px', '18px', '0px', '18px']);
+      expect(got.btn.target, 'its target 44 tall, from its ::after').toBe('44px');
+      expect(got.icon, 'the icon at 34').toEqual([34, 34]);
+      expect(got.word, 'the wordmark as tall as the boards\' 21 px word\'s capitals').toBeCloseTo(0.736 * 21, 1);
+      expect(got.gap, 'a 10 px gap beside the icon').toBeCloseTo(10, 1);
+      expect(got.h1, 'the H1, 56 to 72').toBeCloseTo(lerp(vp.width, 56, 72), 1);
+      expect(got.answer[0], 'the answer line, 20 to 24').toBeCloseTo(lerp(vp.width, 20, 24), 1);
+      expect(got.answer[1], 'on a line of 28 to 32').toBeCloseTo(lerp(vp.width, 28, 32), 1);
+      expect(got.chips).toHaveLength(12);
+      for (const [height, size, weight, left, right] of got.chips) {
+        expect(height, 'a chip, 32 to 36 tall').toBeCloseTo(lerp(vp.width, 32, 36), 1);
+        expect(size, 'at 14 to 15').toBeCloseTo(lerp(vp.width, 14, 15), 1);
+        expect(weight, 'and 500').toBe('500');
+        expect([left, right].map((p) => Math.round(p * 100) / 100), 'with padding 13 to 16').toEqual(Array(2).fill(Math.round(lerp(vp.width, 13, 16) * 100) / 100));
+      }
     });
   });
 }
