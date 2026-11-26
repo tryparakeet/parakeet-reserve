@@ -67,6 +67,12 @@
   }
 }
 
+/* Under 360 wide the line under the button takes a third 18 px line, so the bar's fallback height counts
+   it: with the script off the tile still ends 12 px above the bar (app.js writes the measured height) */
+@media (max-width: 359.98px) {
+  :root { --cta-h: calc(133px + var(--bar-pb)); }
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body { background-color: var(--cream); }

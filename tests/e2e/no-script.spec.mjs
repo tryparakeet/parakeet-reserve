@@ -126,3 +126,29 @@ for (const layout of LAYOUTS) {
     });
   });
 }
+
+/* ---------- a phone under 360 wide, the script off: the bar's own height ---------- */
+
+// Under 360 wide the line under the button takes a third line (at 320 it does in any likely face), and with
+// the script off nothing measures the bar, so its fallback height has to count that line: otherwise the
+// pinned bar covers the bottom of the phone's tile. Where the line keeps two, the gap is only wider.
+for (const width of [320, 340, 356]) {
+  test.describe(`the script off, a phone at ${width}x640`, () => {
+    test.use({ viewport: { width, height: 640 }, javaScriptEnabled: false });
+
+    test('the bar is pinned and the phone\'s tile ends 12 px or more above it', async ({ page }) => {
+      await page.goto(TAGGED_QS);
+      await expect(page.locator('h1')).toHaveText('What’s for dinner this week?');
+      await page.evaluate(() => { for (const a of document.getAnimations()) a.finish(); });
+      const got = await page.evaluate(() => {
+        const r = (sel) => document.querySelector(sel).getBoundingClientRect();
+        return { tile: r('.first-tile').bottom, phone: r('.first-tile .phone').height, bar: r('.cta').top, barBottom: r('.cta').bottom, lines: Math.round(r('.cta-note').height / 18), position: getComputedStyle(document.querySelector('.cta')).position };
+      });
+      expect(got.position, 'the bar is pinned').toBe('fixed');
+      expect(got.barBottom).toBeCloseTo(640, 0);
+      expect(got.bar - got.tile, `the tile ends 12 or more above the bar (its line in ${got.lines} lines)`).toBeGreaterThanOrEqual(11.5);
+      if (got.lines === 3) expect(got.bar - got.tile, 'with three lines, exactly the 12').toBeCloseTo(12, 0);
+      expect(got.phone, 'the bezel at least 200 px').toBeGreaterThanOrEqual(199.99);
+    });
+  });
+}
