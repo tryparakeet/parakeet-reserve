@@ -160,7 +160,7 @@ test('index.html pictures: no clip; the bird and the wordmark inline (currentCol
   assert.equal(count(/\sid="pk-word"/g, index), 1);
   assert.equal(count(/<use href="#pk-mark"\/>/g, index), 1, 'the bird once: the footer\'s whole white bird');
   assert.equal(count(/<use href="#pk-word"\/>/g, index), 2, 'the wordmark twice: the header and the footer');
-  assert.match(index, /<header class="top">\s*<img class="logo-icon" [^>]*>\s*<svg class="logo-word" role="img" aria-label="Parakeet" focusable="false"><use href="#pk-word"\/><\/svg>\s*<\/header>/, 'the header: the icon beside the wordmark, named Parakeet');
+  assert.match(index, /<header class="top">\s*<img class="logo-icon" [^>]*>\s*<svg class="logo-word" role="img" aria-label="Parakeet" focusable="false"><use href="#pk-word"\/><\/svg>\s*<button class="top-btn for-reserve" type="button" data-tap="reserve">Reserve 2 free weeks<\/button>\s*<button class="top-btn for-android" type="button" data-tap="android">Email me when it’s on Android<\/button>\s*<\/header>/, 'the header: the icon beside the wordmark, named Parakeet, then the computer\'s small Reserve (Android\'s button on Android)');
   assert.match(index, /<div class="giant" aria-hidden="true">\s*<svg class="giant-bird" focusable="false"><use href="#pk-mark"\/><\/svg>\s*<svg class="giant-word" focusable="false"><use href="#pk-word"\/><\/svg>\s*<\/div>/, 'the footer: the bird beside the giant wordmark, aria-hidden');
   const imgs = index.match(/<img\b[^>]*>/gi) || [];
   assert.equal(imgs.length, 12, 'the icon, three bezels, and the phones\' eight screens');
@@ -252,6 +252,9 @@ test('index.html copy, verbatim', () => {
   assert.match(index, /<h1>What’s for dinner this week\?<\/h1>/);
   assert.match(index, /<h2>Planning dinners for the whole week\?<\/h2>/);
   assert.match(index, /<ul class="chips">(<li class="chip">[^<]+<\/li>){12}<\/ul>/, 'the twelve stores as chips, nothing else in the list');
+  assert.equal(count(/<h2 class="label">Stores<\/h2>\s*<ul class="chips">(<li class="chip">[^<]+<\/li>){12}<\/ul>/g, index), 2, 'the stores twice: on a computer\'s first screen and, on a phone, further down');
+  assert.match(index, /<div class="first-stores">\s*<h2 class="label">Stores<\/h2>/, 'the computer\'s stores tile');
+  assert.match(index, /<p class="android-line for-android">[^<]*<\/p>\s*<button class="btn first-btn for-reserve" type="button" data-tap="reserve">Reserve 2 free weeks<\/button>\s*<button class="btn first-btn for-android" type="button" data-tap="android">Email me when it’s on Android<\/button>\s*<p class="first-note for-reserve">We don’t charge anything today\. Reserve the yearly plan now and you will have 2 free weeks at launch\.<\/p>\s*<\/div>/, 'the computer\'s white tile: its Reserve (Android\'s button on Android) and the reserve line');
   assert.equal(count(/<p class="story-line">/g, index), 4, 'the story\'s four lines');
   assert.match(index, /<p class="android-line for-android">Parakeet is iPhone only for now\. We plan to bring it to Android\.<\/p>/, 'Android\'s line, under the answer line');
   assert.match(index, /<button class="btn-final for-android" type="button" data-tap="android">Email me when it’s on Android<\/button>/, 'Android\'s button, in the bar');
