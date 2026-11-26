@@ -18,8 +18,8 @@
 # (or, for one fixed size, x descriptors: icon-v1-30.webp 1x, icon-v1-60.webp 2x, icon-v1-90.webp 3x).
 # Each is the area average of the big icon (no ringing, so every pixel stays between its two colours), its
 # colours snapped to 32 steps between the icon's two colours (both kept exactly: the sky is #4FA8E8), then
-# lossless WebP: 0.2-0.6 KB each, about half a lossless PNG. An icon with more than two colours skips the
-# snapping. The corners stay square in the file; the page rounds them with CSS (border-radius: 22.37%).
+# lossless WebP: 0.2-0.6 KB each, two thirds of a palette PNG of the same pixels and two fifths of an RGB one.
+# An icon with more than two colours skips the snapping. The corners stay square in the file; the page rounds them with CSS (border-radius: 22.37%).
 #
 # The screens (SITE-04 §6.7): the nights question, the budget question, the week, the list, the total card
 # and a list row priced "yours", named nights, budget, week, list, total and yours. Each is made 420 and 640
@@ -33,7 +33,7 @@
 #     and "Placeholder" under it, in Inter at generation time only (ffmpeg drawtext; no font ships). They are
 #     drawn as 1179 x 2556 PNGs (393 x 852 at 3x) and then go through the stills mode below, so making them
 #     tests that mode. Their names carry "placeholder" instead of a version: they never ship (the PR waits
-#     for build 2), and the static test that no placeholder is referenced matches /media/screen-*-placeholder-*.
+#     for build 2), and the later static test that no placeholder is referenced can match that word.
 #
 #   stills: build 2's real screens. Claude Code on Umyt's Mac commits them to parakeet-app's
 #     docs/screens/site/ as PNGs at 393 x 852 points; ask for the simulator's own 1179 x 2556 pixels (the
