@@ -1051,6 +1051,11 @@ body.legal .footer {
     --fact-r: clamp(32px, 32px + 4 * var(--k), 36px);
     --fact-fs: clamp(17px, 17px + 2 * var(--k), 19px);
     --fact-lh: clamp(25px, 25px + 2 * var(--k), 27px);
+    --foot-pt: clamp(40px, 40px + 8 * var(--k), 48px);
+    --foot-px: clamp(48px, 48px + 16 * var(--k), 64px);
+    --foot-pb: clamp(48px, 48px + 8 * var(--k), 56px);
+    --giant-mt: clamp(44px, 44px + 12 * var(--k), 56px);
+    --giant-gap: clamp(28px, 28px + 8 * var(--k), 36px);
   }
 
   /* The page: a centred column up to 1440, clear of a phone's side insets when it lies on its side */
@@ -1322,6 +1327,54 @@ body.legal .footer {
     margin-top: 8px;
     font-size: var(--fact-fs);
     line-height: var(--fact-lh);
+  }
+
+  /* The footer (C-page-1440): the first line, the address and the © on the left, the links on the right,
+     14/20; under them the giant row, the bird at min(296px, 20.5vw) beside the wordmark as tall as the
+     board's min(260px, 18vw) word (0.6464 of the bird). The row is 4.2993 birds wide plus its gap (36 at
+     most), so the bird also stays under (the band's width - 36px) / 4.3, and the row never overflows the
+     band. Its bottom keeps the board's word's descent (0.145 of the word's size, 0.1273 of the bird). Each
+     size is written out whole after a fallback without container units, as on the phone. */
+  .footer,
+  body.legal .footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 40px;
+    align-items: start;
+    max-width: 1440px;
+    margin: 64px auto 0;
+    padding: var(--foot-pt) var(--foot-px) calc(var(--foot-pb) + env(safe-area-inset-bottom, 0px));
+    border-radius: 36px 36px 0 0;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .footer > p { grid-column: 1; }
+
+  .foot-links {
+    grid-row: 1 / span 3;
+    grid-column: 2;
+    flex-wrap: nowrap;
+    column-gap: 28px;
+    margin-top: 0;
+  }
+
+  .giant {
+    grid-column: 1 / -1;
+    gap: var(--giant-gap);
+    margin-top: var(--giant-mt);
+    padding-bottom: min(37.68px, 2.61vw);
+    padding-bottom: min(37.68px, 2.61vw, (100cqw - 36px) / 4.3 * 0.1273);
+  }
+
+  .giant-bird {
+    height: min(296px, 20.5vw);
+    height: min(296px, 20.5vw, (100cqw - 36px) / 4.3);
+  }
+
+  .giant-word {
+    height: min(191.33px, 13.251vw);
+    height: min(191.33px, 13.251vw, (100cqw - 36px) / 4.3 * 0.6464);
   }
 
   /* No bottom bar on a computer: the header and the white tile hold the Reserve buttons. The stores sit
