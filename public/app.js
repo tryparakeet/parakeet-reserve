@@ -359,9 +359,27 @@
     sheetRoot.setAttribute('data-picked', plan);   // the lines that depend on the plan (styles.css)
     for (var i = 0; i < planCards.length; i++) {
       var on = planCards[i].getAttribute('data-plan') === plan;
+      var was = planCards[i].getAttribute('aria-checked') === 'true';
       planCards[i].setAttribute('aria-checked', on ? 'true' : 'false');
       planCards[i].setAttribute('tabindex', on ? '0' : '-1');
+      if (on && !was && !reduced) popTick(planCards[i]);
     }
+  }
+
+  /* A tick pops only as it turns on: never on the row turning off, nor on the preselected row as the
+     sheet opens, nor with Reduce Motion (DESIGN.md §6) */
+  function popTick(card) {
+    var tick = card.querySelector('.tick');
+    if (!tick) return;
+    tick.classList.remove('pop');
+    void tick.offsetWidth;   // restarts it on a quick second turn
+    tick.classList.add('pop');
+  }
+
+  for (var tk = 0; tk < planCards.length; tk++) {
+    planCards[tk].addEventListener('animationend', function (ev) {
+      if (ev.target.classList && ev.target.classList.contains('tick')) ev.target.classList.remove('pop');
+    });
   }
 
   function onPlanKey(ev) {

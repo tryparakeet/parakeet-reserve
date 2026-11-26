@@ -438,6 +438,10 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradie
   assert.match(cssNoComments, /\.step\.step-in \{ animation: step-in 200ms var\(--curve\) both; \}/, 'in 200 ms');
   assert.match(app, /showStep\(2, true\)/, 'Hold my spot moves on to the email step');
   assert.match(app, /showStep\(3, true\)/, 'a good address moves on to the done line');
+  assert.match(cssNoComments, /\.plan::before \{[^}]*background: var\(--sky-soft\);\s*box-shadow: inset 0 0 0 1\.5px var\(--sky\);\s*opacity: 0;\s*transition: opacity 150ms linear;/, 'a row\'s ring and fill change in 150 ms');
+  assert.match(cssNoComments, /@keyframes tick-pop \{\s*0% \{ transform: scale\(0\.8\);[^}]*\}\s*60% \{ transform: scale\(1\.12\);[^}]*\}\s*100% \{ transform: none; \}/, 'a tick pops from 80% to 112% and back');
+  assert.match(cssNoComments, /\.tick\.pop \{ animation: tick-pop 260ms both; \}/, 'in 260 ms');
+  assert.match(app, /if \(on && !was && !reduced\) popTick\(/, 'only as it turns on');
   assert.match(css, /@keyframes rise\s*\{\s*from\s*\{\s*opacity:\s*0;\s*transform:\s*translateY\(14px\)/);
   for (const n of [1, 2, 3]) {
     assert.match(css, new RegExp(`\\.answer-${n}\\s*\\{\\s*animation:\\s*answer-${n} 5\\.8s ease-in-out 0\\.3s both;`), `answer ${n}: the one 5.8 s pass from 0.3 s, as the boards run it`);

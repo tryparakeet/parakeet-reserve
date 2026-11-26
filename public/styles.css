@@ -804,8 +804,10 @@ html.android { --sheet-pad-bottom: max(24px, env(safe-area-inset-bottom, 0px)); 
 }
 
 /* Selection rows (DESIGN.md §5), corners 20 on the website: white with a hairline; selected = sky-soft
-   fill, a 1.5 px sky ring (its 1 px edge turned sky plus 0.5 inside, so both rows stay 84 tall) and a sky
-   tick with a white check. Each row is a tag over one line. */
+   fill, a 1.5 px sky ring and a sky tick with a white check. Each row is a tag over one line. The selected
+   look is a layer over the hairline (both rows stay 84 tall), so a row's ring and fill change in 150 ms by
+   its opacity alone, and so does the tick's fill; a tick turning on pops (app.js adds .pop): 80% to 112%
+   at 60% of the way, then 100%, in 260 ms on the standard curve, as the app's ticks do (DESIGN.md §6). */
 .plans {
   display: grid;
   row-gap: 10px;
@@ -813,6 +815,8 @@ html.android { --sheet-pad-bottom: max(24px, env(safe-area-inset-bottom, 0px)); 
 }
 
 .plan {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -829,11 +833,22 @@ html.android { --sheet-pad-bottom: max(24px, env(safe-area-inset-bottom, 0px)); 
   touch-action: manipulation;
 }
 
-.plan[aria-checked="true"] {
-  border-color: var(--sky);
+.plan::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  bottom: -1px;
+  left: -1px;
+  z-index: -1;
+  border-radius: 20px;
   background: var(--sky-soft);
-  box-shadow: inset 0 0 0 0.5px var(--sky);
+  box-shadow: inset 0 0 0 1.5px var(--sky);
+  opacity: 0;
+  transition: opacity 150ms linear;
 }
+
+.plan[aria-checked="true"]::before { opacity: 1; }
 
 .plan-body {
   display: flex;
@@ -867,6 +882,7 @@ html.android { --sheet-pad-bottom: max(24px, env(safe-area-inset-bottom, 0px)); 
 }
 
 .tick {
+  position: relative;
   flex: none;
   display: grid;
   place-items: center;
@@ -874,14 +890,38 @@ html.android { --sheet-pad-bottom: max(24px, env(safe-area-inset-bottom, 0px)); 
   height: 24px;
   border: 1.5px solid var(--ink-22);
   border-radius: 999px;
-  color: transparent;
-}
-
-.plan[aria-checked="true"] .tick {
-  border-color: var(--sky);
-  background: var(--sky);
   color: var(--white);
 }
+
+.tick::before {
+  content: "";
+  position: absolute;
+  top: -1.5px;
+  right: -1.5px;
+  bottom: -1.5px;
+  left: -1.5px;
+  border-radius: 999px;
+  background: var(--sky);
+  opacity: 0;
+  transition: opacity 150ms linear;
+}
+
+.tick svg {
+  position: relative;
+  opacity: 0;
+  transition: opacity 150ms linear;
+}
+
+.plan[aria-checked="true"] .tick::before,
+.plan[aria-checked="true"] .tick svg { opacity: 1; }
+
+@keyframes tick-pop {
+  0% { transform: scale(0.8); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  60% { transform: scale(1.12); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  100% { transform: none; }
+}
+
+.tick.pop { animation: tick-pop 260ms both; }
 
 #hold { margin-top: 12px; }
 
@@ -1503,5 +1543,7 @@ body.legal .footer {
   [data-reveal].in { animation: none; }
   .sheet, .sheet-backdrop { transition: none; }
   .step.step-in, .step.step-out { animation: none; }
+  .plan::before, .tick::before, .tick svg { transition: none; }
+  .tick.pop { animation: none; }
   .field input.shake { animation: none; }
 }
