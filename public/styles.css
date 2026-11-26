@@ -469,6 +469,15 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
   letter-spacing: -0.02em;
 }
 
+/* The story's focus (DESIGN.md §6): app.js marks the story .focus and the line in focus and its screen .on.
+   The line in focus is ink and the others ink at 62%, which on the cream is --ink-62 (4.8:1), in 200 ms;
+   the phone's screen crossfades to the line's in 400 ms, ease-in-out. With the script off every line is
+   ink and the nights' screen shows. */
+.story-line { transition: opacity 200ms ease-out; }
+.story.focus .story-line { opacity: 0.62; }
+.story.focus .story-line.on { opacity: 1; }
+.story .shot { transition: opacity 400ms ease-in-out; }
+
 /* The remembered price: its words over a phone on a sky tile */
 .tile-yours {
   display: flex;
@@ -1456,6 +1465,7 @@ body.legal .footer {
   .answer-1, .answer-2, .answer-3 { animation: none; }
   .answer-1, .answer-2 { visibility: hidden; }
   .first-words, .first-tile, .first-stores { animation: none; }
+  .story-line, .story .shot { transition: none; }
   [data-reveal].in { animation: none; }
   .sheet { transition: none; }
   .field input.shake { animation: none; }

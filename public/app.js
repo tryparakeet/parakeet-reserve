@@ -241,6 +241,47 @@
     }
   } } catch (e) {}
 
+  /* ---------- the story's focus ----------
+     The line in focus is the last one whose text has crossed the focus line: 66% of the window's height on
+     a phone, its middle on a computer (900 up). One IntersectionObserver, its root running from far above
+     the window down to that line, so a line inside it has crossed, a fast jump past the story included; no
+     scroll listener. The line in focus is ink and the phone shows its screen (styles.css); with the script
+     off every line is ink and the first screen shows. */
+
+  var story = doc.querySelector('.story');
+  try { if (story && 'IntersectionObserver' in win) {
+    var storyLines = story.querySelectorAll('.story-line');
+    var storyShots = story.querySelectorAll('.shot');
+    var wide = win.matchMedia ? win.matchMedia('(min-width: 900px)') : null;
+    var crossed = [];
+    var focusAt = -1;
+    var storyObs = null;
+    var setFocus = function (n) {
+      if (n === focusAt) return;
+      focusAt = n;
+      for (var i = 0; i < storyLines.length; i++) storyLines[i].classList.toggle('on', i === n);
+      for (var j = 0; j < storyShots.length; j++) storyShots[j].classList.toggle('on', j === n);
+    };
+    var watchStory = function () {
+      if (storyObs) storyObs.disconnect();
+      crossed = [];
+      storyObs = new IntersectionObserver(function (entries) {
+        for (var i = 0; i < entries.length; i++) {
+          for (var k = 0; k < storyLines.length; k++) if (storyLines[k] === entries[i].target) crossed[k] = entries[i].isIntersecting;
+        }
+        var n = 0;
+        for (var m = 0; m < storyLines.length; m++) if (crossed[m]) n = m;
+        setFocus(n);
+      }, { rootMargin: '100000px 0px ' + (wide && wide.matches ? '-50%' : '-34%') + ' 0px' });
+      for (var l = 0; l < storyLines.length; l++) storyObs.observe(storyLines[l]);
+    };
+    setFocus(0);
+    story.classList.add('focus');
+    watchStory();
+    if (wide && wide.addEventListener) wide.addEventListener('change', watchStory);
+    else if (wide && wide.addListener) wide.addListener(watchStory);
+  } } catch (e) {}
+
   /* ---------- sheet ---------- */
 
   var sheetRoot = doc.getElementById('sheet');

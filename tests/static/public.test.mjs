@@ -426,6 +426,10 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradie
   assert.match(app, /classList\.add\('wait'\)/, 'app.js adds the waiting state');
   assert.match(app, /getBoundingClientRect\(\)\.top > windowH/, 'only to a part whose top is below the window at load');
   assert.match(app, /threshold: 0\.12/, 'it rises once 12% of it shows, as the boards do it');
+  assert.match(app, /rootMargin: '100000px 0px ' \+ \(wide && wide\.matches \? '-50%' : '-34%'\) \+ ' 0px'/, 'the story\'s focus line: 66% of the window on a phone, its middle on a computer');
+  assert.equal(count(/new IntersectionObserver\(/g, app), 3, 'one observer each: seen, the rise, the story');
+  assert.doesNotMatch(app, /win(dow)?\.addEventListener\('scroll'/, 'no scroll listener on the page');
+  assert.match(css, /\.story\.focus \.story-line\s*\{\s*opacity:\s*0\.62;\s*\}/, 'the lines out of focus are ink at 62%');
   assert.match(css, /@keyframes rise\s*\{\s*from\s*\{\s*opacity:\s*0;\s*transform:\s*translateY\(14px\)/);
   for (const n of [1, 2, 3]) {
     assert.match(css, new RegExp(`\\.answer-${n}\\s*\\{\\s*animation:\\s*answer-${n} 5\\.8s ease-in-out 0\\.3s both;`), `answer ${n}: the one 5.8 s pass from 0.3 s, as the boards run it`);
