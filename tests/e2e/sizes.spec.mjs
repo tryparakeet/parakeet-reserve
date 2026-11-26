@@ -1,6 +1,7 @@
 // The sizes that must hold (SITE-04 §6.1, §6.4 and §6.8 #2, #8 and #11; DESIGN.md §4 and §7):
 // - no sideways scroll, on phones (an iPhone's page and an Android phone's) and computers, from 320 to
 //   1600 wide, at the top and at the page's end, and no box crossing the window's sides;
+// - nor on Privacy, Terms and Support at 320 wide and at 200% zoom;
 // - Apple's bezel never under 200 px, on any of the page's three phones;
 // - in 375 x 550 (an iPhone SE's Safari with its bars) and shorter phone windows, the bar is pinned while the
 //   words, a 200 px phone and the bar fit, and otherwise sits in the page under the first screen with the
@@ -108,6 +109,42 @@ for (const run of RUNS) {
         expect(p.ratio, `${p.where}: the bezel at 224:457`).toBeCloseTo(224 / 457, 2);
       }
     });
+  });
+}
+
+/* ---------- Privacy, Terms and Support at 320 wide and at 200% zoom ---------- */
+
+// SITE-04 §6.4: at 320 wide and at 200% zoom nothing is cut off. The legal pages' long words (an address,
+// a URL) break inside their 680 column rather than push the page wider than the window.
+const LEGAL_WINDOWS = [
+  { width: 320, height: 568, name: 'an iPhone at 320x568', ua: PHONES.iPhone },
+  { width: 320, height: 568, name: 'an Android phone at 320x568', ua: PHONES.Android },
+  { width: 196, height: 426, name: 'a 393 iPhone at 200% zoom (196x426)', ua: PHONES.iPhone },
+  { width: 206, height: 458, name: 'a 412 Android phone at 200% zoom (206x458)', ua: PHONES.Android }
+];
+
+for (const w of LEGAL_WINDOWS) {
+  test.describe(`the legal pages, ${w.name}`, () => {
+    test.use({ viewport: { width: w.width, height: w.height }, userAgent: w.ua });
+
+    for (const path of ['/privacy', '/terms', '/support']) {
+      test(`${path}: no sideways scroll, at the top or the page's end, and no box crossing the window's sides`, async ({ page }) => {
+        await page.goto(path);
+        await expect(page.locator('h1')).toBeVisible();
+        for (const at of ['the top', 'the end']) {
+          if (at === 'the end') {
+            await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+            await frames(page);
+          }
+          const got = await sideways(page);
+          expect(got.inner, `${at}: the window is the page's width (no zoomed-out layout)`).toBe(0);
+          expect(got.width, `${at}: the page is no wider than the window`).toBeLessThanOrEqual(0);
+          expect(got.body, `${at}: the body is no wider than the window`).toBeLessThanOrEqual(0);
+          expect(got.moved, `${at}: a sideways scroll doesn't move`).toBe(0);
+          expect(got.out, `${at}: no box crosses the window's sides`).toEqual([]);
+        }
+      });
+    }
   });
 }
 
