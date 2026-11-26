@@ -91,6 +91,21 @@ for (const browser of BROWSERS) {
         await expect(button).toBeVisible();
         await expect(button).toHaveText(BUTTON);
         expect(await button.evaluate((el) => [el.tagName, el.type, el.classList.contains('btn-final')]), 'a button in the final button\'s look').toEqual(['BUTTON', 'button', true]);
+        // the final button's look (SITE-04 §6.2, AN1-412): ink, its label cream 17/600, a 1 px cream edge at 14%
+        expect(await button.evaluate((el) => {
+          const cs = getComputedStyle(el);
+          return {
+            background: cs.backgroundColor,
+            color: cs.color,
+            font: [cs.fontSize, cs.fontWeight],
+            edge: ['Top', 'Right', 'Bottom', 'Left'].map((s) => [cs[`border${s}Width`], cs[`border${s}Style`], cs[`border${s}Color`]].join(' '))
+          };
+        }), 'ink, a cream 17/600 label, a 1 px cream edge at 14%').toEqual({
+          background: 'rgb(14, 27, 38)',
+          color: 'rgb(251, 246, 236)',
+          font: ['17px', '600'],
+          edge: Array(4).fill('1px solid rgba(251, 246, 236, 0.14)')
+        });
         await expect(page.locator('.first-words .android-line')).toBeVisible();
         await expect(page.locator('.first-words .android-line')).toHaveText(LINE);
         for (const sel of ['.cta [data-tap="reserve"]', '.cta-note']) await expect(page.locator(sel)).toBeHidden();
