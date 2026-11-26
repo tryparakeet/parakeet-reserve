@@ -260,6 +260,22 @@
     }
   } } catch (e) {}
 
+  /* ---------- a rise plays once ----------
+     The two stores tiles show in one layout each, so a window crossing 900 wide shows one anew. Once its
+     rise has ended (or was cut short as its layout hid it), it is marked .risen and rests (styles.css). The
+     computer's, hidden at load in a phone's layout, rests once the first screen's rise has ended. */
+
+  var firstStores = doc.querySelector('.first-stores');
+  var phoneStores = doc.querySelector('.stores');
+  var onRisen = function (ev) {
+    var el = ev.target;
+    if (!el || !el.classList) return;
+    if (el === firstStores || (el === phoneStores && el.classList.contains('in'))) el.classList.add('risen');
+    else if (firstStores && el.classList.contains('first-tile') && !firstStores.getClientRects().length) firstStores.classList.add('risen');
+  };
+  doc.addEventListener('animationend', onRisen);
+  doc.addEventListener('animationcancel', onRisen);
+
   /* ---------- the story's focus ----------
      The line in focus is the last one whose text has crossed the focus line: 66% of the window's height on
      a phone, its middle on a computer (900 up). One IntersectionObserver, its root running from far above

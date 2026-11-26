@@ -533,12 +533,18 @@ test('on a phone the parts below the bar wait, then rise 14 px once, 500 ms on t
     expect(p.transform, `${p.part} waits 14 px low`).toBe('matrix(1, 0, 0, 1, 0, 14)');
     expect(p.opacity, `${p.part}: ${p.kind === 'rise' ? 'never faded' : 'faded out'}`).toBe(p.kind === 'rise' ? '1' : '0');
   }
+  // each rise read as it starts (a stores tile rests once its rise has ended, so it isn't read after)
+  await page.evaluate(() => {
+    window.rises = {};
+    document.addEventListener('animationstart', (ev) => {
+      if (!ev.target.hasAttribute || !ev.target.hasAttribute('data-reveal')) return;
+      const a = ev.target.getAnimations().find((x) => x.animationName === ev.animationName);
+      window.rises[ev.target.classList[0]] = a ? { name: a.animationName, duration: a.effect.getTiming().duration, easing: a.effect.getKeyframes()[0].easing } : null;
+    });
+  });
   await scrollThrough(page);
   await page.waitForFunction((parts) => parts.every((p) => document.querySelector(`.${p}`).classList.contains('in')), below);
-  const anims = await page.evaluate((parts) => parts.map((p) => {
-    const [a] = document.querySelector(`.${p}`).getAnimations();
-    return a ? { name: a.animationName, duration: a.effect.getTiming().duration, easing: a.effect.getKeyframes()[0].easing } : null;
-  }), below);
+  const anims = await page.evaluate((parts) => parts.map((p) => window.rises[p] || null), below);
   expect(anims).toEqual(below.map((p) => ({ name: ['story-tile', 'tile-yours'].includes(p) ? 'rise-only' : 'rise', duration: 500, easing: CURVE })));
   await page.evaluate(() => window.scrollTo(0, 0));
   await frames(page, 3);
@@ -596,6 +602,54 @@ test.describe('on a computer', () => {
 });
 
 /* ---------- Reduce Motion and the script off ---------- */
+
+/* ---------- a rise plays once, even when a window crosses 900 wide ---------- */
+
+// The computer's stores tile shows only from 900 wide, and the phone's stores tile only below, so a window
+// crossing 900 (a resize, an iPad's turn) shows one of them anew: its rise has played, so it rests.
+const settled = (page, sel) => page.waitForFunction((q) => document.querySelector(q).getAnimations().every((a) => a.playState === 'finished'), sel);
+const still = (page, sel) => page.locator(sel).evaluate((el) => ({ running: el.getAnimations().filter((a) => a.playState !== 'finished').length, opacity: getComputedStyle(el).opacity, transform: getComputedStyle(el).transform }));
+
+test.describe('a computer crossing 900 wide', () => {
+  test.use({ viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: false, userAgent: MAC_UA });
+
+  test('the stores tile on the first screen rises once at load, not again after a trip to 880 wide', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto(TAGGED_QS);
+    await settled(page, '.first-stores');
+    await frames(page, 2);
+    for (const width of [880, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await frames(page, 2);
+    }
+    expect(await still(page, '.first-stores')).toEqual({ running: 0, opacity: '1', transform: 'none' });
+  });
+});
+
+test('an upright iPad turned on its side shows the computer\'s stores tile at rest', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.setViewportSize({ width: 820, height: 1180 });
+  await page.goto(TAGGED_QS);
+  await settled(page, '.first-tile');
+  await frames(page, 2);
+  await page.setViewportSize({ width: 1180, height: 820 });
+  await frames(page, 2);
+  expect(await still(page, '.first-stores')).toEqual({ running: 0, opacity: '1', transform: 'none' });
+});
+
+test('the phone\'s stores tile rises once as it comes into view, not again after a trip to 1000 wide', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await load(page, { width: 393, height: 852 });
+  await page.evaluate(() => window.scrollTo(0, document.querySelector('.stores').getBoundingClientRect().top + window.scrollY - 300));
+  await expect(page.locator('.stores')).toHaveClass(/\bin\b/);
+  await settled(page, '.stores');
+  await frames(page, 2);
+  for (const width of [1000, 393]) {
+    await page.setViewportSize({ width, height: 852 });
+    await frames(page, 2);
+  }
+  expect(await still(page, '.stores')).toEqual({ running: 0, opacity: '1', transform: 'none' });
+});
 
 test('Reduce Motion: nothing moves; the last answer and the total show, the passing ones are hidden; nothing waits below; the story changes at once', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
