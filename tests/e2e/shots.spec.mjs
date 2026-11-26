@@ -7,10 +7,11 @@
 //   and 1024 x 768 (a computer: no touch, DPR 1, a Mac's Safari): the first screen; the headline under it;
 //   the story with each of its four lines in focus (the line scrolled just past the focus line: halfway
 //   between the held tile and the bar on a phone, the middle on a computer; each line shows whole); the
-//   price; the stores; Prices and Recipes; the footer; and the sheet's three steps (the plans, the email with
-//   an address typed, done for the yearly plan), the dialog in the middle on a computer.
+//   price; the stores; Prices and Recipes; the footer, every question closed; the sheet's three steps (the
+//   plans, the email with an address typed, done for the yearly plan), the dialog in the middle on a
+//   computer; and the questions with 'How do I cancel?' open (§6.10), numbered 14 after the sheet.
 // - An Android phone in Chrome at 412 x 915 and 360 x 800: the page at rest (the band has crossed), the
-//   email step with an address typed, and the done line.
+//   email step with an address typed, the done line, and its four questions with 'Is it on Android?' open.
 // - Privacy's top at 393 x 852 and 1440 x 900.
 // - §6.4's windows, 375 x 550, 1440 x 780 and 1024 x 660: the first screen, and the story with its tile held
 //   (on the phone a whole line between the tile and the pinned bar, on a computer the tile under the header).
@@ -144,6 +145,18 @@ async function part(page, selector) {
   await settleMotion(page);
 }
 
+// The questions with one open, as its board draws them, in the middle of the room; then it closes again.
+async function faq(page, shot, name, question) {
+  const row = page.locator('.faq details').filter({ has: page.locator('.faq-q', { hasText: question }) });
+  await row.locator('summary').click();
+  await expect(row).toHaveAttribute('open', '');
+  await expect(page.locator('.faq details[open]')).toHaveCount(1);
+  await part(page, '.faq');
+  await shot(name);
+  await row.locator('summary').click();
+  await expect(page.locator('.faq details[open]')).toHaveCount(0);
+}
+
 // The sheet's three steps from `button`: the plans as it opens (the yearly plan picked), the email step
 // with an address typed, and the yearly plan's done line.
 async function sheetSteps(page, shot, button, first) {
@@ -185,7 +198,7 @@ for (const size of SIZES) {
   test.describe(`shots at ${size.width}x${size.height}`, () => {
     test.use({ viewport: { width: size.width, height: size.height }, ...size.use });
 
-    test('the first screen, the headline, the story\'s four lines, the price, the stores, Prices and Recipes, the footer, the sheet\'s three steps', async ({ page }) => {
+    test('the first screen, the headline, the story\'s four lines, the price, the stores, Prices and Recipes, the footer, the sheet\'s three steps, the questions', async ({ page }) => {
       test.setTimeout(60_000);
       const shot = shooter(page, `${size.width}x${size.height}`);
       await load(page);
@@ -206,6 +219,7 @@ for (const size of SIZES) {
       await shot('08-stores');
       await part(page, '.facts');
       await shot('09-prices-recipes');
+      await faq(page, shot, '14-faq', 'How do I cancel?');
       await scrollTo(page, await page.evaluate(() => document.documentElement.scrollHeight));
       await imagesReady(page);
       await settleMotion(page);
@@ -222,7 +236,7 @@ for (const win of [{ width: 412, height: 915 }, { width: 360, height: 800 }]) {
   test.describe(`Android shots at ${win.width}x${win.height}`, () => {
     test.use({ viewport: win, userAgent: REAL_UAS.chrome_android });
 
-    test('the page at rest, the email step, the done line', async ({ page }) => {
+    test('the page at rest, the email step, the done line, the questions', async ({ page }) => {
       const shot = shooter(page, `android-${win.width}x${win.height}`);
       await load(page);
       expect(await page.evaluate(() => document.documentElement.classList.contains('android'))).toBe(true);
@@ -244,6 +258,11 @@ for (const win of [{ width: 412, height: 915 }, { width: 360, height: 800 }]) {
       await expect(page.locator('.done.if-android .done-email')).toHaveText(ADDRESS);
       await settleMotion(page);
       await shot('3-done');
+
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#sheet')).toBeHidden();
+      await scrollThrough(page);
+      await faq(page, shot, '4-faq', 'Is it on Android?');
     });
   });
 }
