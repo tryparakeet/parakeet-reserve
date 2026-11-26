@@ -425,6 +425,9 @@
     leaving.style.top = '';
     leaving.style.left = '';
     leaving.style.width = '';
+    holdButton.style.top = '';
+    holdButton.style.left = '';
+    holdButton.style.width = '';
     leaving.hidden = true;
     leaving = null;
     panel.classList.remove('stepping');
@@ -439,11 +442,20 @@
       var step = steps[j];
       step.classList.remove('step-in');
       if (move && !show[j] && !step.hidden) {
+        // Hold my spot is held where it shows, stuck to the sheet's bottom or not, before its step leaves the
+        // flow: stuck again to the bottom of the shorter sheet, it would jump up over the next step
+        var held = step.contains(holdButton) ? holdButton.getBoundingClientRect() : null;
+        var from = held ? step.getBoundingClientRect() : null;
         step.style.top = (step.offsetTop - panel.scrollTop) + 'px';   // as the sheet showed it: its scroll goes to 0 below
         step.style.left = step.offsetLeft + 'px';
         step.style.width = step.offsetWidth + 'px';
         step.setAttribute('inert', '');
         step.classList.add('step-out');
+        if (held) {
+          holdButton.style.top = (held.top - from.top) + 'px';
+          holdButton.style.left = (held.left - from.left) + 'px';
+          holdButton.style.width = held.width + 'px';
+        }
         panel.classList.add('stepping');
         leaving = step;
         continue;

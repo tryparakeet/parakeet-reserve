@@ -345,3 +345,62 @@ for (const run of SCROLLED) {
     });
   });
 }
+
+/* ---------- Hold my spot fades out with its step, where it showed ---------- */
+
+// Hold my spot is stuck to the sheet's bottom while the plans step scrolls. As its step leaves the flow the
+// sheet takes the email step's shorter height at once; Hold must fade out where it showed, its top in the
+// sheet held on every frame of the 200 ms, not stuck again to the shorter sheet's bottom, over the Send
+// button and its small print (DESIGN.md §6: the next step crossfades, and nothing else moves). On a tall
+// window that place is under the shorter sheet's edge, which clips it; on a phone on its side, where Hold
+// was stuck at the bottom, it is the place it was stuck in.
+const HOLDS = [
+  { name: 'a phone at 393x852, from the bottom bar', use: PHONE, button: '.cta [data-tap="reserve"]', clipped: true },
+  { name: 'a computer at 1440x900, the dialog, from the header', use: computer(1440, 900), button: '.top [data-tap="reserve"]', clipped: true },
+  { name: 'a phone on its side at 852x393, from the bar in the page', use: { viewport: { width: 852, height: 393 } }, button: '.cta [data-tap="reserve"]', clipped: false }
+];
+
+for (const run of HOLDS) {
+  test.describe(run.name, () => {
+    test.use(run.use);
+
+    test('Hold my spot fades out with its step where it showed, never stuck to the shorter sheet\'s bottom', async ({ page }) => {
+      await page.goto(TAGGED_QS);
+      await page.locator(run.button).click();
+      await sheetSettled(page);
+      const got = await page.evaluate(() => new Promise((done) => {
+        const panel = document.getElementById('sheet-panel');
+        const hold = document.getElementById('hold');
+        const step = document.getElementById('step-1');
+        const at = () => {
+          const p = panel.getBoundingClientRect();
+          const h = hold.getBoundingClientRect();
+          return { top: h.top - p.top, left: h.left - p.left, width: h.width, panel: p.height, leaving: step.classList.contains('step-out'), shadow: getComputedStyle(hold).boxShadow };
+        };
+        const rest = at();
+        hold.click();
+        const frames = [at()];
+        const next = () => {
+          if (step.hidden) return done({ rest, frames });
+          frames.push(at());
+          requestAnimationFrame(next);
+        };
+        requestAnimationFrame(next);
+      }));
+      const leaving = got.frames.filter((f) => f.leaving);
+      expect(leaving.length, 'the plans step fades out over several frames').toBeGreaterThan(3);
+      expect(leaving[0].panel, 'the sheet takes the email step\'s shorter height at once').toBeLessThan(got.rest.panel - 40);
+      for (const f of leaving) {
+        expect(f.top, `Hold stays at ${got.rest.top.toFixed(1)} in the sheet, not stuck to the shorter sheet's bottom`).toBeCloseTo(got.rest.top, 0);
+        expect(f.left, 'and keeps its place across').toBeCloseTo(got.rest.left, 1);
+        expect(f.width, 'and its width').toBeCloseTo(got.rest.width, 1);
+        expect(f.shadow, 'with the halo it had at rest').toBe(got.rest.shadow);
+      }
+      if (run.clipped) expect(leaving[0].top, 'its place is under the shorter sheet\'s edge, which clips it').toBeGreaterThanOrEqual(leaving[0].panel);
+      else expect(leaving[0].top, 'its place shows in the shorter sheet, where it was stuck').toBeLessThan(leaving[0].panel);
+      await expect(page.locator('#step-2')).toBeVisible();
+      expect(await page.locator('#hold').evaluate((el) => [el.style.top, el.style.left, el.style.width]), 'Hold\'s place is let go once its step has gone').toEqual(['', '', '']);
+      await expect(page.locator('#email')).toBeFocused();
+    });
+  });
+}
