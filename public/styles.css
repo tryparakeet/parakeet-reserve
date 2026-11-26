@@ -1397,7 +1397,8 @@ body.legal .footer {
   /* The story: the four lines in the left column, the phone's tile held under the header on the right.
      The tile stays in its grid area, the four steps, so the fourth step reaches further down: the tile
      stays put until line 4 reaches the header, then leaves with it, its gap to the price tile kept. Line 4
-     sits where a one-line line sits centred in its step, so this holds whether it takes one line or two. */
+     sits in the middle of the step's first --step-h, as the other lines do, whether it takes one line or
+     two: app.js measures its height (--line-4-h); with the script off it sits where one line would. */
   .story {
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--story-col);
@@ -1434,7 +1435,7 @@ body.legal .footer {
   }
 
   .story-step:last-child {
-    --line-4-top: calc((var(--step-h) - 1.04 * var(--story-fs)) / 2);
+    --line-4-top: calc((var(--step-h) - var(--line-4-h, 1.04 * var(--story-fs))) / 2);
     grid-template-rows: auto;
     align-items: start;
     min-height: calc(var(--line-4-top) + var(--story-tile) + var(--story-top) - var(--top-h));

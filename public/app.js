@@ -301,6 +301,23 @@
     else if (wide && wide.addListener) wide.addListener(watchStory);
   } } catch (e) {}
 
+  /* ---------- the story's fourth line, in the middle of its step on a computer ----------
+     Its step is the taller one that holds the tile until line 4 reaches the header (styles.css), so the
+     line's place there follows from its height: measured here, and again whenever its box changes (the
+     width, the fonts). With the script off it sits where a one-line line would. */
+
+  try { if (story && win.ResizeObserver) {
+    var line4 = story.querySelector('.story-step:last-child .story-line');
+    if (line4) {
+      var setLine4 = function () {
+        var h = line4.getBoundingClientRect().height;
+        if (h) line4.parentNode.style.setProperty('--line-4-h', h + 'px');
+      };
+      new win.ResizeObserver(setLine4).observe(line4);
+      if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(setLine4, function () {});
+    }
+  } } catch (e) {}
+
   /* ---------- sheet ---------- */
 
   var sheetRoot = doc.getElementById('sheet');

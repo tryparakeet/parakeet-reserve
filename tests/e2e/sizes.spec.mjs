@@ -245,6 +245,41 @@ for (const vp of [{ width: 1440, height: 780 }, { width: 1024, height: 660 }]) {
   });
 }
 
+/* ---------- the story on a computer: each line in the middle of its step, and the hold ---------- */
+
+// Each story line sits in the middle of its step, as the boards draw it, the fourth too, whether it takes
+// one line or two (at 900 wide every line takes two in any font). The fourth step is the taller one, so the
+// tile stays put until line 4 reaches the header, then leaves with it (SITE-04 §6.8 #3).
+for (const vp of [{ width: 900, height: 768 }, { width: 1024, height: 768 }, { width: 1232, height: 900 }, { width: 1440, height: 900 }]) {
+  test.describe(`the story on a computer at ${vp.width}x${vp.height}`, () => {
+    test.use({ viewport: vp, ...MAC });
+
+    test('each line sits in the middle of its step, the fourth too; the tile holds until line 4 reaches the header', async ({ page }) => {
+      await load(page);
+      await holdStory(page);
+      const steps = await page.evaluate(() => [...document.querySelectorAll('.story-step')].map((st) => {
+        const l = st.querySelector('.story-line').getBoundingClientRect();
+        return { top: l.top - st.getBoundingClientRect().top, line: l.height, step: st.getBoundingClientRect().height };
+      }));
+      const stepH = steps[0].step;
+      for (const [i, st] of steps.entries()) {
+        expect(st.top, `line ${i + 1} (${Math.round(st.line)} px) in the middle of its step's ${stepH}`).toBeCloseTo((stepH - st.line) / 2, 0);
+      }
+
+      const header = (await bbox(page.locator('.top'))).bottom;
+      const line4To = async (y) => {
+        await page.evaluate((to) => window.scrollBy(0, document.querySelectorAll('.story-line')[3].getBoundingClientRect().top - to), y);
+        await frames(page);
+        return (await bbox(page.locator('.story-tile'))).top;
+      };
+      const held = await line4To(header + 40);
+      expect(held, 'the tile is held under the header').toBeGreaterThanOrEqual(header);
+      expect(Math.abs(await line4To(header + 4) - held), 'still held as line 4 reaches the header').toBeLessThan(1);
+      expect(Math.abs(await line4To(header - 20) - (held - 20)), 'then it leaves with line 4').toBeLessThan(1);
+    });
+  });
+}
+
 /* ---------- an upright iPad: the phone stops at 343 x 700 ---------- */
 
 test.describe('an upright iPad at 820x1180', () => {
