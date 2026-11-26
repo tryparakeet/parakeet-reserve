@@ -305,3 +305,43 @@ for (const run of SCROLL_BARS) {
     }
   });
 }
+
+/* ---------- a scrolled sheet: the step that leaves fades out where the sheet showed it ---------- */
+
+// Hold my spot pressed in a sheet scrolled to its end (a phone on its side, a short computer window): the
+// plans step fades out in the place the sheet showed it, while the email step comes in and the sheet's
+// scroll goes back to its top (DESIGN.md §6: the next step crossfades, and nothing else moves). The sheet
+// takes its new height at once, so the place is read against the sheet's own top.
+const SCROLLED = [
+  { name: 'a phone on its side at 852x393, from the bar in the page', use: { viewport: { width: 852, height: 393 } }, button: '.cta [data-tap="reserve"]' },
+  { name: 'a computer at 900x480, from the header', use: computer(900, 480), button: '.top [data-tap="reserve"]' }
+];
+
+for (const run of SCROLLED) {
+  test.describe(run.name, () => {
+    test.use(run.use);
+
+    test('in a scrolled sheet the plans step fades out where it was, not lower by the scroll', async ({ page }) => {
+      await page.goto(TAGGED_QS);
+      await page.locator(run.button).click();
+      await sheetSettled(page);
+      const got = await page.evaluate(() => {
+        const panel = document.getElementById('sheet-panel');
+        const title = document.getElementById('sheet-title-1');
+        const at = () => title.getBoundingClientRect().top - panel.getBoundingClientRect().top;
+        panel.scrollTop = panel.scrollHeight;
+        const scroll = panel.scrollTop;
+        const before = at();
+        document.getElementById('hold').click();
+        return { scroll, before, after: at(), leaving: document.getElementById('step-1').classList.contains('step-out'), scrollAfter: panel.scrollTop };
+      });
+      expect(got.scroll, 'the sheet was scrolled').toBeGreaterThan(0);
+      expect(got.leaving, 'the plans step is fading out').toBe(true);
+      expect(got.scrollAfter, 'the email step shows from the sheet\'s top').toBe(0);
+      expect(got.after, `its title stays at ${got.before.toFixed(1)} in the sheet`).toBeCloseTo(got.before, 0);
+      await expect(page.locator('#step-1')).toBeHidden();
+      await expect(page.locator('#step-2')).toBeVisible();
+      await expect(page.locator('#email')).toBeFocused();
+    });
+  });
+}

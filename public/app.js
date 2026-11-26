@@ -375,8 +375,9 @@
 
   /* Step 3 (done) sits inside the email step, as on the boards: it shows under the emptied field.
      Moving on (animate), the next step crossfades in 200 ms with a 4 px rise while the step it replaces
-     fades out where it was, out of the flow, so the sheet takes its new height at once; the done line rises
-     in the same way (styles.css). Opening shows its step at once: the sheet itself moves. */
+     fades out where it was in the sheet, scrolled or not, out of the flow, so the sheet takes its new height
+     at once; the done line rises in the same way (styles.css). Opening shows its step at once: the sheet
+     itself moves. */
   var leaving = null;
   var leaveTimer = 0;
 
@@ -402,7 +403,7 @@
       var step = steps[j];
       step.classList.remove('step-in');
       if (move && !show[j] && !step.hidden) {
-        step.style.top = step.offsetTop + 'px';
+        step.style.top = (step.offsetTop - panel.scrollTop) + 'px';   // as the sheet showed it: its scroll goes to 0 below
         step.style.left = step.offsetLeft + 'px';
         step.style.width = step.offsetWidth + 'px';
         step.setAttribute('inert', '');
