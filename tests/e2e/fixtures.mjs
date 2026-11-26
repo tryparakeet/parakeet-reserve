@@ -99,6 +99,30 @@ export async function sheetSettled(page) {
   });
 }
 
+// The sheet's focus trap (kept with the instrument): Tab four times, then Shift+Tab three times, from where
+// the focus is (the panel as the sheet opens, or one of its controls). Each press lands on the next or the
+// previous of `ring`, the open step's controls in order, going round at both ends, and never leaves
+// #sheet-panel. A control is named by its id, its data-tap, its aria-label or its words.
+export async function expectFocusTrapped(page, ring, what) {
+  const at = () => page.evaluate(() => {
+    const a = document.activeElement;
+    const name = a.id ? `#${a.id}` : a.getAttribute('data-tap') || a.getAttribute('aria-label') || (a === document.body ? '' : (a.innerText || '').trim().slice(0, 40)) || a.tagName.toLowerCase();
+    return document.getElementById('sheet-panel').contains(a) ? name : `outside the sheet: ${name}`;
+  });
+  const start = await at();
+  expect([...ring, '#sheet-panel'], `${what}: the focus starts in the sheet`).toContain(start);
+  let i = ring.indexOf(start);
+  const want = [];
+  const got = [];
+  for (const key of ['Tab', 'Tab', 'Tab', 'Tab', 'Shift+Tab', 'Shift+Tab', 'Shift+Tab']) {
+    await page.keyboard.press(key);
+    i = key === 'Tab' ? (i + 1) % ring.length : (i <= 0 ? ring.length - 1 : i - 1);
+    want.push(ring[i]);
+    got.push(await at());
+  }
+  expect(got, `${what}: Tab and Shift+Tab go round the sheet's controls and never leave it`).toEqual(want);
+}
+
 export function bbox(locator) {
   return locator.evaluate((el) => {
     const r = el.getBoundingClientRect();

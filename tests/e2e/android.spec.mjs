@@ -2,10 +2,11 @@
 // and in TikTok's in-app browser, at 412 x 915 (AN1-412) and 360 x 800. §1's words show: the bar's ink
 // button "Email me when it’s on Android" (data-tap="android") and the iPhone-only line, with no reserve
 // line. The button opens the sheet straight on its email step (the title "Where should we send it?", the
-// button "Send", Android's small line); a bad address shakes and stores nothing, a good one is sent with
-// plan android and shows the done line with the address. No reserve, plan or seen row is ever stored, and
-// the summary counts the tap and the email apart from the reservations. The band crosses the button 3
-// times from 1 s after load, 1.2 s each and 0.6 s apart, then rests; with Reduce Motion it never runs.
+// button "Send", Android's small line), Tab and Shift+Tab keep the focus in it; a bad address shakes and
+// stores nothing, a good one is sent with plan android and shows the done line with the address. No
+// reserve, plan or seen row is ever stored, and the summary counts the tap and the email apart from the
+// reservations. The band crosses the button 3 times from 1 s after load, 1.2 s each and 0.6 s apart, then
+// rests; with Reduce Motion it never runs.
 //
 // At 1440 x 900 with an Android user agent only the words change: the header's and the white tile's sky
 // buttons read "Email me when it’s on Android" (data-tap="android") and the iPhone-only line takes the
@@ -14,7 +15,7 @@
 //
 // Every in-sheet click that follows an open awaits sheetSettled() (see fixtures.mjs).
 
-import { test, expect, TAGGED_QS, waitForRows, rowsOf, settle, sheetSettled, bbox } from './fixtures.mjs';
+import { test, expect, TAGGED_QS, waitForRows, rowsOf, settle, sheetSettled, bbox, expectFocusTrapped } from './fixtures.mjs';
 import { REAL_UAS, COMPUTER_UAS } from '../fixtures/user-agents.mjs';
 
 const BUTTON = 'Email me when it’s on Android';
@@ -139,6 +140,7 @@ for (const browser of BROWSERS) {
         const panel = await bbox(page.locator('#sheet-panel'));
         expect(panel.bottom, 'the sheet rises from the bottom').toBeCloseTo(win.height, 0);
         expect(await page.locator('#sheet-panel').evaluate((el) => getComputedStyle(el).paddingBottom), 'AN2\'s padding under the sheet: 24').toBe('24px');
+        await expectFocusTrapped(page, ['Close', '#email', 'Send'], 'the email step');
 
         // a bad address shakes and stores nothing
         await page.evaluate(() => {
@@ -367,6 +369,7 @@ test.describe('an Android device at 1440x900', () => {
     const dialog = await bbox(page.locator('#sheet-panel'));
     expect(dialog.width).toBeCloseTo(480, 1);
     expect((dialog.top + dialog.bottom) / 2, 'the dialog in the middle').toBeCloseTo(450, 0);
+    await expectFocusTrapped(page, ['Close', '#email', 'Send'], 'the dialog\'s email step');
     await expect(page.locator('#email-form button[type="submit"]')).toHaveAccessibleName('Send');
     await expect(page.getByText(SMALL, { exact: true })).toBeVisible();
     await page.locator('#email').fill('tablet@example.com');

@@ -6,7 +6,7 @@
 // Each run: Reserve, the plans, Hold my spot with the yearly plan as it opens (via: hold), a bad address
 // shakes and stores nothing, a good one shows the yearly done line; closed by the X, the focus goes back to
 // the pressed button; reopened on the plans, the monthly card (via: card), its email and done line; closed
-// by Escape, then by the backdrop, the focus back each time. The rows the function stores are asserted from
+// by Escape, then by the backdrop, the focus back each time. Tab and Shift+Tab keep the focus in the sheet. The rows the function stores are asserted from
 // the store, as flow.spec does: reserve, seen once, the plan taps, each email with its plan, and never an
 // Android row; then the summary the admin reads.
 //
@@ -16,7 +16,7 @@
 // Every in-sheet click that follows an open awaits sheetSettled(): presses inside the sheet during its
 // first 500 ms are dropped on purpose (see fixtures.mjs).
 
-import { test, expect, TAGGED_QS, waitForRows, rowsOf, settle, sheetSettled, bbox } from './fixtures.mjs';
+import { test, expect, TAGGED_QS, waitForRows, rowsOf, settle, sheetSettled, bbox, expectFocusTrapped } from './fixtures.mjs';
 import { COMPUTER_UAS } from '../fixtures/user-agents.mjs';
 
 const INK_48 = 'rgba(14, 27, 38, 0.48)';
@@ -151,6 +151,7 @@ for (const place of PLACES) {
       await sheetSettled(page);
       await expectSheetPlace(page, place, 'the plans');
       expect(await bbox(reserve), 'the page keeps its place under the sheet').toEqual(pressedAt);
+      await expectFocusTrapped(page, ['Close', 'plan_yearly', '#hold'], 'the plans');
 
       // Hold my spot with the yearly plan as it opens: plan_yearly via hold, the email step, the field focused
       const yearly = page.locator('[data-tap="plan_yearly"]');
