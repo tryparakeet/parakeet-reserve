@@ -20,3 +20,4 @@ Sizes: *-480.webp for the reserve page (about 10–26 KB each), *-720.webp for t
 
 ## The site's own pictures (SITE-04, Nov 26, 2026; none from Pixabay)
 - icon-v1-*.webp — the logo: the app's own icon, parakeet-app's assets/icon.png (1024 × 1024, the bird's head on sky), made small by scripts/make-site-images.sh at 28, 30 and 34 px, each at 1x, 2x and 3x (28, 56, 84, 30, 60, 90, 34, 68 and 102 px); square in the file, its corners rounded by the page's CSS at 22.37%
+- screen-*-placeholder-*.webp — placeholders for the phone's six screens (the nights question, the budget question, the week, the list, the total card, and a list row priced “yours”), 420 and 640 wide: plain cream with the screen's name, drawn by scripts/make-site-images.sh with Inter at generation time (no photo; no font ships); build 2's screens from parakeet-app's docs/screens/site/ replace them (SITE-04 §6.7)
