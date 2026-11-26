@@ -430,6 +430,10 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradie
   assert.equal(count(/new IntersectionObserver\(/g, app), 3, 'one observer each: seen, the rise, the story');
   assert.doesNotMatch(app, /win(dow)?\.addEventListener\('scroll'/, 'no scroll listener on the page');
   assert.match(css, /\.story\.focus \.story-line\s*\{\s*opacity:\s*0\.62;\s*\}/, 'the lines out of focus are ink at 62%');
+  assert.match(cssNoComments, /\.sheet \{[^}]*transform: translateY\(100%\);\s*transition: transform 320ms var\(--curve\);/, 'the phone\'s sheet rises, and slides down, in 320 ms');
+  assert.match(cssNoComments, /\.sheet-backdrop \{[^}]*opacity: 0;\s*transition: opacity 200ms linear;/, 'the dim fades out in 200 ms');
+  assert.match(cssNoComments, /\.sheet-root\.open \.sheet-backdrop \{\s*opacity: 1;/, 'and fades in as the sheet opens');
+  assert.match(cssNoComments, /transform: translateY\(12px\);\s*opacity: 0;\s*transition: transform 240ms var\(--curve\), opacity 240ms var\(--curve\);/, 'the computer\'s dialog rises 12 px as it fades in, and drops as it fades out, in 240 ms');
   assert.match(css, /@keyframes rise\s*\{\s*from\s*\{\s*opacity:\s*0;\s*transform:\s*translateY\(14px\)/);
   for (const n of [1, 2, 3]) {
     assert.match(css, new RegExp(`\\.answer-${n}\\s*\\{\\s*animation:\\s*answer-${n} 5\\.8s ease-in-out 0\\.3s both;`), `answer ${n}: the one 5.8 s pass from 0.3 s, as the boards run it`);

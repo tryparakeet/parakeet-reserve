@@ -700,6 +700,14 @@ html.android { --sheet-pad-bottom: max(24px, env(safe-area-inset-bottom, 0px)); 
   left: 0;
   background: var(--ink-48);
   touch-action: none;
+  opacity: 0;
+  transition: opacity 200ms linear;
+}
+
+/* The page dims in 200 ms as the sheet opens, and the dim fades out in 200 ms as it closes, on both layouts */
+.sheet-root.open .sheet-backdrop {
+  opacity: 1;
+  transition-timing-function: var(--curve);
 }
 
 .sheet {
@@ -718,7 +726,7 @@ html.android { --sheet-pad-bottom: max(24px, env(safe-area-inset-bottom, 0px)); 
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   transform: translateY(100%);
-  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 320ms var(--curve);   /* it rises, and closing slides it down, in 320 ms */
 }
 
 .sheet-root.open .sheet { transform: none; }
@@ -1426,7 +1434,8 @@ body.legal .footer {
 
   /* The reserve sheet as a dialog in the middle (R1-1440 to R3-1440): 480 wide, corners 36, padding 48 36
      36, its X at 14/14 and no grabber. The root centres it, so it is centred again at each step and rests
-     with no transform. Shut, it waits 12 px low and faded out, where the motion starts from. */
+     with no transform. Shut, it waits 12 px low and faded out, where the motion starts from: it rises 12 px
+     as it fades in over 240 ms, and closes as it opened, dropping 12 px as it fades out. */
   .sheet-root {
     display: grid;
     place-items: center;
@@ -1446,6 +1455,7 @@ body.legal .footer {
     border-radius: 36px;
     transform: translateY(12px);
     opacity: 0;
+    transition: transform 240ms var(--curve), opacity 240ms var(--curve);
   }
 
   .sheet-root.open .sheet {
@@ -1467,6 +1477,6 @@ body.legal .footer {
   .first-words, .first-tile, .first-stores { animation: none; }
   .story-line, .story .shot { transition: none; }
   [data-reveal].in { animation: none; }
-  .sheet { transition: none; }
+  .sheet, .sheet-backdrop { transition: none; }
   .field input.shake { animation: none; }
 }
