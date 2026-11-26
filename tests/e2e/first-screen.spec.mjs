@@ -211,8 +211,8 @@ for (const vp of FITS) {
 /* ---------- the words' sizes: C-375 under 390 wide, C-393 from 390 up ---------- */
 
 const SETS = [
-  { width: 389, board: 'C-375', top: 52, gap: 8, icon: 28, word: 19, h1: 30, h1mt: 8, answer: 16, answerLh: 22, answerMt: 8, tileMt: 14, tilePad: 16, bar: ['14px', '20px', '32px', '20px'] },
-  { width: 390, board: 'C-393', top: 56, gap: 9, icon: 30, word: 20, h1: 34, h1mt: 12, answer: 17, answerLh: 24, answerMt: 10, tileMt: 18, tilePad: 20, bar: ['16px', '20px', '34px', '20px'] }
+  { width: 389, board: 'C-375', top: 52, gap: 8, icon: 28, word: 19, h1: 30, h1mt: 8, answer: 16, answerLh: 22, answerMt: 8, tileMt: 14, tilePad: 16, bar: ['14px', '20px', '31px', '20px'], barH: 146 },
+  { width: 390, board: 'C-393', top: 56, gap: 9, icon: 30, word: 20, h1: 34, h1mt: 12, answer: 17, answerLh: 24, answerMt: 10, tileMt: 18, tilePad: 20, bar: ['16px', '20px', '33px', '20px'], barH: 150 }
 ];
 
 async function sizesOf(page) {
@@ -254,6 +254,7 @@ for (const s of SETS) {
     expectSet(got, s);
     expect(got.m.tile.top - got.m.answer.bottom, `${s.board}: the tile's margin`).toBeCloseTo(s.tileMt, 1);
     expect(got.css.bar, `${s.board}: the bar's padding`).toEqual(s.bar);
+    expect(got.m.cta.height, `${s.board}: the bar is the board's ${s.barH} px box`).toBeCloseTo(s.barH, 1);
   });
 }
 
@@ -270,9 +271,9 @@ test.describe('Android', () => {
       expect(m.androidLine.top - m.answer.bottom, 'AN1: the line sits 12 under the answer line').toBeCloseTo(12, 1);
       expect(css.androidLine, 'AN1: 15/20, 600, ink').toEqual(['15px', '20px', '600', INK]);
       expect(m.tile.top - m.androidLine.bottom, `${s.board}: the tile's margin`).toBeCloseTo(s.tileMt, 1);
-      expect(css.bar, 'AN1\'s bar: padding 16 20 24').toEqual(['16px', '20px', '24px', '20px']);
+      expect(css.bar, 'AN1\'s bar: padding 16 20 24, with 23 showing under the button').toEqual(['16px', '20px', '23px', '20px']);
       const final = await bbox(page.locator('.cta .btn-final'));
-      expect(m.cta.height, 'the bar holds only its button').toBeCloseTo(1 + 16 + final.height + 24, 0);
+      expect(m.cta.height, 'the bar holds only its button: AN1\'s 96 box').toBeCloseTo(1 + 16 + final.height + 23, 0);
       expect(m.cta.top - m.tile.bottom, 'the tile ends 12 px above the bar').toBeCloseTo(12, 0);
     });
   }
@@ -376,7 +377,7 @@ for (const vp of [{ width: 393, height: 560, note: 'a short window' }, { width: 
     });
     expect(bar.border, 'its hairline closed').toEqual(Array(4).fill(`1px solid ${INK_10}`));
     expect(bar.radius, 'all four corners 24').toEqual(Array(4).fill('24px'));
-    expect(bar.padding, 'its paddings kept (C-393)').toEqual(['16px', '20px', '34px', '20px']);
+    expect(bar.padding, 'its paddings kept (C-393)').toEqual(['16px', '20px', '33px', '20px']);
 
     // the bar scrolls with the page
     await page.evaluate(() => window.scrollTo(0, 100));

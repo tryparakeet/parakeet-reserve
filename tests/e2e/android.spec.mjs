@@ -101,7 +101,7 @@ for (const browser of BROWSERS) {
         const bar = await bbox(page.locator('.cta'));
         const final = await bbox(button);
         expect(bar.bottom).toBeCloseTo(win.height, 0);
-        expect(bar.height, 'AN1\'s bar holds only its button: 1 + 16 + the button + 24').toBeCloseTo(1 + 16 + final.height + 24, 0);
+        expect(bar.height, 'AN1\'s bar holds only its button: 1 + 16 + the button + 23, its 96 box').toBeCloseTo(1 + 16 + final.height + 23, 0);
 
         // the button opens the sheet straight on its email step, the field focused inside the tap
         await button.click();

@@ -38,9 +38,11 @@
   --tile-mt: 18px;
   --tile-pad: 20px;
   --bar-pt: 16px;
-  --bar-pb: max(34px, env(safe-area-inset-bottom, 0px));
-  /* The bottom bar's height: 1 + 16 + 56 + 8 + two 18 px lines + 34. app.js replaces it with the measured
-     height (a third line on a narrow phone, a larger safe area, Android's bar). */
+  /* The board's bar is 150 tall with padding 34 under a 1 + 16 + 56 + 8 + 36 content that runs 1 px into
+     it, so 33 shows under the line: the bar takes the 33, and a larger safe area (a Face ID iPhone's 34) */
+  --bar-pb: max(33px, env(safe-area-inset-bottom, 0px));
+  /* The bottom bar's height: 1 + 16 + 56 + 8 + two 18 px lines + 33, the board's 150 box. app.js replaces it
+     with the measured height (a third line on a narrow phone, a larger safe area, Android's bar). */
   --cta-h: calc(117px + var(--bar-pb));
   --vvh: 100svh;
 }
@@ -60,7 +62,7 @@
     --tile-mt: 14px;
     --tile-pad: 16px;
     --bar-pt: 14px;
-    --bar-pb: max(32px, env(safe-area-inset-bottom, 0px));
+    --bar-pb: max(31px, env(safe-area-inset-bottom, 0px));   /* the board's 146 box, as at 393 */
     --cta-h: calc(115px + var(--bar-pb));
   }
 }
@@ -333,8 +335,9 @@ html.android .for-reserve { display: none; }
   text-align: center;
 }
 
-/* Android's bar (AN1-412) holds only its button: padding 16 20 24 */
-html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bottom, 0px)); }
+/* Android's bar (AN1-412) holds only its button: 96 tall, padding 16 20 24 around a 1 + 16 + 56 content
+   that runs 1 px into it, so 23 shows under the button, as on the iPhone's bar */
+html.android .cta { padding: 16px var(--gutter) max(23px, env(safe-area-inset-bottom, 0px)); }
 
 /* Primary button (DESIGN.md §5): pill, 56 px, ink 17/600 on sky (6.7:1); pressed 6% darker */
 .btn {
