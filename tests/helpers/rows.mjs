@@ -96,11 +96,13 @@ export function leave(v, seconds, received, o = {}) {
   return row;
 }
 
-// What finalizeBucket returns for an empty bucket: the Oct 30 contract's field names, in order.
+// What finalizeBucket returns for an empty bucket: the Oct 30 contract's field names, in order, with the
+// Android button's two counts (summary version 8) beside the reserve taps.
 export const ZERO_BUCKET = {
   uniques: 0,
   reserve_taps: 0,
   reserve_rate: 0,
+  android_taps: 0,
   plan_taps: 0,
   plan_yearly_taps: 0,
   plan_monthly_taps: 0,
@@ -114,6 +116,7 @@ export const ZERO_BUCKET = {
   video_events: { playing: 0, blocked: 0 },
   tap_events: 0,
   tap_events_reserve: 0,
+  tap_events_android: 0,
   tap_events_play: 0,
   tap_events_plan_yearly: 0,
   tap_events_plan_monthly: 0,

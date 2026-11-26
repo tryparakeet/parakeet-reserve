@@ -66,6 +66,10 @@ test('400: answer is gone, a tap needs a listed button, vid must be 24 [a-z0-9]'
   await rejected({ event: 'tap', vid: V, button: 'bar' }, 400, 'bad button');
   await rejected({ event: 'tap', vid: V, button: 'Reserve' }, 400, 'bad button');
   await rejected({ event: 'tap', vid: V, button: 7 }, 400, 'bad button');
+  await rejected({ event: 'tap', vid: V, button: 'Android' }, 400, 'bad button');
+  await rejected({ event: 'tap', vid: V, button: 'android ' }, 400, 'bad button');
+  await rejected({ event: 'tap', vid: V, button: 'ios' }, 400, 'bad button');
+  await rejected({ event: 'tap', vid: V, button: 'email' }, 400, 'bad button');
   await rejected({ event: 'pageview', vid: 'short' }, 400, 'bad vid');
   await rejected({ event: 'pageview', vid: V.toUpperCase() }, 400, 'bad vid');
   await rejected({ event: 'pageview', vid: V + 'a' }, 400, 'bad vid');
@@ -93,6 +97,15 @@ test('400: bad email, bad plan, bad via, bad video state', async () => {
   await rejected({ event: 'tap', vid: V, button: 'plan_monthly', via: 'Card' }, 400, 'bad via');
   await rejected({ event: 'video', vid: V, video: 'paused' }, 400, 'bad video state');
   await rejected({ event: 'video', vid: V }, 400, 'bad video state');
+});
+
+test('the Android button: a tap named android is taken and stored as it came, with no via', async () => {
+  const row = await one({ event: 'tap', ...tagged, device: 'android', inapp: 'tiktok', button: 'android', via: 'card' });
+  assert.equal(row.button, 'android');
+  assert.equal(row.device, 'android');
+  assert.equal(row.inapp, 'tiktok');
+  assert.equal(row.via, undefined, 'via belongs to plan taps only');
+  assert.equal((await one({ event: 'tap', ...tagged, button: 'android' })).button, 'android', 'taken from any device');
 });
 
 test('via is stored on plan taps (card / hold), empty when absent, ignored on reserve and play', async () => {

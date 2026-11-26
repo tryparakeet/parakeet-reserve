@@ -140,7 +140,7 @@ test('index.html data-tap: the BUTTONS of event.mjs but play, each once; play st
   const taps = [...index.matchAll(/\sdata-tap="([^"]*)"/g)].map((m) => m[1]);
   assert.equal(taps.length, 3, 'three data-tap attributes');
   assert.deepEqual([...taps].sort(), ['plan_monthly', 'plan_yearly', 'reserve']);
-  assert.deepEqual([...BUTTONS].sort(), ['plan_monthly', 'plan_yearly', 'play', 'reserve'], 'play is still allowlisted');
+  assert.deepEqual([...BUTTONS].sort(), ['android', 'plan_monthly', 'plan_yearly', 'play', 'reserve'], 'play is still allowlisted');
   assert.doesNotMatch(app, /'play'/, 'app.js never sends play');
   assert.match(index, /<button[^>]*\sdata-tap="reserve"[^>]*>/);
   assert.match(index, /<button[^>]*\srole="radio"[^>]*\sdata-tap="plan_yearly"[^>]*\sdata-plan="yearly"[^>]*\saria-checked="true"/);

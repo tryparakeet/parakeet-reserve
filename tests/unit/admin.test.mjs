@@ -113,7 +113,7 @@ test('the empty summary is exactly this JSON', async () => {
   assert.equal(res.headers.get('cache-control'), 'no-store');
   const out = await res.json();
   const expected = {
-    version: 7,
+    version: 8,
     gate_start: GATE_START_ISO,
     generated: T0,
     from: null,
@@ -132,7 +132,7 @@ test('the empty summary is exactly this JSON', async () => {
   };
   assert.deepEqual(out, expected);
   assert.deepEqual(Object.keys(out), Object.keys(expected));
-  assert.equal(SUMMARY_VERSION, 7);
+  assert.equal(SUMMARY_VERSION, 8);
   assert.equal(GATE_START, Date.parse(GATE_START_ISO));
   assert.equal(out.answers, undefined);
 });
@@ -141,7 +141,7 @@ test('the scripted week read on Oct 31 with no day params', async () => {
   const { handler, clock } = await scriptedWeek();
   clock.set(READ_AT);
   const out = await read(handler);
-  assert.equal(out.version, 7);
+  assert.equal(out.version, 8);
   assert.equal(out.gate_start, GATE_START_ISO);
   assert.equal(out.generated, READ_AT);
   assert.equal(out.partial, false);
@@ -329,7 +329,7 @@ test('a second read serves the cached hours: no row reads but the email keys, no
   assert.equal(blobs.log.filter((e) => e.store === 'summaries' && e.op === 'get').length, 5);
 });
 
-test('a cached hour is served as is; a v 6 or other-GATE_START entry is rebuilt', async () => {
+test('a cached hour is served as is; a v 6, a v 7 or an other-GATE_START entry is rebuilt', async () => {
   const { handler, clock, blobs } = await scriptedWeek();
   clock.set(READ_AT);
   await read(handler);
@@ -340,12 +340,14 @@ test('a cached hour is served as is; a v 6 or other-GATE_START entry is rebuilt'
   await summaries.setJSON(key, { ...good, rows: 999 });
   const served = await read(handler);
   assert.equal(served.days[1].rows, 999);
-  // previous version: rebuilt and re-cached as v 7
-  await summaries.setJSON(key, { ...good, v: 6, rows: 999 });
-  const rebuilt = await read(handler);
-  assert.equal(rebuilt.days[1].rows, 15);
-  assert.equal(blobs.dump('summaries')[key].v, 7);
-  assert.equal(blobs.dump('summaries')[key].rows, 15);
+  // previous versions: rebuilt and re-cached as v 8 (v 7 is the last version before the Android button)
+  for (const old of [6, 7]) {
+    await summaries.setJSON(key, { ...good, v: old, rows: 999 });
+    const rebuilt = await read(handler);
+    assert.equal(rebuilt.days[1].rows, 15, `v ${old}`);
+    assert.equal(blobs.dump('summaries')[key].v, 8, `v ${old}`);
+    assert.equal(blobs.dump('summaries')[key].rows, 15, `v ${old}`);
+  }
   // another GATE_START: rebuilt too
   await summaries.setJSON(key, { ...good, gs: GATE_START + 1, rows: 999 });
   const again = await read(handler);
@@ -494,7 +496,7 @@ test('the emails table: EMAIL_COLUMNS with plan, as JSON and CSV', async () => {
   assert.ok(lines[2].endsWith(',monthly'));
   const answers = await read(handler, { table: 'answers' });
   assert.equal(answers.answers, undefined, 'no answers table any more');
-  assert.equal(answers.version, 7, 'an unknown table is the summary');
+  assert.equal(answers.version, 8, 'an unknown table is the summary');
 });
 
 test('the directory form with a trailing slash reads the same', async () => {

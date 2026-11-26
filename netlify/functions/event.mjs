@@ -1,8 +1,8 @@
 // One function, two routes (via netlify.toml rewrites):
 //   POST /api/event            stores one raw row per event in Netlify Blobs (store "events", key day/hour/id-event)
 //   GET  /admin?key=ADMIN_KEY  counts per day: uniques (by vid) per utm_source and blended, reserve taps, plan taps
-//                              (plan_rate = plan taps / uniques is the measured number), emails, the video's final
-//                              state per visitor, time on page
+//                              (plan_rate = plan taps / uniques is the measured number), the Android button's taps
+//                              apart from them, emails, the video's final state per visitor, time on page
 //
 // Rows are never deduped on write. Closed hours are summarised once (counts and vid lists only, no
 // addresses) and cached in the "summaries" store; the email table always reads the raw rows, so
@@ -22,7 +22,8 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 // version (see hourSummary).
 export const GATE_START = Date.parse('2026-10-24T05:00:00.000Z');
 export const EVENTS = new Set(['pageview', 'tap', 'email', 'video', 'seen', 'leave']);
-export const BUTTONS = new Set(['reserve', 'play', 'plan_yearly', 'plan_monthly']);
+// android is the Android phone's one button ("Email me when it's on Android"), counted apart from the reserves.
+export const BUTTONS = new Set(['reserve', 'play', 'plan_yearly', 'plan_monthly', 'android']);
 // How a plan tap happened: the card was pressed, or "Hold my spot" was pressed with the preselected plan.
 export const VIAS = new Set(['card', 'hold']);
 // The plan chosen when the email was typed in.
@@ -40,7 +41,7 @@ const MAX_BODY = 8192;
 const UA_MAX = 400;
 const COOKIE_MAX_AGE = 90 * 24 * 60 * 60;
 // Version of the per-hour summary cache: every change to what a summary counts bumps it.
-export const SUMMARY_VERSION = 7;
+export const SUMMARY_VERSION = 8;
 // A pageview is a bot's on positive evidence only: wd true (navigator.webdriver), scr 0x0 or 2000x2000, a
 // user agent that starts with "Instagram " plus a digit (Meta's link checkers carry the Instagram app's
 // network label; every real in-app browser starts "Mozilla/5.0"), see APP_LABEL_UA, or a user agent
@@ -56,8 +57,8 @@ const SITE_ORIGINS = ['https://tryparakeet.netlify.app'];
 // Per-bucket counts. VID_SETS are unique-visitor lists (one entry per vid; they move with the visitor when
 // the flags are resolved at read); COUNTERS count rows and stay where the rows were stored. Every button
 // has a set and a counter (a unit test checks BUTTONS against both lists).
-export const VID_SETS = ['pv', 'tap', 'reserve', 'play', 'plan_yearly', 'plan_monthly', 'email', 'seen', 'video_playing', 'video_blocked'];
-export const COUNTERS = ['n_pv', 'n_tap', 'n_tap_reserve', 'n_tap_play', 'n_tap_plan_yearly', 'n_tap_plan_monthly', 'n_email', 'n_video_playing', 'n_video_blocked'];
+export const VID_SETS = ['pv', 'tap', 'reserve', 'play', 'plan_yearly', 'plan_monthly', 'android', 'email', 'seen', 'video_playing', 'video_blocked'];
+export const COUNTERS = ['n_pv', 'n_tap', 'n_tap_reserve', 'n_tap_play', 'n_tap_plan_yearly', 'n_tap_plan_monthly', 'n_tap_android', 'n_email', 'n_video_playing', 'n_video_blocked'];
 
 export function createHandler({ getStore = blobStore, env = process.env, now = Date.now } = {}) {
   async function handler(req) {
@@ -459,9 +460,11 @@ export function mergeSummary(target, s) {
 }
 
 // The read contract. Per-visitor numbers come from the vid lists, per-row numbers from the counters.
-// plan_rate is the measured number of Gate 0. video is per visitor and playing wins: a visitor whose clip
-// played on any load counts as playing; blocked is the visitors with only blocked loads; both is the overlap.
-// video_events counts the rows (about one per load) beside it.
+// plan_rate is the measured number of Gate 0. The Android button's taps (android_taps, tap_events_android)
+// sit beside the reserve taps and never in them or in the plan taps; like every button they are in taps and
+// tap_events. video is per visitor and playing wins: a visitor whose clip played on any load counts as
+// playing; blocked is the visitors with only blocked loads; both is the overlap. video_events counts the
+// rows (about one per load) beside it.
 export function finalizeBucket(b) {
   const uniques = new Set([...b.pv, ...b.tap, ...b.email]).size;
   const rate = (n) => (uniques ? Number((n / uniques).toFixed(4)) : 0);
@@ -472,6 +475,7 @@ export function finalizeBucket(b) {
     uniques,
     reserve_taps: b.reserve.length,
     reserve_rate: rate(b.reserve.length),
+    android_taps: b.android.length,
     plan_taps: planTaps,
     plan_yearly_taps: b.plan_yearly.length,
     plan_monthly_taps: b.plan_monthly.length,
@@ -485,6 +489,7 @@ export function finalizeBucket(b) {
     video_events: { playing: b.n_video_playing, blocked: b.n_video_blocked },
     tap_events: b.n_tap,
     tap_events_reserve: b.n_tap_reserve,
+    tap_events_android: b.n_tap_android,
     tap_events_play: b.n_tap_play,
     tap_events_plan_yearly: b.n_tap_plan_yearly,
     tap_events_plan_monthly: b.n_tap_plan_monthly,
@@ -635,18 +640,19 @@ export function finalizeDay(s, prestart) {
 
 export const RAW_COLUMNS = ['received', 'event', 'vid', 'flag', 'ts', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'device', 'inapp', 'ref', 'button', 'via', 'email', 'plan', 'video', 'seconds', 'ua', 'wd', 'scr'];
 export const EMAIL_COLUMNS = ['received', 'email', 'vid', 'flag', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'device', 'inapp', 'plan'];
-export const SUMMARY_COLUMNS = ['day', 'scope', 'source', 'content', 'uniques', 'reserve_taps', 'reserve_rate', 'plan_taps', 'plan_yearly_taps', 'plan_monthly_taps', 'plan_rate', 'play_taps', 'taps', 'emails', 'pageviews', 'seen', 'video_playing', 'video_blocked', 'video_both', 'video_events_playing', 'video_events_blocked', 'tap_events', 'tap_events_reserve', 'tap_events_play', 'tap_events_plan_yearly', 'tap_events_plan_monthly', 'email_events', 'leave_n', 'leave_avg_seconds', 'ios', 'android', 'other', 'inapp_tiktok', 'inapp_instagram', 'inapp_facebook', 'inapp_none'];
+export const SUMMARY_COLUMNS = ['day', 'scope', 'source', 'content', 'uniques', 'reserve_taps', 'reserve_rate', 'android_taps', 'plan_taps', 'plan_yearly_taps', 'plan_monthly_taps', 'plan_rate', 'play_taps', 'taps', 'emails', 'pageviews', 'seen', 'video_playing', 'video_blocked', 'video_both', 'video_events_playing', 'video_events_blocked', 'tap_events', 'tap_events_reserve', 'tap_events_android', 'tap_events_play', 'tap_events_plan_yearly', 'tap_events_plan_monthly', 'email_events', 'leave_n', 'leave_avg_seconds', 'ios', 'android', 'other', 'inapp_tiktok', 'inapp_instagram', 'inapp_facebook', 'inapp_none'];
 
 export function summaryRows(out) {
   const rows = [];
   const flat = (day, scope, source, content, f) => rows.push({
     day, scope, source, content,
-    uniques: f.uniques, reserve_taps: f.reserve_taps, reserve_rate: f.reserve_rate,
+    uniques: f.uniques, reserve_taps: f.reserve_taps, reserve_rate: f.reserve_rate, android_taps: f.android_taps,
     plan_taps: f.plan_taps, plan_yearly_taps: f.plan_yearly_taps, plan_monthly_taps: f.plan_monthly_taps, plan_rate: f.plan_rate,
     play_taps: f.play_taps, taps: f.taps, emails: f.emails, pageviews: f.pageviews, seen: f.seen,
     video_playing: f.video.playing, video_blocked: f.video.blocked, video_both: f.video.both,
     video_events_playing: f.video_events.playing, video_events_blocked: f.video_events.blocked,
-    tap_events: f.tap_events, tap_events_reserve: f.tap_events_reserve, tap_events_play: f.tap_events_play,
+    tap_events: f.tap_events, tap_events_reserve: f.tap_events_reserve, tap_events_android: f.tap_events_android,
+    tap_events_play: f.tap_events_play,
     tap_events_plan_yearly: f.tap_events_plan_yearly, tap_events_plan_monthly: f.tap_events_plan_monthly,
     email_events: f.email_events,
     leave_n: f.leave.n, leave_avg_seconds: f.leave.avg_seconds,
