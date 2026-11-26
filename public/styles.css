@@ -16,6 +16,8 @@
   --ink-10: rgba(14, 27, 38, 0.10);   /* hairlines */
   --sky-soft: #E3F1FC;                /* a selected row's fill; the stores' tile */
   --cream-14: rgba(251, 246, 236, 0.14);   /* the final button's edge (§5) */
+  --cream-24: rgba(251, 246, 236, 0.24);   /* the middle of the final button's band (§5) */
+  --cream-0: rgba(251, 246, 236, 0);       /* the band's two ends */
   --curve: cubic-bezier(0.22, 1, 0.36, 1);   /* the standard curve, which settles a move (§6) */
   --col: 430px;
   --gutter: 20px;
@@ -390,6 +392,29 @@ html.android .cta { padding: 16px var(--gutter) max(24px, env(safe-area-inset-bo
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* Its band (DESIGN.md §5 and §6, AN1-412), the site's only gradient: a soft cream band crosses the button 3
+   times, 1.2 s each and 0.6 s apart, from 1 s after load, then rests, so it moves for 4.8 s, under the 5 s
+   past which WCAG 2.2.2 asks for a pause control. Each 1.8 s turn crosses over its first two thirds and
+   waits out of sight for the rest. app.js starts it once per load (.band) where the bar shows: never at
+   900 wide and up, never with Reduce Motion. */
+@keyframes band {
+  0% { transform: translateX(-110%); animation-timing-function: ease-in-out; }
+  66.667%, 100% { transform: translateX(330%); }
+}
+
+.btn-final.band::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(90deg, var(--cream-0), var(--cream-24), var(--cream-0));
+  transform: translateX(-110%);
+  pointer-events: none;
+  animation: band 1.8s 1s 3 both;
 }
 
 /* The computer's own parts: the header's Reserve, the white tile's button and line, the first screen's
@@ -1548,5 +1573,6 @@ body.legal .footer {
   .step.step-in, .step.step-out { animation: none; }
   .plan::before, .tick::before, .tick svg { transition: none; }
   .tick.pop { animation: none; }
+  .btn-final.band::after { display: none; animation: none; }
   .field input.shake { animation: none; }
 }

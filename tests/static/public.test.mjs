@@ -394,7 +394,7 @@ test('app.js: the endpoint, the cookie name, the transport, no http literal, no 
   assert.match(css, /#sheet:not\(\[data-picked="android"\]\) \.if-android,\s*#sheet\[data-picked="android"\] \.if-reserve \{ display: none; \}/, 'each .if- line shows only for its own');
 });
 
-test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradient or glow, svh, the system font stack', () => {
+test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, one gradient (the band) and no glow, svh, the system font stack', () => {
   const tokens = {
     '--sky': '#4FA8E8', '--ink': '#0E1B26', '--cream': '#FBF6EC', '--white': '#FFFFFF', '--sky-soft': '#E3F1FC',
     '--ink-70': 'rgba(14, 27, 38, 0.70)', '--ink-62': 'rgba(14, 27, 38, 0.62)', '--ink-48': 'rgba(14, 27, 38, 0.48)',
@@ -416,7 +416,13 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, no gradie
   for (const old of ['--bg', '--bg-2', '--surface', '--sheet', '--fg', '--fg-2', '--fg-3', '--accent', '--accent-ink', '--hairline', '--hair-strong', '--shadow', '--focus']) {
     assert.doesNotMatch(cssNoComments, new RegExp(`${old}\\b(?!-)`), `the old token ${old} is gone`);
   }
-  assert.doesNotMatch(cssNoComments, /gradient\(/, 'no gradient');
+  const gradients = cssNoComments.match(/[^{}]*\{[^{}]*gradient\([^}]*\}/g) || [];
+  assert.equal(gradients.length, 1, 'one gradient: the final button\'s band (DESIGN.md §2, §5)');
+  assert.match(gradients[0], /^\s*\.btn-final\.band::after\s*\{[^}]*background: linear-gradient\(90deg, var\(--cream-0\), var\(--cream-24\), var\(--cream-0\)\);[^}]*animation: band 1\.8s 1s 3 both;/, 'the band: cream at 24% in its middle, three 1.8 s turns from 1 s');
+  assert.match(cssNoComments, /@keyframes band \{\s*0% \{ transform: translateX\(-110%\); animation-timing-function: ease-in-out; \}\s*66\.667%, 100% \{ transform: translateX\(330%\); \}/, 'each turn crosses in 1.2 s, then rests 0.6 s');
+  assert.match(root[1], /--cream-24:\s*rgba\(251, 246, 236, 0\.24\);/);
+  assert.match(root[1], /--cream-0:\s*rgba\(251, 246, 236, 0\);/);
+  assert.match(app, /if \(android && !reduced && !\(win\.matchMedia && win\.matchMedia\('\(min-width: 900px\)'\)\.matches\)\)/, 'the band runs only on an Android phone\'s bar, never with Reduce Motion');
   assert.match(css, /html, body \{ background-color: var\(--cream\); \}/, 'the page is cream');
   assert.match(css, /\.btn\s*\{[^}]*background:\s*var\(--sky\)[^}]*color:\s*var\(--ink\)/, 'the button is ink on sky');
   assert.match(css, /100svh/);

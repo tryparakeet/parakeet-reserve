@@ -221,6 +221,19 @@
   var reduced = false;   // closeSheet, the sheet's steps and the rise below the first screen read it
   try { reduced = !!(win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
 
+  /* ---------- Android's band: once per load, where the bar shows (a phone's layout), never with Reduce
+     Motion; it crosses the button from 1 s after now, and the class goes when it ends (styles.css) ---------- */
+
+  try { if (android && !reduced && !(win.matchMedia && win.matchMedia('(min-width: 900px)').matches)) {
+    var finalButton = cta && cta.querySelector('.btn-final');
+    if (finalButton) {
+      var endBand = function () { finalButton.classList.remove('band'); };
+      finalButton.addEventListener('animationend', endBand);
+      finalButton.addEventListener('animationcancel', endBand);
+      finalButton.classList.add('band');
+    }
+  } } catch (e) {}
+
   /* ---------- the rise below the first screen: each part, once, the first time it scrolls into view ----------
      Only a part whose top is below the window at load waits (.wait, styles.css); one already in the window
      never moves, and with the script off nothing waits. It rises once 12% of it shows, as the boards do it,
