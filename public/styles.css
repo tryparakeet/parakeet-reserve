@@ -1023,6 +1023,34 @@ body.legal .footer {
     --chip-h: clamp(32px, 32px + 4 * var(--k), 36px);
     --chip-px: clamp(13px, 13px + 3 * var(--k), 16px);
     --chip-fs: clamp(14px, 14px + var(--k), 15px);
+    --lede-w: clamp(860px, 860px + 140 * var(--k), 1000px);
+    --lede-mt: clamp(96px, 96px + 24 * var(--k), 120px);
+    --lede-h2: clamp(44px, 44px + 8 * var(--k), 52px);
+    --lede-h2-lh: clamp(46.64px, 46.64px + 7.96 * var(--k), 54.6px);   /* 44 x 1.06, 52 x 1.05 */
+    --lede-p: clamp(19px, 19px + var(--k), 20px);
+    --lede-p-lh: clamp(28px, 28px + 2 * var(--k), 30px);
+    --lede-p-w: clamp(680px, 680px + 80 * var(--k), 760px);
+    --story-col: clamp(420px, 420px + 140 * var(--k), 560px);
+    --story-gap: clamp(48px, 48px + 16 * var(--k), 64px);
+    --story-mt: clamp(80px, 80px + 16 * var(--k), 96px);
+    --story-pb: clamp(120px, 120px + 40 * var(--k), 160px);
+    --story-pl: clamp(64px, 64px + 56 * var(--k), 120px);
+    --step-h: clamp(360px, 360px + 60 * var(--k), 420px);
+    --story-fs: clamp(44px, 44px + 16 * var(--k), 60px);
+    --story-top: clamp(88px, 88px + 8 * var(--k), 96px);
+    /* The story's tile: the boards' 640 to 760, or less in a short window so it fits under the header
+       (40 to 44 px to spare below it); its phone keeps 40 above and below and never goes under 200. */
+    --story-tile: max(280px, min(clamp(640px, 640px + 120 * var(--k), 760px), 100svh - clamp(128px, 128px + 12 * var(--k), 140px)));
+    --yours-h: clamp(560px, 560px + 120 * var(--k), 680px);
+    --yours-px: clamp(56px, 56px + 16 * var(--k), 72px);
+    --yours-w: clamp(440px, 440px + 160 * var(--k), 600px);
+    --yours-fs: clamp(36px, 36px + 12 * var(--k), 48px);
+    --yours-lh: clamp(44px, 44px + 12 * var(--k), 56px);
+    --yours-phone: clamp(225px, 225px + 49 * var(--k), 274px);
+    --fact-pad: clamp(32px, 32px + 8 * var(--k), 40px);
+    --fact-r: clamp(32px, 32px + 4 * var(--k), 36px);
+    --fact-fs: clamp(17px, 17px + 2 * var(--k), 19px);
+    --fact-lh: clamp(25px, 25px + 2 * var(--k), 27px);
   }
 
   /* The page: a centred column up to 1440, clear of a phone's side insets when it lies on its side */
@@ -1169,6 +1197,131 @@ body.legal .footer {
     height: var(--chip-h);
     padding: 0 var(--chip-px);
     font-size: var(--chip-fs);
+  }
+
+  /* The headline and Umyt's sentence, centred (S-A-1440) */
+  .lede {
+    max-width: var(--lede-w);
+    margin: var(--lede-mt) auto 0;
+    padding: 0 var(--pad);
+  }
+
+  .lede h2 {
+    font-size: var(--lede-h2);
+    line-height: var(--lede-h2-lh);
+  }
+
+  .lede p {
+    max-width: var(--lede-p-w);
+    margin: 20px auto 0;
+    font-size: var(--lede-p);
+    line-height: var(--lede-p-lh);
+  }
+
+  /* The story: the four lines in the left column, the phone's tile held under the header on the right.
+     The tile stays in its grid area, the four steps, so the fourth step reaches further down: the tile
+     stays put until line 4 reaches the header, then leaves with it, its gap to the price tile kept. Line 4
+     sits where a one-line line sits centred in its step, so this holds whether it takes one line or two. */
+  .story {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--story-col);
+    column-gap: var(--story-gap);
+    margin-top: var(--story-mt);
+    padding: 0 var(--pad) var(--story-pb) var(--story-pl);
+  }
+
+  .story-pin {
+    grid-row: 1 / 5;
+    grid-column: 2;
+    align-self: start;
+    top: var(--story-top);
+    padding: 0;
+  }
+
+  .story-pin::before { display: none; }
+
+  .story-tile {
+    height: var(--story-tile);
+    border-radius: 36px;
+  }
+
+  .story-tile .phone { height: calc(100% - 80px); }
+
+  .story-step {
+    display: grid;
+    grid-column: 1;
+    grid-template-rows: minmax(var(--step-h), auto);
+    align-content: start;
+    align-items: center;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .story-step:last-child {
+    --line-4-top: calc((var(--step-h) - 1.04 * var(--story-fs)) / 2);
+    grid-template-rows: auto;
+    align-items: start;
+    min-height: calc(var(--line-4-top) + var(--story-tile) + var(--story-top) - var(--top-h));
+    padding-top: var(--line-4-top);
+  }
+
+  .story-line {
+    font-size: var(--story-fs);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+  }
+
+  /* The remembered price: its words beside its phone on a sky tile */
+  .tile-yours {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 64px;
+    height: var(--yours-h);
+    margin: 0 var(--pad);
+    padding: 0 var(--yours-px);
+    border-radius: 36px;
+  }
+
+  .yours-line {
+    align-self: auto;
+    max-width: var(--yours-w);
+    font-size: var(--yours-fs);
+    line-height: var(--yours-lh);
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  .tile-yours .phone {
+    flex: none;
+    width: var(--yours-phone);
+    margin-top: 0;
+  }
+
+  /* Prices and Recipes: two white tiles side by side */
+  .facts {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    margin: 16px var(--pad) 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  .fact,
+  .fact + .fact {
+    margin: 0;
+    padding: var(--fact-pad);
+    border: 1px solid var(--ink-10);
+    border-radius: var(--fact-r);
+    background: var(--white);
+  }
+
+  .fact p {
+    margin-top: 8px;
+    font-size: var(--fact-fs);
+    line-height: var(--fact-lh);
   }
 
   /* No bottom bar on a computer: the header and the white tile hold the Reserve buttons. The stores sit
