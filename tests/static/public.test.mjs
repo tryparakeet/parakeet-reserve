@@ -321,19 +321,23 @@ test('privacy.html: the cookie, the retention, the one email, never shared or so
   pageFooter(privacy, 'privacy');
 });
 
-// The privacy page's part about the app (SITE-01 §4, Umyt's words, Nov 17), in the page's style: a bold lead-in, the
-// page's ’ for each apostrophe, after the page's own parts and before Deletion.
-const IN_THE_APP = 'In the app. The app counts what people do in it, so we can see what works and fix what doesn’t: setup’s pages, a week built, the list opened, a price typed, a dinner marked cooked, a thumb, a swap, the paywall and the free week. Each count carries a random id the app makes when it’s installed. Some also carry the store chain, the first three digits of the ZIP code, the household’s size, the diet, the budget, the week’s estimated total and which dinners were picked. It never sends a name, an email, your exact location or full ZIP code, the phone’s identifiers, your notes, your own list items or the prices you type. Your notes, your lists and the prices you type stay on your phone. The counts are stored on Netlify, in the United States, and kept 2 years, then deleted.';
+// The privacy page's part about the app (SITE-01 §4, Umyt's words, Nov 17), in the page's style: its heading
+// (P-393 makes each bold lead-in a heading over its part), the page's ’ for each apostrophe, after the page's own
+// parts and before Deletion.
+const IN_THE_APP = 'The app counts what people do in it, so we can see what works and fix what doesn’t: setup’s pages, a week built, the list opened, a price typed, a dinner marked cooked, a thumb, a swap, the paywall and the free week. Each count carries a random id the app makes when it’s installed. Some also carry the store chain, the first three digits of the ZIP code, the household’s size, the diet, the budget, the week’s estimated total and which dinners were picked. It never sends a name, an email, your exact location or full ZIP code, the phone’s identifiers, your notes, your own list items or the prices you type. Your notes, your lists and the prices you type stay on your phone. The counts are stored on Netlify, in the United States, and kept 2 years, then deleted.';
 
-test('privacy.html: the part about the app, word for word, after Where. and before Deletion.', () => {
+test('privacy.html: each part under its heading; the part about the app, word for word, after Where. and before Deletion.', () => {
   const main = /<main class="legal-main">([\s\S]*?)<\/main>/.exec(privacy);
   assert.ok(main, 'the main');
-  const paras = [...main[1].matchAll(/<p>([\s\S]*?)<\/p>/g)].map((m) => m[1]);
-  const leads = paras.map((p) => (/^<b>([^<]+)<\/b>/.exec(p) || [])[1] || null);
-  assert.deepEqual(leads, ['What this page collects.', 'Why.', 'What is not collected.', 'How long.', 'Where.', 'In the app.', 'Deletion.', null]);
-  const app = paras[5];
+  const blocks = [...main[1].matchAll(/<(h1|h2|p)( class="[^"]+")?>([\s\S]*?)<\/\1>/g)].map((m) => [m[1] + (m[2] || ''), m[3]]);
+  assert.deepEqual(blocks.map((b) => b[0]), ['h1', ...Array(7).fill(['h2', 'p']).flat(), 'p class="legal-sign-off"'], 'the title, seven headings each over its part, then the closing line');
+  assert.deepEqual(blocks.filter((b) => b[0] === 'h2').map((b) => b[1]), ['What this page collects.', 'Why.', 'What is not collected.', 'How long.', 'Where.', 'In the app.', 'Deletion.']);
+  assert.equal(main[1].replace(/<(h1|h2|p)( class="[^"]+")?>[\s\S]*?<\/\1>/g, '').trim(), '', 'nothing else in the main');
+  assert.doesNotMatch(main[1], /<b>/, 'no bold lead-in left');
+  const app = blocks[12][1];
+  assert.equal(blocks[11][1], 'In the app.');
   assert.equal(textOf(app), IN_THE_APP);
-  assert.doesNotMatch(app.replace(/^<b>In the app\.<\/b>/, ''), /</, 'no other tag inside');
+  assert.doesNotMatch(app, /</, 'no tag inside');
   assert.doesNotMatch(app, /'/, 'no straight apostrophe: the page uses ’');
   assert.equal(count(/In the app\./g, privacy), 1);
 });

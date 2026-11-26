@@ -1102,10 +1102,12 @@ html.sheet-open body {
 
 .legal-main h2 + p { margin-top: 6px; }
 
+/* Privacy's closing line stands 32 below its last part */
+.legal-main .legal-sign-off { margin-top: 32px; }
+
 /* Support's questions stay the H2 of DESIGN.md §3, 20/700, on both layouts (DESIGN.md §4) */
 .legal-main.legal-questions h2 { font-size: 20px; font-weight: 700; line-height: 1.3; color: var(--ink); }
 
-.legal-main b { color: var(--ink); font-weight: 600; }
 .legal-main a { color: var(--ink); }
 
 /* The home's footer, 64 below the words (P-393) and with no bar to clear */
