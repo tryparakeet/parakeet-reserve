@@ -589,9 +589,37 @@ test('styles.css: the DESIGN.md tokens exactly (§2), no other colour, one gradi
   assert.match(app, /classList\.add\('wait'\)/, 'app.js adds the waiting state');
   assert.match(app, /var shownH = windowH - pinnedBarH\(\);\s*for \([^)]*\) \{\s*if \(reveals\[rv\]\.getBoundingClientRect\(\)\.top > shownH\)/, 'only to a part whose top is out of sight at load: below the window, or under the pinned bar');
   assert.match(app, /threshold: 0\.12/, 'it rises once 12% of it shows, as the boards do it');
-  assert.match(app, /rootMargin: '100000px 0px ' \+ \(wide && wide\.matches \? '-50%' : '-34%'\) \+ ' 0px'/, 'the story\'s focus line: 66% of the window on a phone, its middle on a computer');
+  // the story's focus line (SITE-04 §6.3, §6.9 #3): a computer's is the window's middle; a phone's is halfway
+  // between the held tile's bottom and the bar's top, worked out from the page's boxes
+  const focusBlock = /\/\* -+ the story's focus -+[\s\S]*?\n  \} \} catch \(e\) \{\}\n/.exec(app);
+  assert.ok(focusBlock, 'app.js has the story\'s focus');
+  const focus = focusBlock[0].replace(/\/\*[\s\S]*?\*\//g, '').replace(/[ \t]*\/\/[^\n]*/g, '');   // its code, without the comments
+  assert.match(focus, /if \(wide && wide\.matches\) return '-50%';/, 'on a computer, the window\'s middle');
+  assert.match(focus, /if \(pinStyle && \/sticky\/\.test\(pinStyle\.position\)\) \{\s*tileEnd = \(parseFloat\(pinStyle\.top\) \|\| 0\) \+ storyTile\.offsetTop \+ storyTile\.getBoundingClientRect\(\)\.height;/,
+    'on a phone, the held tile\'s bottom: the pin\'s sticky top, the tile\'s place in the pin as laid out (not as its rise moves it) and its height');
+  assert.match(focus, /var tileEnd = 0;/, 'or the window\'s top where the tile isn\'t held');
+  assert.match(focus, /var barTop = windowH;\s*if \(cta && cta\.offsetHeight && win\.getComputedStyle\(cta\)\.position === 'fixed'\) barTop = cta\.getBoundingClientRect\(\)\.top;/,
+    'and the bar\'s top where it is pinned, or the window\'s bottom where it sits in the page');
+  assert.match(focus, /return -Math\.round\(\(windowH - \(tileEnd \+ barTop\) \/ 2\) \* 100\) \/ 100;/, 'halfway between them, as a bottom margin in px');
+  assert.match(focus, /rootMargin: '100000px 0px ' \+ \(typeof margin === 'number' \? margin \+ 'px' : margin\) \+ ' 0px'/, 'the observer\'s root runs from far above the window down to the focus line');
+  assert.equal(count(/new IntersectionObserver\(/g, focus), 1, 'one observer for the story');
+  assert.match(focus, /Math\.abs\(margin - storyMargin\) < 0\.5\)\)\) return;\s*storyMargin = margin;\s*if \(storyObs\) storyObs\.disconnect\(\);\s*crossed = \[\];/,
+    'built again only where the line has moved half a pixel or more, the old one disconnected first, so one is live');
+  assert.match(focus, /if \(!storyRaf\) storyRaf = win\.requestAnimationFrame\(watchStory\);/, 'a frame later, once however many asked');
+  for (const [hook, what] of [
+    [/barPlaced = queueStory;/, 'as the bar is placed'],
+    [/win\.addEventListener\('resize', queueStory\);/, 'on a resize'],
+    [/win\.addEventListener\('load', queueStory\);/, 'at load'],
+    [/wide\.addEventListener\('change', queueStory\);\s*else if \(wide && wide\.addListener\) wide\.addListener\(queueStory\);/, 'as the window crosses 900 wide'],
+    [/new win\.ResizeObserver\(queueStory\)\.observe\(storyTile\)/, 'as the tile changes size']
+  ]) assert.match(focus, hook, `the focus line is worked out again ${what}`);
+  assert.match(app, /root\.classList\.toggle\('bar-measured', !!bar\);[^\n]*\n\s*if \(barPlaced\) barPlaced\(\);/, 'placeBar tells the story when it has placed the bar');
+  assert.doesNotMatch(app, /-34%|0\.66|\b66%/, 'nothing left of the old focus line at 66% of the window');
   assert.equal(count(/new IntersectionObserver\(/g, app), 3, 'one observer each: seen, the rise, the story');
-  assert.doesNotMatch(app, /win(dow)?\.addEventListener\('scroll'/, 'no scroll listener on the page');
+  assert.doesNotMatch(focus, /scroll/, 'the story\'s focus listens to no scroll');
+  assert.deepEqual([...app.matchAll(/([\w.]+)\.addEventListener\(\s*['"]scroll['"]/g)].map((m) => m[1]), ['win.visualViewport'],
+    'no scroll listener on the page: the one there is is the visual viewport\'s, which fits the open sheet to a keyboard or a pinch zoom');
+  assert.doesNotMatch(app, /\bonscroll\b/, 'nor an onscroll');
   assert.match(css, /\.story\.focus \.story-line\s*\{\s*opacity:\s*0\.62;\s*\}/, 'the lines out of focus are ink at 62%');
   assert.match(cssNoComments, /\n\.story-line \{[^}]*text-wrap: balance;/, 'the story\'s lines are headlines, balanced so no line ends on one word (DESIGN.md §4), on both layouts');
   assert.doesNotMatch(cssNoComments, /\.story-line \{[^}]*text-wrap: (wrap|pretty|stable)/, 'and nothing undoes it');

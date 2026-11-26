@@ -12,7 +12,7 @@
 // The container has no SF Pro: system-ui renders a stand-in, so how many lines the H1, the answer line and
 // the bar's line take (and so the phone's exact height) is measured here, never pinned.
 
-import { test, expect, TAGGED_QS, bbox, frames, sheetSettled } from './fixtures.mjs';
+import { test, expect, TAGGED_QS, bbox, frames, sheetSettled, focusLineAt } from './fixtures.mjs';
 import { REAL_UAS } from '../fixtures/user-agents.mjs';
 
 const ANDROID_UA = REAL_UAS.chrome_android;
@@ -346,13 +346,16 @@ for (const [device, ua] of [['iPhone', undefined], ['Android', ANDROID_UA]]) {
 
 /* ---------- a window too short: the bar in the page, the story's tile scrolls with its lines ---------- */
 
-// The line in focus is the last whose text has crossed 66% of the window's height. Each step is 300 px or
-// more, so a line placed at the middle has crossed and the next one hasn't.
+// The line in focus is the last whose text has crossed the focus line (SITE-04 §6.3): the window's middle
+// where the bar sits in the page and the tile scrolls, and halfway between the held tile and the pinned bar
+// where they are held (focusLineAt). Line n's top goes 8 px past it; each step is 300 px or more, so the
+// next line hasn't crossed.
 async function focusLine(page, n) {
-  await page.evaluate((k) => {
+  const at = await focusLineAt(page);
+  await page.evaluate(([k, to]) => {
     const line = document.querySelectorAll('.story-line')[k];
-    window.scrollBy(0, line.getBoundingClientRect().top - window.innerHeight * 0.5);
-  }, n);
+    window.scrollBy(0, line.getBoundingClientRect().top - to);
+  }, [n, at - 8]);
   await page.waitForFunction((k) => {
     const on = (sel) => [...document.querySelectorAll(sel)].map((el, i) => (el.classList.contains('on') ? i : -1)).filter((i) => i >= 0);
     const lines = on('.story-line');

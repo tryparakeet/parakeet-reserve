@@ -69,8 +69,10 @@
       }
       root.classList.toggle('bar-in-page', short);
       root.classList.toggle('bar-measured', !!bar);   // then the measure decides, both ways, not styles.css's heights
+      if (barPlaced) barPlaced();   // the story's focus line hangs on the bar's place and height (below)
     } catch (e) {}
   }
+  var barPlaced = null;
 
   setCtaH();
   win.addEventListener('resize', placeBar);
@@ -349,26 +351,56 @@
   } catch (e) {}
 
   /* ---------- the story's focus ----------
-     The line in focus is the last one whose text has crossed the focus line: 66% of the window's height on
-     a phone, its middle on a computer (900 up). One IntersectionObserver, its root running from far above
-     the window down to that line, so a line inside it has crossed, a fast jump past the story included; no
-     scroll listener. The line in focus is ink and the phone shows its screen (styles.css); with the script
-     off every line is ink and the first screen shows. */
+     The line in focus is the last one whose text has crossed the focus line (SITE-04 §6.3): on a phone,
+     halfway between the held tile's bottom and the bar's top, the middle of the room a line shows in; on a
+     computer (900 up), the window's middle. Where the phone's tile isn't held (html.bar-in-page) the
+     window's top stands for its bottom, and where the bar isn't pinned the window's bottom stands for its
+     top, so with neither the phone's line is the middle too. The tile's bottom is where it ends while held,
+     wherever the page is scrolled: the pin's sticky top, the tile's place in the pin as laid out (not as
+     its rise moves it) and its height. One IntersectionObserver, its root running from far above the
+     window down to that line, so a line inside it has crossed, a fast jump past the story included; no
+     scroll listener. The line moves with the window, the bar's place and height and the tile's size, so on
+     a resize, once the bar has been placed and as the tile changes size it is worked out again a frame
+     later, and only where it has moved half a pixel or more is the observer built again, the old one
+     disconnected; the new one's first report gives the line in focus again. The line in focus is ink and
+     the phone shows its screen (styles.css), at once with Reduce Motion; with the script off every line is
+     ink and the first screen shows. */
 
   var story = doc.querySelector('.story');
   try { if (story && 'IntersectionObserver' in win) {
     var storyLines = story.querySelectorAll('.story-line');
     var storyShots = story.querySelectorAll('.shot');
+    var storyPin = story.querySelector('.story-pin');
+    var storyTile = story.querySelector('.story-tile');
     var crossed = [];
     var focusAt = -1;
     var storyObs = null;
+    var storyMargin = null;   // the observer's bottom margin: '-50%' on a computer, px above the window's bottom on a phone
+    var storyRaf = 0;
     var setFocus = function (n) {
       if (n === focusAt) return;
       focusAt = n;
       for (var i = 0; i < storyLines.length; i++) storyLines[i].classList.toggle('on', i === n);
       for (var j = 0; j < storyShots.length; j++) storyShots[j].classList.toggle('on', j === n);
     };
+    var focusMargin = function () {
+      if (wide && wide.matches) return '-50%';
+      var windowH = win.innerHeight || root.clientHeight;
+      var tileEnd = 0;   // the held tile's bottom, or the window's top where it isn't held
+      var pinStyle = storyPin && storyTile ? win.getComputedStyle(storyPin) : null;
+      if (pinStyle && /sticky/.test(pinStyle.position)) {
+        tileEnd = (parseFloat(pinStyle.top) || 0) + storyTile.offsetTop + storyTile.getBoundingClientRect().height;
+      }
+      var barTop = windowH;   // the pinned bar's top, or the window's bottom where it sits in the page
+      if (cta && cta.offsetHeight && win.getComputedStyle(cta).position === 'fixed') barTop = cta.getBoundingClientRect().top;
+      return -Math.round((windowH - (tileEnd + barTop) / 2) * 100) / 100;
+    };
     var watchStory = function () {
+      storyRaf = 0;
+      var margin = focusMargin();
+      if (storyObs && (margin === storyMargin ||
+          (typeof margin === 'number' && typeof storyMargin === 'number' && Math.abs(margin - storyMargin) < 0.5))) return;
+      storyMargin = margin;
       if (storyObs) storyObs.disconnect();
       crossed = [];
       storyObs = new IntersectionObserver(function (entries) {
@@ -378,14 +410,21 @@
         var n = 0;
         for (var m = 0; m < storyLines.length; m++) if (crossed[m]) n = m;
         setFocus(n);
-      }, { rootMargin: '100000px 0px ' + (wide && wide.matches ? '-50%' : '-34%') + ' 0px' });
+      }, { rootMargin: '100000px 0px ' + (typeof margin === 'number' ? margin + 'px' : margin) + ' 0px' });
       for (var l = 0; l < storyLines.length; l++) storyObs.observe(storyLines[l]);
+    };
+    var queueStory = function () {
+      if (!storyRaf) storyRaf = win.requestAnimationFrame(watchStory);
     };
     setFocus(0);
     story.classList.add('focus');
     watchStory();
-    if (wide && wide.addEventListener) wide.addEventListener('change', watchStory);
-    else if (wide && wide.addListener) wide.addListener(watchStory);
+    barPlaced = queueStory;
+    win.addEventListener('resize', queueStory);
+    win.addEventListener('load', queueStory);
+    if (wide && wide.addEventListener) wide.addEventListener('change', queueStory);
+    else if (wide && wide.addListener) wide.addListener(queueStory);
+    try { if (storyTile && win.ResizeObserver) new win.ResizeObserver(queueStory).observe(storyTile); } catch (e) {}
   } } catch (e) {}
 
   /* ---------- the story's fourth line, in the middle of its step on a computer ----------

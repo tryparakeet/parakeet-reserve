@@ -130,6 +130,33 @@ export function bbox(locator) {
   });
 }
 
+// The story's focus line (SITE-04 §6.3), in px from the window's top, worked out from the page's boxes by
+// the brief's rule, not read from app.js: on a computer (900 wide and up) the window's middle; on a phone
+// halfway between the held tile's bottom and the bar's top. The held tile's bottom is where the tile ends
+// while its pin is stuck, wherever the page is scrolled: the pin's sticky top, plus the tile's place in the
+// pin (its box's, less the translate its rise may give it), plus its height. Where the pin isn't sticky the
+// tile isn't held, and the window's top (0) stands for its bottom; where the bar isn't pinned (it sits in
+// the page) the window's bottom stands for its top. So with neither, a phone's focus line is the middle too.
+export function focusLineAt(page) {
+  return page.evaluate(() => {
+    if (matchMedia('(min-width: 900px)').matches) return innerHeight / 2;
+    const pin = document.querySelector('.story-pin');
+    const tile = document.querySelector('.story-tile');
+    const bar = document.querySelector('.cta');
+    const pinStyle = getComputedStyle(pin);
+    let tileBottom = 0;
+    if (pinStyle.position === 'sticky') {
+      const t = tile.getBoundingClientRect();
+      const moved = getComputedStyle(tile).transform;
+      const lift = moved === 'none' ? 0 : new DOMMatrixReadOnly(moved).m42;
+      tileBottom = parseFloat(pinStyle.top) + (t.top - lift - pin.getBoundingClientRect().top) + t.height;
+    }
+    const barStyle = getComputedStyle(bar);
+    const barTop = barStyle.display !== 'none' && barStyle.position === 'fixed' ? bar.getBoundingClientRect().top : innerHeight;
+    return (tileBottom + barTop) / 2;
+  });
+}
+
 export async function viewportSize(page) {
   return page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }));
 }

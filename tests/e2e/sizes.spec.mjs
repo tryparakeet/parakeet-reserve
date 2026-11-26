@@ -9,6 +9,9 @@
 //   held tile and the bar; on a computer at 1440 x 780 and 1024 x 660 (no bar) the held tile fits under the
 //   header, and in a computer window too short to hold it whole (an Android phone on its side) it scrolls
 //   with its lines, the focus line still working;
+// - on a phone the story's focus line sits halfway between the held tile and the bar (the window's middle
+//   where the tile isn't held and the bar sits in the page), through a turn, a change in the bar's or the
+//   tile's size and Reduce Motion (§6.3, §6.9 #3);
 // - an upright iPad stops the phone at 343 x 700;
 // - in a browser without svh units, the story's tile keeps its height and its phone;
 // - on a computer the header (72, its Reserve 40 with a 44 px target), the logo, the H1, the answer line and
@@ -23,7 +26,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, expect, TAGGED_QS, ROOT, frames, bbox } from './fixtures.mjs';
+import { test, expect, TAGGED_QS, ROOT, frames, bbox, focusLineAt } from './fixtures.mjs';
 import { REAL_UAS, COMPUTER_UAS } from '../fixtures/user-agents.mjs';
 
 const PHONES = { iPhone: REAL_UAS.safari_ios, Android: REAL_UAS.chrome_android };
@@ -275,6 +278,170 @@ for (const w of FOCUS_WINDOWS) {
     });
   });
 }
+
+/* ---------- the story's focus line: on a phone halfway between the held tile and the bar ---------- */
+
+// The line in focus is the last one whose text has crossed the focus line (SITE-04 §6.3): on a phone halfway
+// between the held tile's bottom and the bar's top, 559 at 393x852 (416 and 702) and 468.5 at 375x667 (416
+// and 521); where the tile isn't held and the bar sits in the page (a phone on its side, a short window),
+// the window's middle, as on a computer. focusLineAt() works it out from the page's boxes by that rule,
+// apart from app.js, and each of lines 2 to 4 has its top put 3 px past it (that line in focus, its screen
+// on) and 3 px short of it (the line before), then the page goes back to the first line.
+
+// Line n's text top y px from the window's top.
+async function lineTo(page, n, y) {
+  const top = await page.evaluate(([k, to]) => {
+    const line = document.querySelectorAll('.story-line')[k];
+    window.scrollBy(0, line.getBoundingClientRect().top - to);
+    return line.getBoundingClientRect().top;
+  }, [n, y]);
+  expect(Math.abs(top - y), `line ${n + 1}'s top at ${y}`).toBeLessThan(1);
+}
+
+// Line k is the one in focus and its screen the one shown, and they stay so once the observer has reported.
+async function expectFocus(page, k, what) {
+  const focus = () => page.evaluate(() => {
+    const on = (sel) => [...document.querySelectorAll(sel)].map((el, i) => (el.classList.contains('on') ? i : -1)).filter((i) => i >= 0);
+    return { lines: on('.story-line'), shots: on('.story .shot') };
+  });
+  await expect.poll(focus, { message: what, timeout: 2000 }).toEqual({ lines: [k], shots: [k] });
+  await frames(page, 3);
+  expect(await focus(), `${what}, and stays`).toEqual({ lines: [k], shots: [k] });
+}
+
+// Lines 2 to 4 each 3 px past the focus line, then 3 px short of it; then back to the first line.
+async function crossFocusLine(page, at, where) {
+  for (const n of [1, 2, 3]) {
+    await lineTo(page, n, at - 3);
+    await expectFocus(page, n, `${where}: line ${n + 1} 3 px past the focus line (${at}) is in focus, its screen on`);
+    await lineTo(page, n, at + 3);
+    await expectFocus(page, n - 1, `${where}: line ${n + 1} 3 px short of it, line ${n} is in focus`);
+  }
+  await lineTo(page, 1, at + 3);
+  await expectFocus(page, 0, `${where}: back to the first line`);
+}
+
+// Android's bar is its button alone (96), so where its tile is 404 its focus line holds in any font:
+// (416 + window - 96) / 2. Elsewhere focusLineAt() gives it.
+const FOCUS_LINES = [
+  { width: 393, height: 852, ua: PHONES.iPhone, focus: 559 },
+  { width: 375, height: 667, ua: PHONES.iPhone, focus: 468.5 },
+  { width: 412, height: 915, ua: PHONES.Android, focus: 617.5 },
+  { width: 360, height: 800, ua: PHONES.Android, focus: 560 },
+  { width: 360, height: 600, ua: PHONES.Android },
+  { width: 393, height: 600, ua: PHONES.Android },
+  { width: 412, height: 620, ua: PHONES.Android },
+  { width: 852, height: 393, ua: PHONES.iPhone, inPage: true },
+  { width: 393, height: 560, ua: PHONES.iPhone, inPage: true },
+  { width: 800, height: 360, ua: PHONES.Android, inPage: true }
+];
+
+for (const w of FOCUS_LINES) {
+  const name = `${w.ua === PHONES.Android ? 'Android' : 'iPhone'} at ${w.width}x${w.height}`;
+  test.describe(name, () => {
+    test.use({ viewport: { width: w.width, height: w.height }, userAgent: w.ua });
+
+    test(w.inPage
+      ? 'with the bar in the page and the tile not held, the story\'s focus line is the window\'s middle'
+      : 'the story\'s focus line is halfway between the held tile\'s bottom and the bar\'s top', async ({ page }) => {
+      await load(page);
+      const places = await page.evaluate(() => ['.cta', '.story-pin'].map((sel) => getComputedStyle(document.querySelector(sel)).position));
+      expect(places, w.inPage ? 'the bar in the page, the tile not held' : 'the bar pinned, the tile held').toEqual(w.inPage ? ['relative', 'relative'] : ['fixed', 'sticky']);
+      const at = await focusLineAt(page);
+      if (w.inPage) expect(at, 'the window\'s middle').toBe(w.height / 2);
+      else if (w.focus !== undefined) expect(Math.abs(at - w.focus), `the focus line at ${at}, ${w.focus} by the boards' sizes`).toBeLessThanOrEqual(0.5);
+      await crossFocusLine(page, at, name);
+    });
+  });
+}
+
+// app.js's story observers, counted as they observe the lines and disconnect, so a test can see how many
+// are live and the root margin of each.
+function countStoryObservers() {
+  const Native = window.IntersectionObserver;
+  const live = new Set();
+  window.__storyObservers = live;
+  window.IntersectionObserver = class extends Native {
+    observe(el) {
+      if (el.classList && el.classList.contains('story-line')) live.add(this);
+      return super.observe(el);
+    }
+    disconnect() {
+      live.delete(this);
+      return super.disconnect();
+    }
+  };
+}
+
+test.describe('an iPhone turned, 393x852 to 852x393 and back', () => {
+  test.use({ viewport: { width: 393, height: 852 }, userAgent: PHONES.iPhone });
+
+  test('the focus line follows the turn, 559, then the middle, then 559, with the line in focus right after each turn and one observer', async ({ page }) => {
+    await page.addInitScript(countStoryObservers);
+    await load(page);
+    expect(Math.abs(await focusLineAt(page) - 559), 'upright, the focus line at 559').toBeLessThanOrEqual(0.5);
+    await lineTo(page, 2, 559 - 3);
+    await expectFocus(page, 2, 'before the turn, line 3 past the focus line');
+    expect(await page.evaluate(() => window.__storyObservers.size), 'one story observer live').toBe(1);
+    for (const [size, want] of [[{ width: 852, height: 393 }, 196.5], [{ width: 393, height: 852 }, 559]]) {
+      const where = `turned to ${size.width}x${size.height}`;
+      await page.setViewportSize(size);
+      await frames(page, 3);
+      const at = await focusLineAt(page);
+      expect(Math.abs(at - want), `${where}: the focus line at ${at}`).toBeLessThanOrEqual(0.5);
+      const crossedLast = await page.evaluate((line) => {
+        let n = 0;
+        document.querySelectorAll('.story-line').forEach((el, i) => { if (el.getBoundingClientRect().top <= line) n = i; });
+        return n;
+      }, at);
+      await expectFocus(page, crossedLast, `${where}: right after the turn, the last line past the focus line is in focus`);
+      expect(await page.evaluate(() => window.__storyObservers.size), `${where}: one story observer live`).toBe(1);
+      await crossFocusLine(page, at, where);
+    }
+    expect(await page.evaluate(() => window.__storyObservers.size), 'one story observer live').toBe(1);
+  });
+});
+
+test.describe('an iPhone at 393x852 whose bar and story tile change size', () => {
+  test.use({ viewport: { width: 393, height: 852 }, userAgent: PHONES.iPhone });
+
+  test('the focus line follows the bar\'s height and the tile\'s size with no resize', async ({ page }) => {
+    await load(page);
+    // the bar 20 px taller: the tile keeps its 404, so only the bar's top moves
+    await page.evaluate(() => document.querySelector('.cta-note').style.setProperty('padding-top', '20px'));
+    await frames(page, 3);
+    const bar = await bbox(page.locator('.cta'));
+    expect((await bbox(page.locator('.story-tile'))).height, 'the tile keeps its 404').toBeCloseTo(404, 1);
+    let at = await focusLineAt(page);
+    expect(at, 'halfway between the tile\'s 416 and the taller bar\'s top').toBeCloseTo((416 + bar.top) / 2, 1);
+    expect(at, 'above where it was').toBeLessThan(559 - 9);
+    await crossFocusLine(page, at, 'a taller bar');
+    // the tile 104 px shorter
+    await page.evaluate(() => document.querySelector('.story-tile').style.setProperty('height', '300px'));
+    await frames(page, 3);
+    at = await focusLineAt(page);
+    expect(at, 'halfway between the shorter tile\'s 312 and the bar\'s top').toBeCloseTo((312 + bar.top) / 2, 1);
+    await crossFocusLine(page, at, 'a shorter tile');
+  });
+});
+
+test.describe('Reduce Motion, an iPhone at 375x667', () => {
+  test.use({ viewport: { width: 375, height: 667 }, userAgent: PHONES.iPhone, contextOptions: { reducedMotion: 'reduce' } });
+
+  test('the same lines switch at the same focus line, at once', async ({ page }) => {
+    await load(page);
+    expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches), 'Reduce Motion is on').toBe(true);
+    const at = await focusLineAt(page);
+    expect(Math.abs(at - 468.5), `the focus line at ${at}`).toBeLessThanOrEqual(0.5);
+    await crossFocusLine(page, at, 'Reduce Motion');
+    await lineTo(page, 2, at - 3);
+    await expectFocus(page, 2, 'Reduce Motion: line 3 past the focus line');
+    expect(await page.evaluate(() => [
+      [...document.querySelectorAll('.story-line')].map((el) => getComputedStyle(el).opacity),
+      [...document.querySelectorAll('.story .shot')].map((el) => getComputedStyle(el).opacity)
+    ]), 'the line in focus is ink and its screen shows at once').toEqual([['0.62', '0.62', '1', '0.62'], ['0', '0', '1', '0']]);
+  });
+});
 
 for (const vp of [{ width: 1440, height: 780 }, { width: 1024, height: 660 }]) {
   test.describe(`a computer at ${vp.width}x${vp.height}`, () => {
